@@ -14,7 +14,7 @@ setup(
     packages=['enzi'],
     package_data={
         'enzi': [
-            'templates/*',
+            "enzi/backend/templates/*"
         ]
     },
     description="Enzi(Enzyme IC) is a tool for automating HDL project",
