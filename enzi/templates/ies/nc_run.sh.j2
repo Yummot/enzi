@@ -1,0 +1,69 @@
+#! /bin/bash -f
+
+if [ -e $HOME/.cdsenv ]; then
+  source $HOME/.cdsenv
+fi
+
+export proj_dir="{{ proj_dir }}"
+export src_dir="$proj_dir/src"
+export tb_dir="$proj_dir/tb"
+export build_dir="$proj_dir/build"
+export work_dir="$build_dir/worklib"
+
+# Script usage
+usage()
+{
+  msg="Usage: nc_run.sh [--help|-h]\n\
+Usage: nc_run.sh [--clean]\n\
+Usage: nc_run.sh [--gui]\n\
+Usage: nc_run.sh [--build]\n\
+\
+[--help|-h] -- Print help\n\
+[--build] -- Build only\n\
+[--gui] -- Run in GUI\n\
+[--clean] -- Clean up previous run generated files\n"
+  echo -e $msg
+  exit 1
+}
+
+if [[ $# > 1 ]]; then
+  echo -e "ERROR: invalid number of arguments specified\n"
+  usage
+fi
+
+if [[ ($# == 1 )]]; then
+  case "$1" in
+    "--build"|"--gui") 
+      ;;
+    "-h"|"--help")
+      usage
+      exit 0
+      ;;
+    "--clean")
+      ./nc_setup.sh --clean
+      exit 0
+      ;;
+    *)
+      echo -e "ERROR: unknown option specified '$1' (type "nc_setup.sh --help" for for more info)"
+      exit 1
+      ;;
+  esac
+fi
+
+# setup environment
+./nc_setup.sh
+# compile all filesets
+./nc_compile.sh
+# elaboration
+./nc_elaborate.sh
+
+if [[ ($1 == "--build")]]; then
+  exit 0
+fi
+
+# simulation
+if [[ ($1 == "--gui")]]; then
+  ./nc_simulate.sh --gui
+else
+  ./nc_simulate.sh
+fi

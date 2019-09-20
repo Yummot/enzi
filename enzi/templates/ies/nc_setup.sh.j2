@@ -1,0 +1,147 @@
+#!/bin/bash -f
+
+NC_BUILD_DIR="INCA_libs"
+
+# Script usage
+usage()
+{
+  msg="Usage: nc_setup.sh [--help|-h]\n\
+Usage: nc_setup.sh [--reset_run]\n\
+Usage: nc_setup.sh [--clean]\n\
+\
+[--help|-h] -- Print help\n\
+[--clean] -- clean up previous generated files\n\
+[--reset_run] -- Recreate simulator setup files and library mappings for a clean run. The generated files\n\
+\t\tfrom the previous run will be removed automatically.\n"
+  echo -e $msg
+  exit 1
+}
+
+# Delete generated files from the previous run
+reset_run()
+{
+  files_to_remove=(ncsim.key nc_compile.log nc_elaborate.log ncsim.log ncvlog.log waves.shm)
+  {%- raw %}
+  for (( i=0; i<${#files_to_remove[*]}; i++ )); do
+  {%- endraw %}
+  {#- #}
+    file="${files_to_remove[i]}"
+    if [[ -e $file ]]; then
+      rm -rf $file
+    fi
+  done
+  
+  if [ -e ".simvision" ]; then
+    rm -r ./.simvision
+  fi
+
+  # if [ -d "./waves.shm" ]; then
+  #   echo "deleted previous waves records directory ./waves.shm"
+  #   rm -r waves.shm
+  # fi
+
+  # if [ -d "./waves" ]; then
+  #   echo "deleted previous waves records directory ./waves"
+  #   rm -r waves
+  # fi
+}
+
+# Create design library directory paths and define design library mappings in cds.lib
+create_lib_mappings()
+{
+  libs=(worklib)
+  file="cds.lib"
+  dir="$NC_BUILD_DIR"
+
+  if [[ -e $file ]]; then
+    rm -f $file
+  fi
+  if [[ -e $dir ]]; then
+    rm -rf $dir
+  fi
+
+  touch $file
+  lib_map_path=""
+
+  if [ -z ${CDSHOME+x} ]; then
+    echo "environment variable CDSHOME is not set. check if you setup cadence environment."
+    exit 1
+  else
+    lib_map_path="$CDSHOME/tools.lnx86/inca/files/"    
+  fi
+
+  incl_ref="SOFTINCLUDE $lib_map_path/cds.lib"
+  echo $incl_ref >> $file
+  {%- raw %}
+  for (( i=0; i<${#libs[*]}; i++ )); do
+  {%- endraw %}
+  {#- #}
+    lib="${libs[i]}"
+    lib_dir="$dir/$lib"
+    if [[ ! -e $lib_dir ]]; then
+      mkdir -p $lib_dir
+      mapping="DEFINE $lib $dir/$lib"
+      echo $mapping >> $file
+    fi
+  done
+}
+
+clean_up()
+{
+  echo -e "INFO: CLEANUP all simluation generated files.\n"
+  
+  reset_run
+  if [[ -e $NC_BUILD_DIR ]]; then
+    rm -r $NC_BUILD_DIR
+  fi
+
+  if [[ -e $file ]]; then
+    rm cds.lib hdl.var
+  fi
+
+  exit 0
+}
+
+setup()
+{
+  case $1 in
+    "--reset_run" )
+      reset_run
+      echo -e "INFO: Simulation run files deleted.\n"
+      exit 0
+    ;;
+    * )
+    ;;
+  esac
+
+  create_lib_mappings
+  touch hdl.var
+  echo -e "INFO: Simulation setup files and library mappings created.\n"
+  # Add any setup/initialization commands here:-
+  # <user specific commands>
+}
+
+
+if [[ $# > 1 ]]; then
+  echo -e "ERROR: invalid number of arguments specified\n"
+  usage
+fi
+
+if [[ ($# == 1 ) ]]; then
+  case "$1" in
+  "--reset_run"):
+    ;;
+  "--clean"):
+    clean_up
+    ;;
+  "--help"|"-h"):
+    usage
+    ;;  
+  *):
+    echo -e "ERROR: unknown option specified '$1' (type "nc_setup.sh --help" for for more info)"
+    exit 1
+    ;;
+  esac  
+fi
+
+setup $1

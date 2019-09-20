@@ -1,0 +1,11 @@
+{%- if toplevel %}
+# generates VCD file
+database -open ./waves/tbvcdwaves -vcd -default
+probe -create {{ toplevel }} -depth all -all -vcd -database ./waves/tbvcdwaves
+
+# generates shm file
+database -open ./waves/tbwaves -shm -default
+probe -create {{ toplevel }} -depth all -all -shm -database ./waves/tbwaves
+run 
+exit
+{% endif %}

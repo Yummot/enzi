@@ -1,0 +1,41 @@
+#! /bin/bash -f
+
+if [ -z ${build_dir+x} ]; then
+  mkdir -p ./waves
+else
+  mkdir -p $build_dir/waves
+fi
+
+if [[ $# > 1 ]]; then
+  echo -e "ERROR: invalid number of arguments specified\n"
+  usage
+fi
+
+if [[ ($# == 1 ) && ($1 != "--gui") ]]; then
+  echo -e "ERROR: unknown option specified '$1'"
+  exit 1
+fi
+
+ncsim_opts="+acssce+rwc -messages"
+{% if sim_opts %}
+ncsim_opts+=" {{ sim_opts }}"
+{% endif %}
+
+{% if simulate_log %}
+ncsim_opts+=" -logfile {{ simulate_log }}"
+{% else %}
+ncsim_opts+=" -logfile nc_simulate.log"
+{% endif %}
+
+{% if toplevel %}
+if [[ ($1 == "--gui") ]]; then
+  ncsim {{ toplevel }} $ncsim_opts -gui
+else
+  {% if gen_waves %}
+  ncsim {{ toplevel }} $ncsim_opts -input ./waves.tcl
+  {% else %}
+  ncsim {{ toplevel }} $ncsim_opts
+  {% endif %}
+fi
+{%- endif %}
+

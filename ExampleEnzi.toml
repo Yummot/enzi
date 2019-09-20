@@ -1,0 +1,79 @@
+enzi_version = "0.1"
+
+[package]
+name = "arb_tree"
+version = "0.1.0"
+authors = ["Mot Yu"]
+
+# table, indicate this is a remote package
+# [provider]
+# name = '' # may be git
+# author = ''
+# version = ''
+# repo = ''
+
+# TODO: currently, only filelist can specify dependencies
+[filesets.rtl]
+dependencies = []
+files = [
+    "./mock/src/arb_tree.sv",
+    "./mock/src/req_mux2.sv",
+    "./mock/src/req_rr_flag.sv", 
+]
+
+[filesets.include]
+files = [
+    "./mock/include/test_clk_if.sv",
+]
+
+[filesets.tb]
+files = [
+    "./mock/tb/tb.sv",
+]
+
+# currently, targets inside [ 'run', 'build', 'sim', 'program_device' ]
+[targets.sim]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+[targets.run]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+[targets.build]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+[[tools]]
+name = "ies"
+    [tools.params]
+    link_libs = [] # must be array
+    gen_waves = true # must be boolean
+    vlog_opts = ["-message"] # *_opts can be string or array
+    vhdl_opts = ["-message"] # *_opts can be string or array
+    elab_opts = ["-message"] # *_opts can be string or array
+    sim_opts = ["-massage"] # *_opts can be string or array
+    vlog_defines = [] # must be a string array
+    vhdl_defines = [] # must be a string array
+    compile_log = "x.log" # string
+    elaborate_log = "y.log" # string
+    simulate_log = "z.log" # string
+
+[[tools]]
+name = "ixs"
+    # detail of tools config is in each tools.param
+    [tools.params]
+    link_libs = [] # must be array
+    gen_waves = true # must be boolean
+    vlog_opts = ["-message"] # *_opts can be string or array
+    vhdl_opts = ["-message"] # *_opts can be string or array
+    elab_opts = ["-message"] # *_opts can be string or array
+    sim_opts = ["-massage"] # *_opts can be string or array
+    vlog_defines = [] # must be a string array
+    vhdl_defines = [] # must be a string array
+    compile_log = "x.log" # string
+    elaborate_log = "y.log" # string
+    simulate_log = "z.log" # string

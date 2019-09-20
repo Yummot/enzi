@@ -1,0 +1,76 @@
+#! /bin/bash -f
+
+# verilog args
+ncvlog_opts="-64bit -messages"
+{% if vlog_opts %}
+ncvlog_opts+=" {{ vlog_opts }}"
+{% endif %}
+
+{% if compile_log %}
+ncvlog_opts+=" -logfile {{compile_log}} -append_log -update"
+{% else %}
+ncvlog_opts+=" -logfile nc_compile.log -append_log -update"
+{% endif %}
+
+{% if vlog_defines %}
+ncvlog_defines="{{ vlog_defines }}"
+{% else %}
+ncvlog_defines=""
+{% endif %}
+
+# vhdl args
+ncvhdl_opts="-64bit -messages -relax"
+{% if vhdl_opts %}
+ncvhdl_opts+=" {{ vhdl_opts }}"
+{% endif %}
+
+{% if compile_log %}
+ncvhdl_opts+=" -logfile {{compile_log}} -append_log -update"
+{% else %}
+ncvhdl_opts+=" -logfile nc_compile.log -append_log -update"
+{% endif %}
+
+{% if vhdl_defines %}
+ncvhdl_defines="{{ vlog_defines }}"
+{% else %}
+ncvhdl_defines=""
+{% endif %}
+
+{% if vlog_fileset %}
+{% for vlog_file in vlog_fileset %}
+{#- -#}
+{% if vlog_file.endswith((".sv", '.svh')) %}
+ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ vlog_file }}
+{% endif %}
+{% if vlog_file.endswith((".v", '.vh')) %}
+ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ vlog_file }}
+{% endif %}
+{#- -#}
+{% endfor %}
+{% endif %}
+
+{% if vhdl_fileset %}
+{% for vhdl_file in vhdl_fileset %}
+{% if vhdl_file.endswith((".vhd", '.vhdl')) %}
+ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ vhdl_file }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if fileset %}
+{% for file in fileset %}
+{#- -#}
+{% if file.endswith((".vhd", '.vhdl')) %}
+ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ file }}
+{% endif %}
+{#- -#}
+{% if file.endswith((".sv", '.svh')) %}
+ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file }}
+{% endif %}
+{#- -#}
+{% if file.endswith((".v", '.vh')) %}
+ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file }}
+{% endif %}
+{#- -#}
+{% endfor %}
+{% endif %}
