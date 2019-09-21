@@ -4,8 +4,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class IES(Backend):
-    def __init__(self, config=None, work_root=None):
+    def __init__(self, config={}, work_root=None):
         # general run config
         self.gen_waves = config.get('gen_waves', True)
         self.proj_dir = config.get('proj_dir', '.')
@@ -19,7 +20,6 @@ class IES(Backend):
 
         _fileset = config.get('fileset', []) + config.get('files', [])
         self.fileset = list(OrderedDict.fromkeys(_fileset))
-        # print(self.fileset)
         self.vlog_fileset = config.get('vlog_fileset', [])
         self.vhdl_fileset = config.get('vhdl_fileset', [])
 
@@ -30,7 +30,6 @@ class IES(Backend):
         if self.fileset and self.vhdl_fileset:
             self.fileset = [
                 x for x in self.fileset if not x in self.vhdl_fileset]
-        # print(self.fileset)
 
         # IES elaborate step config
         self.elab_opts = config.get('elab_opts', None)
@@ -112,7 +111,7 @@ class IES(Backend):
         self.render_template('nc_makefile.j2', 'Makefile', self._makefile_vars)
 
         self._gen_scripts_name = ['waves.tcl', 'nc_setup.sh', 'nc_compile.sh',
-                                  'nc_elaborate.sh', 'nc_simulate.sh', 'nc_run.sh']
+                                  'nc_elaborate.sh', 'nc_simulate.sh', 'nc_run.sh', 'Makefile']
 
     def configure_main(self):
         self.gen_scripts()

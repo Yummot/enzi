@@ -55,6 +55,8 @@ def main():
 
     if len(args.root) > 1:
         raise RuntimeError('Currently, Enzi does not support multiple roots')
+    if not args.root:
+        raise RuntimeError('No root directory specified.')
 
     if args.config:
         s = Enzi(args.root[0], args.config)
@@ -65,7 +67,7 @@ def main():
     project_manager = ProjectFiles(s)
     project_manager.fetch(target)
     fileset = project_manager.get_fileset(target)
-    s.run_target(target, fileset)
+    s.run_target(target, fileset, args.tool)
     print('enzi {} done'.format(target))
 
 

@@ -94,16 +94,6 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
     else:
         return str(value)
 
-# print(value_str_filter(True))
-# print(value_str_filter(False))
-# print(value_str_filter(False, bool_type={ True: 1, False: 0 }))
-# print(value_str_filter(False, bool_type={ True: 1, False: 0 }, bool_is_str=1))
-# print(value_str_filter(False, bool_type={ True: 1, False: 0 }, bool_is_str=1))
-# print(value_str_filter(False, str_quote="'", bool_type={ True: 1, False: 0 }, bool_is_str=1))
-# print(value_str_filter(dict(), str_quote="'"))
-# print(value_str_filter("xxxx", str_quote="'"))
-
-
 class BackendCallback(object):
     def pre(self):
         pass
@@ -123,7 +113,7 @@ class Backend(object):
 
     supported_ops = ['build', 'sim', 'run', 'program_device']
 
-    def __init__(self, config=None, work_root=None):
+    def __init__(self, config={}, work_root=None):
         if config is None:
             raise RuntimeError(
                 "An minimal config for running Backend with \"name\" must provide.")
@@ -160,6 +150,8 @@ class Backend(object):
             'sim': BackendCallback(),
             'program_device': BackendCallback()
         }
+
+        self._gen_scripts_name = None
 
     # TODO: Add a checker fn to abort running Backend without the corresponding Backend tool.
 

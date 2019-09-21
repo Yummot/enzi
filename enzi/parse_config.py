@@ -59,15 +59,3 @@ class Config(object):
             self.tools[tool['name']]['params'] = tool.get('params', {})
 
         self.is_local = (not 'provider' in conf)
-
-# with open("./Enzi.toml") as f:
-#     import pprint
-#     toml_data = f.read()
-#     parsed_toml = toml.loads(toml_data)
-#     # pprint.pprint(parsed_toml)
-
-# import pprint
-# for attr in dir(config):
-#     if not attr.startswith('_'):
-#         print(attr, ":")
-#         pprint.pprint(config.__getattribute__(attr))

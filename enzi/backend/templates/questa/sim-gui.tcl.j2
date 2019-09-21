@@ -1,0 +1,14 @@
+{% if toplevel %}
+vsim {{ toplevel }}_opt
+
+# set NumericStdNoWarnings 1
+# set StdArithNoWarnings 1
+
+if { [catch {[add wave *]}] } {}
+
+view wave
+view structure
+view signals
+
+run 100ns
+{% endif %}

@@ -1,0 +1,80 @@
+link_libs = 
+
+{% if link_libs %}
+{% for lib in link_libs %}
+link_libs += -lib {{ lib }}
+{% endfor %}
+{% endif %}
+
+.PHONY: all build compile elaborate run sim run-gui sim-gui clean
+
+all: build
+
+build: compile elaborate
+
+run:
+{% if simulate_log %}
+	{% if silence_mode %}
+	vsim -c -do "run -a" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }}
+	{% else %}
+	vsim -c -do "run -a" -l {{ simulate_log }} {{ toplevel }}_opt {{ sim_opts }}
+	{% endif %}
+{% else %}
+	{% if silence_mode %}
+	vsim -c -do "run -a" -l simulate.log -quiet {{ toplevel }}_opt {{ sim_opts }}
+	{% else %}
+	vsim -c -do "run -a" -l simulate.log {{ toplevel }}_opt {{ sim_opts }}
+	{% endif %}
+{% endif %}
+
+run-gui:
+{% if simulate_log %}
+	{% if silence_mode %}
+	vsim -do sim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }}
+	{% else %}
+	vsim -do sim-gui.tcl -l {{ simulate_log }} {{ sim_opts }}
+	{% endif %}
+{% else %}
+	{% if silence_mode %}
+	vsim -do sim-gui.tcl -l simulate.log -quiet {{ sim_opts }}
+	{% else %}
+	vsim -do sim-gui.tcl -l simulate.log {{ sim_opts }}
+	{% endif %}
+{% endif %}
+
+sim: run
+
+sim-gui: run-gui
+
+compile: compile.sh
+{% if compile_log %}
+	{% if silence_mode %}
+	./compile.sh | tee {{ compile_log }} > /dev/null
+	{% else %}
+	./compile.sh | tee {{ compile_log }}
+	{% endif %}
+{% else %}
+	{% if silence_mode %}
+	./compile.sh | tee compile.log > /dev/null
+	{% else %}
+	./compile.sh | tee compile.log
+	{% endif %}
+{% endif %}
+
+elaborate: elaborate.sh
+{% if elaborate_log %}
+	{% if silence_mode %}
+	./elaborate.sh | tee {{ elaborate_log }} > /dev/null
+	{% else %}
+	./elaborate.sh | tee {{ elaborate_log }}
+	{% endif %}
+{% else %}
+	{% if silence_mode %}
+	./elaborate.sh | tee elaborate.log > /dev/null
+	{% else %}
+	./elaborate.sh | tee elaborate.log
+	{% endif %}
+{% endif %}
+
+clean:
+	rm work -rf

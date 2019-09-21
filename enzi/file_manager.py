@@ -83,20 +83,3 @@ class LocalFiles(FileManager):
                 raise FileNotFoundError(msg)
         self.status = FileManagerStatus.FETCHED
         return self.cache_files
-
-# s = frontend.Enzi('.')
-
-# filset = ['./mock/include/test_clk_if.sv',
-#           './mock/src/arb_tree.sv',
-#           './mock/src/req_mux2.sv',
-#           './mock/src/req_rr_flag.sv',
-#           './mock/tb/tb.sv']
-# localfiles = LocalFiles({'fileset': filset}, '.', './build/arb_tree')
-# localfiles.fetch()
-# localfiles.clean_cache()
-# import pprint
-# pprint.pprint(localfiles.cache_files)
-# localfiles.clean_cache()
-# print(os.path.commonpath(['./build/xxxx', './build/yyy']))
-# print(os.path.normpath('./build/xxx'))
-# print(os.path.dirname('./build/xxx/y.v'))

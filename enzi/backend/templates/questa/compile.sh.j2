@@ -1,0 +1,66 @@
+#! /bin/bash -f
+
+vlib work
+
+vlog_opts="+cover=bcefsx -incr"
+vhdl_opts="+cover=bcefsx "
+vlog_defines=""
+vhdl_defines=""
+
+sv_input_port="-svinputport=var"
+
+{% if vlog_opts %}
+vlog_opts+=" {{ vlog_opts }} "
+{% endif %}
+
+{% if vhdl_opts %}
+vlog_opts+=" {{ vhdl_opts }} "
+{% endif %}
+
+{% if vlog_defines %}
+vlog_defines+=" {{ vlog_defines }} "
+{% endif %}
+
+{% if vhdl_defines %}
+vhdl_defines+=" {{ vlog_defines }} "
+{% endif %}
+
+{% if vlog_fileset %}
+{% for vlog_file in vlog_fileset %}
+{#- -#}
+{% if vlog_file.endswith((".sv", '.svh')) %}
+vlog $vlog_opts $vlog_defines -sv {{ vlog_file }} $sv_input_port
+{% endif %}
+{% if vlog_file.endswith((".v", '.vh')) %}
+vlog $vlog_opts $vlog_defines {{ vlog_file }}
+{% endif %}
+{#- -#}
+{% endfor %}
+{% endif %}
+
+{% if vhdl_fileset %}
+{% for vhdl_file in vhdl_fileset %}
+{% if vhdl_file.endswith((".vhd", '.vhdl')) %}
+vcom $vhdl_opts $vhdl_defines {{ vhdl_file }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if fileset %}
+{% for file in fileset %}
+{#- -#}
+{% if file.endswith((".vhd", '.vhdl')) %}
+vcom $vhdl_opts $vhdl_defines {{ file }}
+{% endif %}
+{#- -#}
+{% if file.endswith((".sv", '.svh')) %}
+vlog $vlog_opts $vlog_defines -sv {{ file }} $sv_input_port
+{% endif %}
+{#- -#}
+{% if file.endswith((".v", '.vh')) %}
+vlog $vlog_opts $vlog_defines {{ file }}
+{% endif %}
+{#- -#}
+{% endfor %}
+{% endif %}
+

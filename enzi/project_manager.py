@@ -5,7 +5,6 @@ class ProjectFiles(FileManager):
         self.lf_managers = {}
         self.cache_files = {}
         for target in enzi_project.targets:
-            # print('found target:', target)
             fileset = enzi_project.gen_target_fileset(target)
             config = {'fileset': fileset}
             self.lf_managers[target] = LocalFiles(

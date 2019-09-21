@@ -1,0 +1,10 @@
+#! /bin/bash -f
+
+elab_opts="+cover=bcefsx +acc=npr "
+{% if elab_opts %}
+elab_opts+=" {{ elab_opts }}"
+{% endif %}
+
+{% if toplevel %}
+vopt $elab_opts work.{{ toplevel }} -o {{ toplevel }}_opt
+{% endif %}
