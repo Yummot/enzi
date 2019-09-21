@@ -119,6 +119,11 @@ class Enzi(object):
                 toplevel=target_toplevel,
                 fileset=target_fileset
             )
+            
+            if tool_name == 'vsim':
+                logger.warning('Treat Vsim tool request as using questa simulator')
+                tool_name = 'questa'
+            
             backend = self.known_backends.get(
                 tool_name, backend_config, self.build_dir)
             return backend
@@ -160,6 +165,8 @@ class BackendConfigGen(object):
         else:
             RuntimeError(
                 'known_backends must be list or an instance of KnownBackends.')
+        self.known_backends.append('vsim')
+        print(self.known_backends)
 
     def get(self, *, tool_name, tool_config, work_name, work_root, toplevel, fileset):
         # if tool_name.lower() == 'ies':
@@ -205,6 +212,9 @@ class BackendConfigGen(object):
         config['silence_mode'] = ies_config.get('silence_mode', False)
 
         return config
+
+    def vsim(self, vsim_config, work_name, work_root, toplevel, fileset):
+        return self.questa(vsim_config, work_name, work_root, toplevel, fileset)
 
     def questa(self, questa_config, work_name, work_root, toplevel, fileset):
         config = {}
