@@ -12,6 +12,7 @@ class FileManagerStatus(Enum):
     INIT = 0
     FETCHED = 1
     OUTDATE = 2
+    CLEANED = 3
 
 
 class FileManager(object):

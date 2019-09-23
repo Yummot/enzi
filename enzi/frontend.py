@@ -36,6 +36,7 @@ class Enzi(object):
         # TODO: currently the dependencies field in a fileset of config.filesets is just an placeholder.
         self.filesets = config.filesets
         self.package = config.package
+        self.dependencies = config.dependencies
         self.work_name = py_copy.copy(self.package['name'])
         self.tools = config.tools
         self.known_backends = KnownBackends()
@@ -57,7 +58,7 @@ class Enzi(object):
             self._silence_mode = value
         else:
             setattr(self, '_silence_mode', value)
-    
+
     def check_target_availability(self, target_name):
         if not target_name in self.supported_targets:
             raise RuntimeError(
@@ -113,11 +114,12 @@ class Enzi(object):
                 toplevel=target_toplevel,
                 fileset=target_fileset
             )
-            
+
             if tool_name == 'vsim':
-                logger.warning('Treat Vsim tool request as using questa simulator')
+                logger.warning(
+                    'Treat Vsim tool request as using questa simulator')
                 tool_name = 'questa'
-            
+
             backend = self.known_backends.get(
                 tool_name, backend_config, self.build_dir)
             return backend
@@ -132,13 +134,14 @@ class Enzi(object):
         self.check_target_availability(target_name)
 
         _files = []
-        _deps = []
+        # _deps = []
         for fileset_name in self.targets[target_name]['filesets']:
             fileset = self.filesets.get(
-                fileset_name, {'files': [], 'dependencies': []})
+                fileset_name, {'files': [], })
             _files = _files + fileset.get('files', [])
-            _deps = _deps + fileset.get('dependencies', [])
-        return {'files': _files, 'dependencies': _deps}
+            # _deps = _deps + fileset.get('dependencies', [])
+        # return {'files': _files, 'dependencies': _deps}
+        return {'files': _files, }
 
     # def update_target_fileset(self, target_name, new_fileset):
     #     if not target_name in self.targets:

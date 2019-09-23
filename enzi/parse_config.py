@@ -31,6 +31,20 @@ class Dependency(object):
         
         self.name = name
         # print(self.name, self.is_remote, self.version or self.commit, self.path or self.url)
+    def git_repo_config(self):
+        config = {}
+        if self.is_remote:
+            config['url'] = self.url
+        else:
+            config['path'] = self.path
+        config['use_version'] = self.use_version
+        if self.use_version:
+            config['version'] = self.version
+        else:
+            config['commit'] = self.commit
+        config['name'] = self.name
+        
+        return config
 
 class Config(object):
     def __init__(self, config_file, extract_dep_only=False):
