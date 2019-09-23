@@ -1,4 +1,4 @@
-enzi_version = "0.1"
+enzi_version = "0.2"
 
 [package]
 name = "arb_tree"
@@ -12,12 +12,16 @@ authors = ["Mot Yu"]
 # version = ''
 # repo = ''
 
-# TODO: currently, only filelist can specify dependencies
+# name: string, path: path string, url: url string
+# dependency must be a git repo with a valid Enzi.toml.
+# The root package is recommended to be a git repo. In this case,
+# we can have a better version control over root package. Also helping resolve deps. 
+[dependencies.dep1]
+path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
+version = "0.1.0" # may use semver compare string
+# version can be replace as commit
+
 [filesets.rtl]
-dependencies = [
-    { name= "dep1", path = "/home/motyu/ic_projs/enzi_test_deps/dep1" }
-    # name: string, path: path string, url: url string
-]
 files = [
     "./mock/src/arb_tree.sv",
     "./mock/src/req_mux2.sv",

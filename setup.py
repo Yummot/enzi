@@ -24,7 +24,8 @@ setup(
         ]
     },
     install_requires=[
-        'toml'
+        'toml',
+        'semver'
     ],
     setup_requires=['setuptools_scm', 'setuptools_scm_about']
 )
