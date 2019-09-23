@@ -20,6 +20,7 @@ authors = ["Mot Yu"]
 path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
 version = "0.1.0" # may use semver compare string
 # version can be replace as commit
+# commit = "commit hash"
 
 [filesets.rtl]
 files = [
