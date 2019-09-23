@@ -14,7 +14,10 @@ authors = ["Mot Yu"]
 
 # TODO: currently, only filelist can specify dependencies
 [filesets.rtl]
-dependencies = []
+dependencies = [
+    { name= "dep1", path = "/home/motyu/ic_projs/enzi_test_deps/dep1" }
+    # name: string, path: path string, url: url string
+]
 files = [
     "./mock/src/arb_tree.sv",
     "./mock/src/req_mux2.sv",

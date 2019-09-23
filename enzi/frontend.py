@@ -57,13 +57,16 @@ class Enzi(object):
             self._silence_mode = value
         else:
             setattr(self, '_silence_mode', value)
-
-    def run_target(self, target_name, filelist=None, tool_name=None):
-        if not target_name in self.targets:
-            raise RuntimeError('{} in not in targets'.format(target_name))
+    
+    def check_target_availability(self, target_name):
         if not target_name in self.supported_targets:
             raise RuntimeError(
                 '{} in not in current supprot targets'.format(target_name))
+        if not target_name in self.targets:
+            raise RuntimeError('{} in not in targets'.format(target_name))
+
+    def run_target(self, target_name, filelist=None, tool_name=None):
+        self.check_target_availability(target_name)
 
         backend = self.get_backend(
             target_name, tool_name=tool_name, filelist=filelist)
@@ -71,20 +74,11 @@ class Enzi(object):
         self.excute(target_name, backend)
 
     def configure(self, target_name, backend):
-        if not target_name in self.targets:
-            raise RuntimeError('{} in not in targets'.format(target_name))
-        if not target_name in self.supported_targets:
-            raise RuntimeError(
-                '{} in not in current supprot targets'.format(target_name))
-
+        self.check_target_availability(target_name)
         getattr(backend, 'configure')()
 
     def excute(self, target_name, backend):
-        if not target_name in self.targets:
-            raise RuntimeError('{} in not in targets'.format(target_name))
-        if not target_name in self.supported_targets:
-            raise RuntimeError(
-                '{} in not in current supprot targets'.format(target_name))
+        self.check_target_availability(target_name)
 
         # backend = self.get_backend(target_name)
         getattr(backend, target_name)()
@@ -135,8 +129,7 @@ class Enzi(object):
         return ret
 
     def gen_target_fileset(self, target_name):
-        if not target_name in self.targets:
-            raise KeyError('{} in not in targets'.format(target_name))
+        self.check_target_availability(target_name)
 
         _files = []
         _deps = []
