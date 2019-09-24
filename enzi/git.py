@@ -38,7 +38,7 @@ class GitRepo(FileManager):
 
     def _fetch_repo(self):
         origin_path = self.path if self.is_local else self.url
-            
+
         if os.path.exists(self.repo_path):
             self.clean_cache()
 
@@ -51,9 +51,10 @@ class GitRepo(FileManager):
             raise RuntimeError(str(e))
 
     def _checkout(self):
-        version = self.version if self.version.startswith('v') else 'v' + self.version
+        version = self.version if self.version.startswith(
+            'v') else 'v' + self.version
         commit = self.commit if hasattr(self, 'commit') else version
-        git_args = ['-C', self.repo_path,'checkout', '-q', commit]
+        git_args = ['-C', self.repo_path, 'checkout', '-q', commit]
         try:
             Launcher('git', git_args).run()
         except subprocess.CalledProcessError as e:
@@ -73,8 +74,8 @@ class GitRepo(FileManager):
         _files = []
         for value in config.filesets.values():
             _files = _files + value.get('files', [])
-        self.fileset = { 'files': _files }
-        
+        self.fileset = {'files': _files}
+
         for file in self.fileset['files']:
             cached_file = join_path(repo_path, file)
             self.cache_files['files'].append(cached_file)
@@ -85,3 +86,125 @@ class GitRepo(FileManager):
         self.status = FileManagerStatus.FETCHED
         self._detect_files()
         return self.cache_files
+
+
+class GitCommand(object):
+    def __init__(self):
+        self.cmd = 'git'
+        self.args = []
+
+    def arg(self, arg):
+        self.args.append(str(arg))
+        return self
+
+# inspired by bender https://github.com/fabianschuiki/bender
+
+
+class Git(object):
+    def __init__(self, path):
+        self.path = path
+
+    def spawn(self, cmd: GitCommand):
+        return Launcher(cmd.cmd, cmd.args, self.path).run()
+
+    def spawn_with(self, f):
+        cmd = GitCommand()
+        f(cmd)
+        return self.spawn(cmd)
+
+    # fetch the tags and refs of a remote git repository
+    def fetch(self, remote):
+        self.spawn_with(lambda x: x.arg('fetch').arg('--prune').arg(remote))
+        self.spawn_with(lambda x: 
+            x.arg('fetch').arg('--tags').arg('--prune').arg(remote))
+
+    def init_repo(self, dst_path, url_path):
+        """
+        Initialize a git repository at the given path
+        """
+        self.spawn_with(lambda x: x.arg('init').arg('--bare'))
+        self.spawn_with(lambda x: x.arg('remote').arg('add').arg('origin').arg(url_path))
+        self.fetch('origin')
+
+    def list_refs(self):
+        refs = self.spawn_with(lambda x: x.arg('show-ref'))
+        ret = []
+        for line in refs.splitlines():
+            fields = line.split()
+            # TODO: bender said: Handle the case where the line might not contain enough
+            # information or is missing some fields.
+            rev_id = fields[0]
+            ref = fields[1]
+            rev_id = rev_id + '^{commit}'
+            rev_id = self.spawn_with(lambda x:
+                x.arg('rev-parse').arg('--verify').arg(rev_id)
+            ).strip()
+            ret.append((rev_id, ref))
+        return ret
+    
+    def list_revs(self):
+        revs = self.spawn_with(lambda x:
+            x.arg('rev-list').arg('--all').arg('--date-order')).splitlines()
+        return revs     
+
+    def current_checkout(self):
+        return self.spawn_with(lambda x: 
+            x.arg('rev-parse').arg('--revs-only').arg('HEAD^{commit}')
+        ).splitlines()[0]
+    
+    def cat_file(self, hash):
+        return self.spawn_with(lambda x: 
+            x.arg('cat-file').arg('blob').arg(hash))
+    
+    def list_files(self, rev_id, path=None):
+
+        lines = self.spawn_with(lambda x:
+            x.arg('ls-tree').arg(rev_id)
+        ).splitlines()
+        return [ entry for entry in map(TreeEntry.parse, lines) ]
+
+class TreeEntry(object):
+    def __init__(self, input: str):
+        tab_idx = input.find('\t')
+        meta, name = input[0:tab_idx], input[tab_idx+1:]
+        meta_fields = meta.split()
+        self.name = name
+        self.hash = meta_fields[2]
+        self.kind = meta_fields[1]
+        self.mode = meta_fields[0]
+
+    @staticmethod
+    def parse(input):
+        return TreeEntry(input)
+
+    def __str__(self):
+        return 'TreeEntry{{ name: {}, hash: {}, kind: {} }}'.format(
+            self.name, self.hash, self.kind)
+
+# import pprint
+# git = Git('./build/xxx')
+# if os.path.exists('./build/xxx'):
+#     shutil.rmtree('./build/xxx')
+# os.makedirs('./build/xxx')
+# git.init_repo('./build/xxx', 'https://github.com/Shoobx/python-graph.git')
+# git.spawn_with(lambda x: 
+#     x.arg('tag')
+#         .arg('tag-test')
+#         .arg('afd6f1cf0f04350d05ea28ad3ea567b623031ae4')
+#         .arg('--force')
+# )
+
+# git.spawn_with(lambda x:
+#     x.arg('clone')
+#         .arg('.')
+#         .arg('../yyy')
+#         .arg('--recursive')
+#         .arg('--branch')
+#         .arg('tag-test')
+# )
+# afd6f1cf0f04350d05ea28ad3ea567b623031ae4
+# pprint.pprint(git.list_refs())
+# pprint.pprint(git.list_revs())
+# pprint.pprint(git.current_checkout())
+# for file in git.list_files('master'):
+#     print(file)
