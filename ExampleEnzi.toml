@@ -19,7 +19,6 @@ authors = ["Mot Yu"]
 [dependencies.dep1]
 path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
 version = "0.1.0" # may use semver compare string
-# version can be replace as commit
 # commit = "commit hash"
 # dep must have verison or commit string
 # dep must have path or url string

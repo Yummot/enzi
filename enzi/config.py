@@ -1,15 +1,16 @@
 import toml
 import logging
+from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
 
 
-class Dependency(object):
+class DependencySource(object):
     def __init__(self, name, info):
         if 'path' in info and 'url' in info:
             raise RuntimeError(
-                'Dependency {} cannot have path and url in the same time'.format(name))
-        
+                'DependencySource {} cannot have path and url in the same time'.format(name))
+
         if 'path' in info and not 'url' in info:
             self.is_remote = False
             self.path = str(info['path'])
@@ -18,8 +19,8 @@ class Dependency(object):
             self.url = str(info['url'])
 
         if 'version' in info and 'commit' in info:
-            logger.warning(
-                'Dependency {} configuration has commit and version at the same time, only use version key'.format(name))
+            raise RuntimeError(
+                'DependencySource {} configuration has commit and version at the same time'.format(name))
         if 'version' in info and not 'commit' in info:
             self.use_version = True
             self.version = str(info['version'])
@@ -27,10 +28,12 @@ class Dependency(object):
             self.use_version = False
             self.commit = str(info['commit'])
         else:
-            raise RuntimeError('Dependency {} has not version or commit key.'.format(name))
-        
+            raise RuntimeError(
+                'DependencySource {} has not version or commit key.'.format(name))
+
         self.name = name
         # print(self.name, self.is_remote, self.version or self.commit, self.path or self.url)
+
     def git_repo_config(self):
         config = {}
         if self.is_remote:
@@ -43,8 +46,56 @@ class Dependency(object):
         else:
             config['commit'] = self.commit
         config['name'] = self.name
-        
+
         return config
+
+
+class DependencyEntry(object):
+    def __init__(self, name: str, source: DependencySource, revision=None, version=None):
+        """
+        @param name: str
+        @param source: DependencySource
+        @param revision: str | None
+        @param version: semver.VersionInfo | None
+        """
+        self.name = name
+        self.source = DependencySource
+        if revision is None or type(revision) == str:
+            self.revision = revision
+        else:
+            raise RuntimeError('DependencyEntry.revision must be str or None')
+        if version is None or isinstance(version, Version):
+            self.version = version
+        else:
+            raise RuntimeError(
+                'DependencyEntry.version must be semver.VersionInfo or None')
+
+    def get_version(self):
+        if self.revision:
+            return self.revision
+        else:
+            raise RuntimeError('DependencyEntry.revision is None')
+
+
+class DependencyRef:
+    def __init__(self, dep_id):
+        self.id = dep_id
+
+
+class DependencyTable(object):
+    def __init__(self):
+        self.list = []
+        self.ids = {}
+
+    def add(self, entry: DependencyEntry):
+        if entry in self.ids:
+            return self.ids[entry]
+        else:
+            dep_id = DependencyRef(len(self.list))
+            self.list.append(entry)
+            self.ids[dep_id] = entry
+            return dep_id
+
 
 class Config(object):
     def __init__(self, config_file, extract_dep_only=False):
@@ -79,9 +130,9 @@ class Config(object):
             #     fileset['dependencies'] = v['dependencies']
             self.filesets[k] = fileset
 
-        if 'dependencies' in conf:
-            for dep, dep_conf in conf['dependencies'].items():
-                self.dependencies[dep] = Dependency(dep, dep_conf)
+        # if 'dependencies' in conf:
+        #     for dep, dep_conf in conf['dependencies'].items():
+        #         self.dependencies[dep] = DependencySource(dep, dep_conf)
 
         if not extract_dep_only:
             # targets configs

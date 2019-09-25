@@ -5,6 +5,8 @@ import logging
 import enzi.project_manager
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
+from enzi.config import DependencySource
+from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,8 @@ class Enzi(object):
     __default_config__ = 'Enzi.toml'
 
     def __init__(self, work_dir='.', config_name='Enzi.toml'):
-        self.work_dir = work_dir
-        self.build_dir = work_dir + '/build'
+        self.work_dir = realpath(work_dir)
+        self.build_dir = self.work_dir + '/build'
         work_root_config = '/'.join([work_dir, config_name])
         if os.path.exists(work_root_config):
             config = EnziConfig(work_root_config)
@@ -58,6 +60,9 @@ class Enzi(object):
             self._silence_mode = value
         else:
             setattr(self, '_silence_mode', value)
+    
+    def load_dependencies(self, name, dep):
+        
 
     def check_target_availability(self, target_name):
         if not target_name in self.supported_targets:

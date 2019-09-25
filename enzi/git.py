@@ -65,8 +65,8 @@ class GitRepo(FileManager):
         # # check invalid deps
         # for dep_name, dep in config.dependencies.items():
         #     if self.is_local and dep.is_remote:
-        #         raise RuntimeError('Remote Dependency {}\'s dependency \
-        #             {} is a local dependency'.format(self.name, dep_name))
+        #         raise RuntimeError('Remote DependencySource {}\'s DependencySource \
+        #             {} is a local DependencySource'.format(self.name, dep_name))
         if self.status != FileManagerStatus.FETCHED:
             return
 
