@@ -1,12 +1,16 @@
 import os
 import copy as py_copy
 import logging
+import crypt
 # import file_manager
 import enzi.project_manager
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencySource, DependencyEntry, DependencyTable
-from enzi.utils import realpath
+from enzi.config import DependencyRef, DependencySource, DependencyEntry, DependencyTable
+from enzi.utils import realpath, PathBuf, try_parse_semver
+from enzi.git import Git, GitVersions
+# from typing import Optional
+# from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +29,14 @@ class Enzi(object):
     def __init__(self, work_dir='.', config_name='Enzi.toml'):
         self.work_dir = realpath(work_dir)
         self.build_dir = self.work_dir + '/build'
-        work_root_config = '/'.join([self.work_dir, config_name])
+        work_root_config = os.path.join(self.work_dir, config_name)
         if os.path.exists(work_root_config):
             config = EnziConfig(work_root_config)
             self.config = config
         else:
             raise RuntimeError('No Enzi.toml in this directory.')
-
+        
+        self.config_mtime = self.config.file_stat.st_mtime
         # targets is a reference for self.config.targets for convenience.
         self.targets = config.targets
         self.is_local = config.is_local
@@ -45,7 +50,8 @@ class Enzi(object):
         self.tools = config.tools
         self.known_backends = KnownBackends()
         self.backend_conf_generator = BackendConfigGen(self.known_backends)
-    
+        self.database: PathBuf = PathBuf(self.build_dir).join('database')
+
     @property
     def silence_mode(self):
         if hasattr(self, '_silence_mode'):
@@ -62,13 +68,23 @@ class Enzi(object):
             self._silence_mode = value
         else:
             setattr(self, '_silence_mode', value)
-    
-    def load_dependencies(self, name, dep: DependencySource):
+
+    def load_dependencies(self, name, dep: DependencySource, config: EnziConfig):
         if not isinstance(dep, DependencySource):
             raise ValueError('dep must be an instance of DependencySource')
+        logger.debug('Loading dependency {} for {}'.format(name, config.name))
         dep_id = self.dependencies.add(DependencyEntry(name, dep))
         print('xxx', self.dependencies.list[dep_id])
-        
+
+    def dependecy(self, dep: DependencyRef) -> DependencyEntry:
+        return self.dependencies.list[dep.id]
+
+    def dependency_name(self, dep: DependencyRef) -> str:
+        return self.dependencies.list[dep.id].name
+
+    def dependency_source(self, dep: DependencyRef) -> DependencySource:
+        # TODO: Code review
+        return self.dependencies.list[dep.id].source
 
     def check_target_availability(self, target_name):
         if not target_name in self.supported_targets:
@@ -161,6 +177,75 @@ class Enzi(object):
     #     self.targets[target_name]['filesets'] = new_fileset if isinstance(
     #         new_fileset, list) else []
 
+
+class EnziIO(object):
+    def __init__(self, enzi: Enzi):
+        self.enzi = enzi
+
+    def dep_versions(self, dep_id):
+        dep = self.enzi.dependecy(dep_id)
+        git_urls = dep.source.git_urls
+        dep_git = self.git_database(dep.name, git_urls)
+        return self.git_versions(dep_git)
+
+
+    def git_database(self, name, git_urls) -> Git:
+        # TODO: change git database name format
+        url_hash = crypt.crypt(git_urls, crypt.METHOD_SHA256)[:16]
+        db_name = name + '-' + hash(url_hash)
+        # db_name = name
+        # TODO: cache db_dir in Enzi
+        db_dir: PathBuf = self.enzi.git_db.join('git').join('db').join(db_name)
+        os.makedirs(db_dir, exist_ok=True)
+        git = Git(db_dir, self)
+
+        if db_dir.join("config").exits():
+            git.spawn_with(lambda x: x.arg('init').arg('--bare'))
+            git.spawn_with(lambda x: x.arg('remote').arg('add')
+                .arg('origin').arg(git_urls))
+            git.fetch('origin')
+            return git
+        else:
+            db_mtime = os.stat(db_dir.join('FETCH_HEAD').path).st_mtime
+            if self.enzi.config_mtime < db_mtime:
+                logger.debug('skip update of {}'.format(db_dir.path))
+                return git
+            git.fetch('origin')
+            return git
+    
+    # def git_versions(self, git) -> GitVersions:
+    def git_versions(self, git: Git):
+        dep_refs = git.list_refs()
+        dep_revs = git.list_revs()
+
+        rev_ids = set(dep_revs)
+
+        # get tags and branches
+        tags = {}
+        branches = {}
+        tag_prefix = "refs/tags/"
+        branch_prefix = "refs/remotes/origin/"
+        for rev_id, ref in dep_refs:
+            if rev_id in rev_ids:
+                continue
+            if ref.startswith(tag_prefix):
+                tags[ref[len(tag_prefix):]] = rev_id
+            elif ref.startswith(branch_prefix):
+                branches[ref[len(branch_prefix):]] = rev_id
+        
+        # extract the tags that look like semver
+        res_map = map(try_parse_semver, tags.items())
+        versions = list(filter(lambda x: x, res_map))
+        # TODO: check if this sort is correct.
+        versions.sort()
+        refs = { **branches, **tags }
+
+        return GitVersions(versions, refs, dep_revs)
+    
+    # def checkout(self, dep)
+
+    # def __test__(self):
+    #     pass
 
 class BackendConfigGen(object):
     def __init__(self, known_backends):

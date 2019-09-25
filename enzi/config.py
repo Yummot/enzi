@@ -6,6 +6,7 @@ from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
+Version.__gt__
 
 class DependencySource(object):
     def __init__(self, name, info):
@@ -13,12 +14,15 @@ class DependencySource(object):
             raise RuntimeError(
                 'DependencySource {} cannot have path and url in the same time'.format(name))
 
+        # self.git_urls = None
         if 'path' in info and not 'url' in info:
             self.is_remote = False
             self.path = str(info['path'])
+            self.git_urls = self.path
         elif not 'path' in info and 'url' in info:
             self.is_remote = True
             self.url = str(info['url'])
+            self.git_urls = self.url
 
         if 'version' in info and 'commit' in info:
             raise RuntimeError(
@@ -108,7 +112,7 @@ class Config(object):
             raise RuntimeError('Config toml file is empty.')
 
         self.directory = os.path.dirname(config_file)
-
+        self.file_stat = os.stat(config_file)
         self.package = {}
         self.dependencies = {}
         self.filesets = {}
@@ -120,6 +124,7 @@ class Config(object):
             if not 'name' in conf['package']:
                 raise RuntimeError('package with no name is not allowed.')
             self.package = conf['package']
+            self.name = self.package['name']
         else:
             raise RuntimeError(
                 'package info must specify in Config toml file.')

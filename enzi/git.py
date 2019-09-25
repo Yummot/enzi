@@ -106,7 +106,7 @@ class GitCommand(object):
 
 
 class Git(object):
-    def __init__(self, path):
+    def __init__(self, path, enzi_io=None):
         """
         Init a Git database,
         Store a real path of the cwd on where this Git is operated.
@@ -114,6 +114,7 @@ class Git(object):
         if not os.path.isabs(path):
             path = realpath(path)
         self.path = path
+        self.enzi_io = enzi_io
 
     def spawn(self, cmd: GitCommand):
         return Launcher(cmd.cmd, cmd.args, self.path).run()

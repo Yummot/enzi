@@ -80,7 +80,15 @@ class DependencyResolver(object):
             # TODO: may be we should make Enzi more orthogonal, 
             # by seperating it into EnziSession and Enzi
             return (name, self.enzi.load_dependencies(name, dep))
+        
         names_map = map(fn , deps.items())
+        names = dict(names_map)
+
+        dep_ids = set(map(lambda item: item[1], names.items()))
+
+        versions = 
+
+
 
 # dsrc = DependencySource(DependencyRef(0), GitVersions(None, None, None))
 

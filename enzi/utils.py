@@ -2,18 +2,51 @@ import subprocess
 import logging
 import sys
 import os
+import copy as py_copy
 import importlib
-
+from smver import VersionInfo as Version
 logger = logging.getLogger(__name__)
 
 # launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
 
 
+def try_parse_semver(tag_and_id):
+    tag, tag_id = tag_and_id
+    if tag.startswith('v'):
+        try:
+            return (Version.parse(tag[1:]), tag_id)
+        except ValueError:
+            return None
+    else:
+        return None
+
+class PathBuf(object):
+    def __init__(self, base=''):
+        self.path = base
+    def join(self, paths):
+        self_copy = py_copy.copy(self)
+        self_copy.path = os.path.join(self.path, paths)
+        return self_copy
+    def exits(self):
+        return os.path.exists(self.path)
+    def isabs(self):
+        return os.path.isabs(self.path)
+    def isdir(self):
+        return os.path.isdir(self.path)
+    def dirname(self):
+        return os.path.dirname(self.path)
+    def basename(self):
+        return os.path.basename(self.path)
+
+# pb = PathBuf('xxx')
+# print(pb.join('xxxx').join('xxxx').path)
+# print(pb.path)
+
 def realpath(path):
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
     path = os.path.realpath(path)
-    return path
+    return path.decode('utf-8')
 
 class Launcher:
     def __init__(self, cmd, args=[], cwd=None):
