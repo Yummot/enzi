@@ -5,7 +5,7 @@ import shutil
 import copy as py_copy
 import subprocess
 from enzi.utils import Launcher, realpath
-from enzi.parse_config import Config
+from enzi.config import Config
 
 logger = logging.getLogger(__name__)
 

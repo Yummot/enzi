@@ -4,7 +4,7 @@ import logging
 # import file_manager
 import enzi.project_manager
 from enzi.backend import KnownBackends
-from enzi.parse_config import Config as EnziConfig
+from enzi.config import Config as EnziConfig
 
 logger = logging.getLogger(__name__)
 
