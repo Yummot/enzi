@@ -9,6 +9,11 @@ from enzi.config import Config
 
 logger = logging.getLogger(__name__)
 
+class GitVersions(object):
+    def __init__(self, verisons, refs, revisions):
+        self.verisons = verisons
+        self.refs = refs
+        self.revisions = revisions
 
 class GitRepo(FileManager):
     """

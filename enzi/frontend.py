@@ -5,7 +5,7 @@ import logging
 import enzi.project_manager
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencySource
+from enzi.config import DependencySource, DependencyEntry, DependencyTable
 from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
@@ -25,9 +25,10 @@ class Enzi(object):
     def __init__(self, work_dir='.', config_name='Enzi.toml'):
         self.work_dir = realpath(work_dir)
         self.build_dir = self.work_dir + '/build'
-        work_root_config = '/'.join([work_dir, config_name])
+        work_root_config = '/'.join([self.work_dir, config_name])
         if os.path.exists(work_root_config):
             config = EnziConfig(work_root_config)
+            self.config = config
         else:
             raise RuntimeError('No Enzi.toml in this directory.')
 
@@ -38,12 +39,13 @@ class Enzi(object):
         # TODO: currently the dependencies field in a fileset of config.filesets is just an placeholder.
         self.filesets = config.filesets
         self.package = config.package
-        self.dependencies = config.dependencies
+        # self.dependencies = config.dependencies
+        self.dependencies = DependencyTable()
         self.work_name = py_copy.copy(self.package['name'])
         self.tools = config.tools
         self.known_backends = KnownBackends()
         self.backend_conf_generator = BackendConfigGen(self.known_backends)
-
+    
     @property
     def silence_mode(self):
         if hasattr(self, '_silence_mode'):
@@ -61,7 +63,11 @@ class Enzi(object):
         else:
             setattr(self, '_silence_mode', value)
     
-    def load_dependencies(self, name, dep):
+    def load_dependencies(self, name, dep: DependencySource):
+        if not isinstance(dep, DependencySource):
+            raise ValueError('dep must be an instance of DependencySource')
+        dep_id = self.dependencies.add(DependencyEntry(name, dep))
+        print('xxx', self.dependencies.list[dep_id])
         
 
     def check_target_availability(self, target_name):
@@ -167,7 +173,7 @@ class BackendConfigGen(object):
             RuntimeError(
                 'known_backends must be list or an instance of KnownBackends.')
         self.known_backends.append('vsim')
-        print(self.known_backends)
+        # print(self.known_backends)
 
     def get(self, *, tool_name, tool_config, work_name, work_root, toplevel, fileset):
         # if tool_name.lower() == 'ies':

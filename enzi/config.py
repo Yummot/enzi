@@ -1,6 +1,8 @@
 import toml
 import logging
+import os
 from semver import VersionInfo as Version
+from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +107,8 @@ class Config(object):
             logger.error('Config toml file is empty.')
             raise RuntimeError('Config toml file is empty.')
 
+        self.directory = os.path.dirname(config_file)
+
         self.package = {}
         self.dependencies = {}
         self.filesets = {}
@@ -130,9 +134,15 @@ class Config(object):
             #     fileset['dependencies'] = v['dependencies']
             self.filesets[k] = fileset
 
-        # if 'dependencies' in conf:
-        #     for dep, dep_conf in conf['dependencies'].items():
-        #         self.dependencies[dep] = DependencySource(dep, dep_conf)
+        if 'dependencies' in conf:
+            for dep, dep_conf in conf['dependencies'].items():
+                dep_path = dep_conf['path']
+                if 'path' in dep_conf and not os.path.isabs(dep_path):
+                    dep_conf['path'] = realpath(dep_path)
+                self.dependencies[dep] = DependencySource(dep, dep_conf)
+        
+        # for dep in self.dependencies.values():
+        #     print(dep.path, dep.name, dep.version)
 
         if not extract_dep_only:
             # targets configs
