@@ -3,12 +3,13 @@
 
 import argparse
 import copy as py_copy
-from collections import OrderedDict
 import jinja2
 import logging
 import os
 import stat
 import subprocess
+from collections import OrderedDict
+from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +54,7 @@ class FilesAction(argparse.Action):
                 setattr(namespace, name, value)
             return getattr(namespace, name)
 
-        path = os.path.expandvars(values[0])
-        path = os.path.expanduser(path)
-        path = os.path.abspath(path)
+        path = realpath(values[0])
 
         paths = py_copy.copy(_ensure_value(namespace, self.dest, []))
         paths.append(path)

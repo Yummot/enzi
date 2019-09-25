@@ -4,7 +4,7 @@ import os
 import shutil
 import copy as py_copy
 import subprocess
-from enzi.utils import Launcher
+from enzi.utils import Launcher, realpath
 from enzi.parse_config import Config
 
 logger = logging.getLogger(__name__)
@@ -102,6 +102,12 @@ class GitCommand(object):
 
 class Git(object):
     def __init__(self, path):
+        """
+        Init a Git database,
+        Store a real path of the cwd on where this Git is operated.
+        """
+        if not os.path.isabs(path):
+            path = realpath(path)
         self.path = path
 
     def spawn(self, cmd: GitCommand):
@@ -196,15 +202,9 @@ class TreeEntry(object):
 
 # git.spawn_with(lambda x:
 #     x.arg('clone')
-#         .arg('.')
+#         .arg(git.path)
 #         .arg('../yyy')
 #         .arg('--recursive')
 #         .arg('--branch')
 #         .arg('tag-test')
 # )
-# afd6f1cf0f04350d05ea28ad3ea567b623031ae4
-# pprint.pprint(git.list_refs())
-# pprint.pprint(git.list_revs())
-# pprint.pprint(git.current_checkout())
-# for file in git.list_files('master'):
-#     print(file)
