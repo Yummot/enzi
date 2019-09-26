@@ -262,6 +262,18 @@ class DependencyResolver(object):
         logger.debug('resolve: computing closure over dependencies')
         enzi_io = EnziIO(self.enzi)
 
+        econfigs = []
+        for dep in self.table.values():
+            src: DependencySource = dep.source
+            version = src.current_pick()
+            if not version:
+                continue
+            econfig = enzi_io.dep_config_version(src.id, version)
+            econfigs.append( (dep.name, econfig) )
+        for name, econfig in econfigs:
+            if econfig:
+                logger.debug('resolve:')
+
     def req_indices(self, name: str, con: DependencyConstraint, src: DependencySource):
         if con.is_version():
             git_ver = src.versions

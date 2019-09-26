@@ -2,6 +2,7 @@ from enzi.project_manager import ProjectFiles
 from enzi.frontend import Enzi
 
 import argparse
+import logging
 
 
 def parse_args():
@@ -9,6 +10,9 @@ def parse_args():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
+    parser.add_argument("-l", "--log", dest="log_level", help='set Enzi self log level',
+                        choices=[
+                            'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
     # Global options
     parser.add_argument('--root', help='Enzi project root directory',
                         default=[], action='append')
@@ -62,7 +66,10 @@ def main():
         s = Enzi(args.root[0], args.config)
     else:
         s = Enzi(args.root[0])
-    
+
+    if args.log_level:
+        logging.basicConfig(level=getattr(logging, args.log_level))
+
     s.silence_mode = args.silence_mode
     project_manager = ProjectFiles(s)
     project_manager.fetch(target)

@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: move to other pack
 class DependencySource(object):
-    def __init__(self, git_urls):
+    def __init__(self, git_urls: str):
         if not git_urls:
             raise ValueError('git_urls must be str')
         self.git_urls: str = git_urls
@@ -117,7 +117,7 @@ class DependencyEntry(object):
 
 class DependencyRef:
     def __init__(self, dep_id: int):
-        self.id = dep_id
+        self.id: int = dep_id
     
     def __eq__(self, other):
         if isinstance(other, DependencyRef):
@@ -142,7 +142,7 @@ class DependencyTable(object):
 
 
 class Config(object):
-    def __init__(self, config_file, extract_dep_only=False, from_str=False):
+    def __init__(self, config_file, from_str=False):
         conf = {}
         if from_str:
             conf = toml.loads(config_file)
@@ -191,30 +191,29 @@ class Config(object):
         # for dep in self.dependencies.values():
         #     print(dep.git_urls, dep.rev_ver)
 
-        if not extract_dep_only:
-            # targets configs
-            for target, values in conf.get('targets', {}).items():
-                if not 'default_tool' in values:
-                    raise RuntimeError(
-                        'default_tool must be set for targets.{}'.format(target))
-                if not 'toplevel' in values:
-                    raise RuntimeError(
-                        'toplevel must be set for targets.{}'.format(target))
-                if not 'filesets' in values:
-                    raise RuntimeError(
-                        'filesets must be set for targets.{}'.format(target))
-                self.targets[target] = {
-                    'default_tool': values['default_tool'],
-                    'toplevel': values['toplevel'],
-                    'filesets': values['filesets'],
-                }
-            # tools configs
-            for idx, tool in enumerate(conf.get('tools', {})):
-                if not 'name' in tool:
-                    raise RuntimeError(
-                        'tool must be set for tools<{}>'.format(idx))
-                self.tools[tool['name']] = {}
-                self.tools[tool['name']]['params'] = tool.get('params', {})
+        # targets configs
+        for target, values in conf.get('targets', {}).items():
+            if not 'default_tool' in values:
+                raise RuntimeError(
+                    'default_tool must be set for targets.{}'.format(target))
+            if not 'toplevel' in values:
+                raise RuntimeError(
+                    'toplevel must be set for targets.{}'.format(target))
+            if not 'filesets' in values:
+                raise RuntimeError(
+                    'filesets must be set for targets.{}'.format(target))
+            self.targets[target] = {
+                'default_tool': values['default_tool'],
+                'toplevel': values['toplevel'],
+                'filesets': values['filesets'],
+            }
+        # tools configs
+        for idx, tool in enumerate(conf.get('tools', {})):
+            if not 'name' in tool:
+                raise RuntimeError(
+                    'tool must be set for tools<{}>'.format(idx))
+            self.tools[tool['name']] = {}
+            self.tools[tool['name']]['params'] = tool.get('params', {})
 
     @staticmethod
     def from_str(config_str: str):
