@@ -6,13 +6,13 @@ import crypt
 import typing
 # import file_manager
 import enzi.project_manager
+from enzi import config
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
 from enzi.config import DependencyRef, DependencySource
 from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
 from enzi.utils import realpath, PathBuf, try_parse_semver
 from enzi.git import Git, GitVersions, TreeEntry
-
 # from typing import Optional
 # from semver import VersionInfo as Version
 
@@ -73,11 +73,12 @@ class Enzi(object):
         else:
             setattr(self, '_silence_mode', value)
 
-    def load_dependency(self, name, dep: DependencySource, config: EnziConfig):
-        if not isinstance(dep, DependencySource):
-            raise ValueError('dep must be an instance of DependencySource')
+    def load_dependency(self, name, dep: config.Dependency, config: EnziConfig):
+        if not isinstance(dep, config.Dependency):
+            raise ValueError('dep must be an instance of config6.Dependency')
         logger.debug('Loading dependency {} for {}'.format(name, config.name))
-        dep_ref = self.dependencies.add(DependencyEntry(name, dep))
+        src = config.DependencySource(dep.git_urls)
+        dep_ref = self.dependencies.add(DependencyEntry(name, src))
         print('loaded: ', self.dependencies.list[dep_ref])
         return dep_ref
 

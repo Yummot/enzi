@@ -1,5 +1,4 @@
 from enzi.config import DependencyRef
-# from enzi.config import DependencySource
 from enzi.config import Config as EnziConfig
 from enzi.config import DependencyVersion, Locked
 from enzi.git import GitVersions
@@ -7,10 +6,10 @@ from typing import List, Set, Dict, Tuple, Optional
 from enzi.frontend import Enzi, EnziIO
 from enzi.utils import flat_map, unique
 from semver import VersionInfo as Version
+from enzi import config
 import copy as py_copy
 import logging
 import itertools
-import enzi.config
 import typing
 
 logger = logging.getLogger(__name__)
@@ -59,7 +58,7 @@ class DependencyConstraint(object):
         return DependencyConstraint('Revision', revision)
 
     @staticmethod
-    def From(dep: enzi.config.DependencySource):
+    def From(dep: config.DependencySource):
         if dep.use_version:
             return DependencyConstraint.Version(dep.version)
         else:
@@ -225,6 +224,15 @@ class DepTableDumper(object):
     __repr__ = __str__
 
 
+def find_version(versions: typing.List[typing.Tuple[Version, str]], rev: str):
+    rev_filter = filter(lambda x: x[1] == rev, versions)
+    rev_map = map(lambda x: x[0], rev_filter)
+    try:
+        return max(rev_map)
+    except ValueError:
+        return None
+
+
 class DependencyResolver(object):
     def __init__(self, enzi: Enzi):
         self.table: typing.MutableMapping[str,
@@ -232,7 +240,8 @@ class DependencyResolver(object):
         self.decisions: typing.MutableMapping[str, int] = {}  # <K=str, int>
         self.enzi = enzi
 
-    def resolve(self) -> Locked:
+    # def resolve(self) -> Locked:
+    def resolve(self):
         self.register_dep_in_config(
             self.enzi.config.dependencies, self.enzi.config)
 
@@ -247,7 +256,36 @@ class DependencyResolver(object):
             any_change = self.pick()
             self.close()
         logger.debug('resolve: resolved after {} iterations'.format(iteration))
+
+        enzi = self.enzi
+        locked = {}
+
+        for name, dep in self.table:
+            dep_config: EnziConfig = dep.config
+            deps: typing.Set[str] = set(dep_config.dependencies.keys())
+            src: DependencySource = dep.source()
+            enzi_src = enzi.dependency_source(src.id)
+
+            git_urls = ''
+            if enzi_src.is_git():
+                git_urls = enzi_src.git_urls
+            else:
+                raise ValueError('INTERNAL ERROR: unreachable')
+            pick = src.state.pick
+            if not pick:
+                logger.error('resolver: pick is none')
+                raise ValueError('pick is none')
+            rev = src.versions.revisions[pick]
+            version = find_version(src.versions.versions, rev)
+            lock_dep = config.LockedDependency(
+                revision = rev,
+                version = version,
+                source = config.LockedSource(git_urls),
+                dependencies = deps
+            )
+            locked[name] = lock_dep
         
+        return config.Locked(dependencies=locked)
 
     def init(self):
         for dep in self.table.values():
@@ -445,7 +483,7 @@ class DependencyResolver(object):
         if not dep in entry_src:
             entry_src[dep] = DependencySource(dep, versions)
 
-    def register_dep_in_config(self, deps: typing.MutableMapping[str, Dependency], enzi_config: EnziConfig):
+    def register_dep_in_config(self, deps: typing.MutableMapping[str, config.Dependency], enzi_config: EnziConfig):
         def fn(items):
             name, dep = items
             # TODO: may be we should make Enzi more orthogonal,
