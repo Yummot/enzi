@@ -53,7 +53,7 @@ class PathBuf(object):
 # print(pb.join('xxxx').join('xxxx').path)
 # print(pb.path)
 
-def realpath(path):
+def realpath(path, base_path=None):
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
     path = os.path.realpath(path)

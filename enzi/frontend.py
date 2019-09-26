@@ -265,7 +265,7 @@ class EnziIO(object):
             # actually, there is only one entry
             entry = entries[0]
             data = git_db.cat_file(entry.hash)
-            dep_config = EnziConfig.from_str(data)
+            dep_config = EnziConfig.from_str(data, git_db.path)
             return dep_config
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')

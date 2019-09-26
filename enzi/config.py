@@ -186,20 +186,23 @@ class LockedDependency(object):
     # TODO: use a more elegant way
     __repr__ = __str__
 
+
 class Locked(object):
     """
     A Lock, contains all the resolved dependencies
     """
+
     def __init__(self, *, dependencies: typing.MutableMapping[str, LockedDependency]):
         self.dependencies = dependencies
-    
+
     def __str__(self):
         return "Locked { %s }" % self.dependencies
     # TODO: use a more elegant way
     __repr__ = __str__
 
+
 class Config(object):
-    def __init__(self, config_file, from_str=False):
+    def __init__(self, config_file, from_str=False, base_path=None):
         conf = {}
         if from_str:
             conf = toml.loads(config_file)
@@ -210,7 +213,8 @@ class Config(object):
             logger.error('Config toml file is empty.')
             raise RuntimeError('Config toml file is empty.')
 
-        self.directory = os.path.dirname(config_file)
+        self.directory = base_path if from_str else os.path.dirname(
+            config_file)
         self.file_stat = os.stat(config_file)
         self.package = {}
         self.dependencies: typing.MutableMapping[str, Dependency] = {}
@@ -240,9 +244,11 @@ class Config(object):
 
         if 'dependencies' in conf:
             for dep, dep_conf in conf['dependencies'].items():
-                dep_path = dep_conf['path']
-                if 'path' in dep_conf and not os.path.isabs(dep_path):
-                    dep_conf['path'] = realpath(dep_path)
+                # TODO: make sure the existence of the path of each dependency
+                # TODO: add function to resolve abs dependency's path
+                # dep_path = dep_conf['path']
+                # if 'path' in dep_conf and not os.path.isabs(dep_path):
+                #     dep_conf['path'] = realpath(dep_path)
                 self.dependencies[dep] = RawDependency.from_config(
                     dep_conf).validate()
 
@@ -282,5 +288,7 @@ class Config(object):
         return '\n'.join(str_buf)
 
     @staticmethod
-    def from_str(config_str: str):
-        return Config(config_str, from_str=True)
+    def from_str(config_str: str, base_path):
+        logger.debug(
+            'Config: construct from a given str with given base_path {}'.format(base_path))
+        return Config(config_str, from_str=True, base_path=base_path)
