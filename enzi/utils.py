@@ -4,7 +4,10 @@ import sys
 import os
 import copy as py_copy
 import importlib
-from smver import VersionInfo as Version
+from itertools import chain
+from semver import VersionInfo as Version
+import typing
+
 logger = logging.getLogger(__name__)
 
 # launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
@@ -19,6 +22,14 @@ def try_parse_semver(tag_and_id):
             return None
     else:
         return None
+
+# TODO: code review, can we improve performance ?
+def unique(iterable: typing.Iterable[typing.Any]):
+    seen = set()
+    for item in iterable:
+        if item not in seen:
+            seen.add(item)
+            yield item
 
 class PathBuf(object):
     def __init__(self, base=''):
@@ -46,7 +57,13 @@ def realpath(path):
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
     path = os.path.realpath(path)
-    return path.decode('utf-8')
+    return path
+
+def flat_map(f, items):
+    """
+    Creates an iterator that works like map, but flattens nested Iteratorable.
+    """
+    return chain.from_iterable(map(f, items))
 
 class Launcher:
     def __init__(self, cmd, args=[], cwd=None):

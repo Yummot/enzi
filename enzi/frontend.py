@@ -69,12 +69,13 @@ class Enzi(object):
         else:
             setattr(self, '_silence_mode', value)
 
-    def load_dependencies(self, name, dep: DependencySource, config: EnziConfig):
+    def load_dependency(self, name, dep: DependencySource, config: EnziConfig):
         if not isinstance(dep, DependencySource):
             raise ValueError('dep must be an instance of DependencySource')
         logger.debug('Loading dependency {} for {}'.format(name, config.name))
-        dep_id = self.dependencies.add(DependencyEntry(name, dep))
-        print('xxx', self.dependencies.list[dep_id])
+        dep_ref = self.dependencies.add(DependencyEntry(name, dep))
+        print('loaded: ', self.dependencies.list[dep_ref])
+        return dep_ref
 
     def dependecy(self, dep: DependencyRef) -> DependencyEntry:
         return self.dependencies.list[dep.id]

@@ -1,6 +1,7 @@
 import toml
 import logging
 import os
+import typing
 from semver import VersionInfo as Version
 from enzi.utils import realpath
 
@@ -84,14 +85,14 @@ class DependencyEntry(object):
 
 
 class DependencyRef:
-    def __init__(self, dep_id):
+    def __init__(self, dep_id: int):
         self.id = dep_id
 
 
 class DependencyTable(object):
     def __init__(self):
-        self.list = []
-        self.ids = {}
+        self.list: typing.List[DependencyEntry] = [] # list[DependencyEntry]
+        self.ids: typing.MutableMapping[DependencyEntry, DependencyRef] = {} # <K=DependencyEntry, V=DependencyRef>
 
     def add(self, entry: DependencyEntry):
         if entry in self.ids:

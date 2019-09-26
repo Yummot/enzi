@@ -11,6 +11,11 @@ logger = logging.getLogger(__name__)
 
 class GitVersions(object):
     def __init__(self, verisons, refs, revisions):
+        """
+        @param verisons: List[Tuple[semver.VersionInfo, str]]
+        @param refs: Dict[str, str]
+        @param revisions: List[str]
+        """
         self.verisons = verisons
         self.refs = refs
         self.revisions = revisions
