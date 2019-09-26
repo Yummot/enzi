@@ -1,6 +1,7 @@
 from enzi.config import DependencyRef
 # from enzi.config import DependencySource
-from enzi.config import Config as EnziConfig, DependencyVersion
+from enzi.config import Config as EnziConfig
+from enzi.config import DependencyVersion, Locked
 from enzi.git import GitVersions
 from typing import List, Set, Dict, Tuple, Optional
 from enzi.frontend import Enzi, EnziIO
@@ -117,13 +118,33 @@ class State(object):
             return self.value
 
     @property
+    def lock_id(self):
+        if self.is_locked():
+            return self.value
+        else:
+            raise RuntimeError(
+                'INTERNAL ERROR: try to get lock id of a non-locked State')
+
+    @lock_id.setter
+    def lock_id(self, value):
+        if not type(id) == int:
+            raise ValueError('ids must be a int')
+
+        if self.is_locked():
+            self.value = value
+        else:
+            raise RuntimeError(
+                'INTERNAL ERROR: try to set lock_id for a State::{}'.format(self.state))
+
+    @property
     def ids(self) -> set:
         if self.is_constrained():
             return self.value
         elif self.is_pick():
             return self.value[1]
         else:
-            raise RuntimeError('INTERNAL ERROR: unreachable')
+            raise RuntimeError(
+                'INTERNAL ERROR: try to get ids of State::{}'.format(self.state))
 
     @ids.setter
     def ids(self, ids):
@@ -168,12 +189,65 @@ class DependencySource(object):
             return DependencyVersion.Git(self.versions.revisions[self.id])
 
 
+class DepTableDumper(object):
+    """
+    dumper for DependencyResolver.table
+    """
+
+    def __init__(self, table: typing.MutableMapping[str, Dependency]):
+        self.table = table
+
+    def __str__(self):
+        str_buf = ['{']
+        names = list(self.table.keys())
+        names.sort()
+        for name in names:
+            dep = self.table[name]
+            str_buf.append('\n\t{} :'.format(name))
+            for dep_id, src in dep.sources:
+                str_buf.append('\n\t\t[{}] :'.format(dep_id))
+                state: State = src.state
+                if state.is_open():
+                    str_buf.append(' open')
+                elif state.is_locked():
+                    str_buf.append(' locked {}'.format(state.lock_id))
+                elif state.is_constrained():
+                    ids = state.ids
+                    str_buf.append(' {} possible'.format(ids))
+                else:
+                    ids = state.ids
+                    pick_id = state.pick
+                    str_buf.append(
+                        ' picked #{} out of {} possible'.format(pick_id, ids))
+            str_buf.append('\n}')
+            return ''.join(str_buf)
+    # TODO: use a more elegant way
+    __repr__ = __str__
+
+
 class DependencyResolver(object):
     def __init__(self, enzi: Enzi):
         self.table: typing.MutableMapping[str,
                                           Dependency] = {}  # <K=str, Dependency>
         self.decisions: typing.MutableMapping[str, int] = {}  # <K=str, int>
         self.enzi = enzi
+
+    def resolve(self) -> Locked:
+        self.register_dep_in_config(
+            self.enzi.config.dependencies, self.enzi.config)
+
+        iteration = 0
+        any_change = True
+        while any_change:
+            logger.debug('resolve: iteration {}, table {}'.format(
+                iteration, DepTableDumper(self.table)))
+            iteration += 1
+            self.init()
+            self.mark()
+            any_change = self.pick()
+            self.close()
+        logger.debug('resolve: resolved after {} iterations'.format(iteration))
+        
 
     def init(self):
         for dep in self.table.values():
@@ -262,17 +336,19 @@ class DependencyResolver(object):
         logger.debug('resolve: computing closure over dependencies')
         enzi_io = EnziIO(self.enzi)
 
-        econfigs = []
+        econfigs: typing.List[typing.Tuple[str, EnziConfig]] = []
         for dep in self.table.values():
             src: DependencySource = dep.source
             version = src.current_pick()
             if not version:
                 continue
             econfig = enzi_io.dep_config_version(src.id, version)
-            econfigs.append( (dep.name, econfig) )
+            econfigs.append((dep.name, econfig))
         for name, econfig in econfigs:
             if econfig:
-                logger.debug('resolve:')
+                logger.debug('resolve: for {} load enzi configuration {}'
+                             .format(name, econfig.debug_str()))
+            self.table[name].config = econfig
 
     def req_indices(self, name: str, con: DependencyConstraint, src: DependencySource):
         if con.is_version():
@@ -369,7 +445,7 @@ class DependencyResolver(object):
         if not dep in entry_src:
             entry_src[dep] = DependencySource(dep, versions)
 
-    def register_dep_in_config(self, deps, enzi_config):
+    def register_dep_in_config(self, deps: typing.MutableMapping[str, Dependency], enzi_config: EnziConfig):
         def fn(items):
             name, dep = items
             # TODO: may be we should make Enzi more orthogonal,
