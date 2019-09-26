@@ -1,4 +1,5 @@
 import os
+
 import copy as py_copy
 import logging
 import crypt
@@ -7,9 +8,10 @@ import typing
 import enzi.project_manager
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencyRef, DependencySource, DependencyEntry, DependencyTable
+from enzi.config import DependencyRef, DependencySource
+from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
 from enzi.utils import realpath, PathBuf, try_parse_semver
-from enzi.git import Git, GitVersions
+from enzi.git import Git, GitVersions, TreeEntry
 
 # from typing import Optional
 # from semver import VersionInfo as Version
@@ -246,14 +248,27 @@ class EnziIO(object):
         return GitVersions(versions, refs, dep_revs)
     
     # def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
-    def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
-        # TODO: cache dep_config
+    def dep_config_version(self, dep_id: DependencyRef, version: DependencyVersion) -> typing.Optional[EnziConfig]:
+        # from enzi.config import DependencySource as DepSrc
+        # from enzi.config import DependencyVersion as DepVer
+        # TODO: cache dep_config to reduce io workload
 
         dep = self.enzi.dependecy(dep_id)
-        from enzi.config import DependencySource as DepSrc
-        # from enzi.config.
-        pass
 
+        if dep.source.is_git() and version.is_git():
+            dep_name = dep.name
+            git_urls = dep.source.git_urls
+            git_rev = version.git_rev
+            git_db = self.git_database(dep_name, git_urls)
+
+            entries: typing.List[TreeEntry] = git_db.list_files(git_rev, 'Enzi.toml')
+            # actually, there is only one entry
+            entry = entries[0]
+            data = git_db.cat_file(entry.hash)
+            dep_config = EnziConfig.from_str(data)
+            return dep_config
+        else:
+            raise RuntimeError('INTERNAL ERROR: unreachable')
     # def checkout(self, dep)
 
     # def __test__(self):

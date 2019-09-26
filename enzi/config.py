@@ -1,6 +1,7 @@
 import toml
 import logging
 import os
+import io
 import typing
 from semver import VersionInfo as Version
 from enzi.utils import realpath
@@ -20,18 +21,27 @@ class DependencySource(object):
     
     def __hash__(self):
         return hash(self.git_urls)
+    
+    def is_git(self):
+        return True
 
 class DependencyVersion(object):
     def __init__(self, revision: str):
         self.revision: str = revision
+
     def __eq__(self, other):
         if isinstance(other, DependencyVersion):
             return self.revision == other.revision
+
     def __hash__(self):
         return hash(self.revision)
+
     @staticmethod
     def Git(revision: str):
         return DependencyVersion(revision)
+    
+    def is_git(self):
+        return True
 
 class Dependency(object):
     def __init__(self, git_urls: str, rev_ver: typing.Union[str, Version]):
@@ -132,8 +142,12 @@ class DependencyTable(object):
 
 
 class Config(object):
-    def __init__(self, config_file, extract_dep_only=False):
-        conf = conf = toml.load(config_file)
+    def __init__(self, config_file, extract_dep_only=False, from_str=False):
+        conf = {}
+        if from_str:
+            conf = toml.loads(config_file)
+        else:
+            conf = toml.load(config_file)
 
         if not conf:
             logger.error('Config toml file is empty.')
@@ -172,11 +186,10 @@ class Config(object):
                 dep_path = dep_conf['path']
                 if 'path' in dep_conf and not os.path.isabs(dep_path):
                     dep_conf['path'] = realpath(dep_path)
-                dep_conf['version'] = '>1.1.0'
                 self.dependencies[dep] = RawDependency.from_config(dep_conf).validate()
         
-        for dep in self.dependencies.values():
-            print(dep.git_urls, dep.rev_ver)
+        # for dep in self.dependencies.values():
+        #     print(dep.git_urls, dep.rev_ver)
 
         if not extract_dep_only:
             # targets configs
@@ -202,3 +215,7 @@ class Config(object):
                         'tool must be set for tools<{}>'.format(idx))
                 self.tools[tool['name']] = {}
                 self.tools[tool['name']]['params'] = tool.get('params', {})
+
+    @staticmethod
+    def from_str(config_str: str):
+        return Config(config_str, from_str=True)

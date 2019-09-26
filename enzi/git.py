@@ -180,7 +180,7 @@ class Git(object):
         lines = self.spawn_with(lambda x:
             x.arg('ls-tree').arg(rev_id)
         ).splitlines()
-        return [ entry for entry in map(TreeEntry.parse, lines) ]
+        return list(map(TreeEntry.parse, lines))
 
 class TreeEntry(object):
     def __init__(self, input: str):
