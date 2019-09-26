@@ -1,6 +1,6 @@
 from enzi.config import DependencyRef
 # from enzi.config import DependencySource
-from enzi.config import Config as EnziConfig
+from enzi.config import Config as EnziConfig, DependencyVersion
 from enzi.git import GitVersions
 from typing import List, Set, Dict, Tuple, Optional
 from enzi.frontend import Enzi, EnziIO
@@ -19,13 +19,14 @@ class Dependency(object):
     def __init__(self, name: str):
         self.name = name
         # the sources for this dependency <K=DependencyRef, V=DependencySource>
-        self.sources: typing.MutableMapping[DependencyRef, DependencySource] = {}
+        self.sources: typing.MutableMapping[DependencyRef, DependencySource] = {
+        }
         # the enzi config we chose
         self.config: typing.Optional[EnziConfig] = None
 
     def source(self):
         # TODO: inspect this code
-        min_source = next(iter(self.sources.keys()))
+        min_source = min(self.sources.keys())
         return self.sources[min_source]
 
 # TODO: rewrite in more python way
@@ -108,7 +109,7 @@ class State(object):
 
     def is_pick(self):
         return self.state == 'Pick'
-    
+
     def pick(self):
         if self.is_pick():
             return self.value[0]
@@ -164,7 +165,7 @@ class DependencySource(object):
         if self.state.is_open() or self.state.is_constrained():
             return None
         else:
-            return self.versions.revisions[self.id]
+            return DependencyVersion.Git(self.versions.revisions[self.id])
 
 
 class DependencyResolver(object):
@@ -242,7 +243,7 @@ class DependencyResolver(object):
                             open_pending.update(dep.config.dependencies.keys())
                             any_change = True
                             src.state = State.Open()
-        
+
         while open_pending:
             opens, open_pending = open_pending, set()
             for dep_name in opens:
@@ -256,7 +257,7 @@ class DependencyResolver(object):
                         src.state = State.Open()
 
         return any_change
-    
+
     def close(self):
         logger.debug('resolve: computing closure over dependencies')
         enzi_io = EnziIO(self.enzi)

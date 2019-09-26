@@ -7,8 +7,31 @@ from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
+# TODO: move to other pack
 class DependencySource(object):
-    pass
+    def __init__(self, git_urls):
+        if not git_urls:
+            raise ValueError('git_urls must be str')
+        self.git_urls: str = git_urls
+    
+    def __eq__(self, other):
+        if isinstance(other, DependencySource):
+            return self.git_urls == other.git_urls
+    
+    def __hash__(self):
+        return hash(self.git_urls)
+
+class DependencyVersion(object):
+    def __init__(self, revision: str):
+        self.revision: str = revision
+    def __eq__(self, other):
+        if isinstance(other, DependencyVersion):
+            return self.revision == other.revision
+    def __hash__(self):
+        return hash(self.revision)
+    @staticmethod
+    def Git(revision: str):
+        return DependencyVersion(revision)
 
 class Dependency(object):
     def __init__(self, git_urls: str, rev_ver: typing.Union[str, Version]):
@@ -67,7 +90,7 @@ class DependencyEntry(object):
 
     def get_version(self):
         if self.revision:
-            return self.revision
+            return DependencyVersion.Git(self.revision)
         else:
             raise RuntimeError('DependencyEntry.revision is None')
     

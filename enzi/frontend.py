@@ -247,6 +247,11 @@ class EnziIO(object):
     
     # def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
     def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
+        # TODO: cache dep_config
+
+        dep = self.enzi.dependecy(dep_id)
+        from enzi.config import DependencySource as DepSrc
+        # from enzi.config.
         pass
 
     # def checkout(self, dep)
