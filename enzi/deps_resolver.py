@@ -108,6 +108,12 @@ class State(object):
 
     def is_pick(self):
         return self.state == 'Pick'
+    
+    def pick(self):
+        if self.is_pick():
+            return self.value[0]
+        elif self.is_locked():
+            return self.value
 
     @property
     def ids(self) -> set:
@@ -154,11 +160,11 @@ class DependencySource(object):
         self.options: typing.Optional[typing.MutableSet[int]] = options
         self.state: State = state
 
-    def get_pick_version(self) -> Optional[GitVersions]:
+    def current_pick(self) -> Optional[str]:
         if self.state.is_open() or self.state.is_constrained():
             return None
         else:
-            return self.versions
+            return self.versions.revisions[self.id]
 
 
 class DependencyResolver(object):

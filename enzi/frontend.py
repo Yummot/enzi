@@ -2,6 +2,7 @@ import os
 import copy as py_copy
 import logging
 import crypt
+import typing
 # import file_manager
 import enzi.project_manager
 from enzi.backend import KnownBackends
@@ -9,6 +10,7 @@ from enzi.config import Config as EnziConfig
 from enzi.config import DependencyRef, DependencySource, DependencyEntry, DependencyTable
 from enzi.utils import realpath, PathBuf, try_parse_semver
 from enzi.git import Git, GitVersions
+
 # from typing import Optional
 # from semver import VersionInfo as Version
 
@@ -243,6 +245,10 @@ class EnziIO(object):
 
         return GitVersions(versions, refs, dep_revs)
     
+    # def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
+    def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
+        pass
+
     # def checkout(self, dep)
 
     # def __test__(self):

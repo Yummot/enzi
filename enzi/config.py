@@ -7,55 +7,43 @@ from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
-Version.__gt__
-
 class DependencySource(object):
-    def __init__(self, name, info):
-        if 'path' in info and 'url' in info:
-            raise RuntimeError(
-                'DependencySource {} cannot have path and url in the same time'.format(name))
+    pass
 
-        # self.git_urls = None
-        if 'path' in info and not 'url' in info:
-            self.is_remote = False
-            self.path = str(info['path'])
-            self.git_urls = self.path
-        elif not 'path' in info and 'url' in info:
-            self.is_remote = True
-            self.url = str(info['url'])
-            self.git_urls = self.url
+class Dependency(object):
+    def __init__(self, git_urls: str, rev_ver: typing.Union[str, Version]):
+        self.git_urls = git_urls
+        self.rev_ver = rev_ver # revision or version
 
-        if 'version' in info and 'commit' in info:
-            raise RuntimeError(
-                'DependencySource {} configuration has commit and version at the same time'.format(name))
-        if 'version' in info and not 'commit' in info:
-            self.use_version = True
-            self.version = str(info['version'])
-        elif not 'version' in info and 'commit' in info:
-            self.use_version = False
-            self.commit = str(info['commit'])
-        else:
-            raise RuntimeError(
-                'DependencySource {} has not version or commit key.'.format(name))
+class RawDependency(object):
+    def __init__(self, path=None, url=None, revision=None, version=None):
+        self.path: typing.Optional[str] = path
+        self.url: typing.Optional[str] = url
+        self.revision: typing.Optional[str] = revision
+        self.version: typing.Optional[str] = version
+    
+    @staticmethod
+    def from_config(config):
+        path: typing.Optional[str] = config.get('path')
+        url: typing.Optional[str] = config.get('url')
+        revision: typing.Optional[str] = config.get('commit')
+        version: typing.Optional[str] = config.get('version')
+        return RawDependency(path=path, url=url, revision=revision, version=version)
 
-        self.name = name
-        # print(self.name, self.is_remote, self.version or self.commit, self.path or self.url)
-
-    def git_repo_config(self):
-        config = {}
-        if self.is_remote:
-            config['url'] = self.url
-        else:
-            config['path'] = self.path
-        config['use_version'] = self.use_version
-        if self.use_version:
-            config['version'] = self.version
-        else:
-            config['commit'] = self.commit
-        config['name'] = self.name
-
-        return config
-
+    def validate(self):
+        version = self.version
+        if version:
+            # TODO: allow version as a version compare string
+            version = Version.parse(self.version)
+        if self.revision and self.version:
+            raise ValueError('Dependency cannot specify `commit` and `version` at the same time.')
+        if self.path and self.url:
+            raise ValueError('Dependency cannot specify `path` and `url` at the same time.')
+        git_urls = self.path if self.path else self.url
+        rev_ver = self.revision if self.revision else self.version
+        return Dependency(git_urls, rev_ver)
+        # if self.version:
+            # return Dependency()
 
 class DependencyEntry(object):
     def __init__(self, name: str, source: DependencySource, revision=None, version=None):
@@ -65,14 +53,14 @@ class DependencyEntry(object):
         @param revision: str | None
         @param version: semver.VersionInfo | None
         """
-        self.name = name
-        self.source = DependencySource
+        self.name: str = name
+        self.source: DependencySource = source
         if revision is None or type(revision) == str:
-            self.revision = revision
+            self.revision: typing.Optional[str] = revision
         else:
             raise RuntimeError('DependencyEntry.revision must be str or None')
         if version is None or isinstance(version, Version):
-            self.version = version
+            self.version: typing.Optional[Version] = version
         else:
             raise RuntimeError(
                 'DependencyEntry.version must be semver.VersionInfo or None')
@@ -82,12 +70,28 @@ class DependencyEntry(object):
             return self.revision
         else:
             raise RuntimeError('DependencyEntry.revision is None')
+    
+    @property
+    def __keys(self):
+        return (self.name, self.source, self.revision, self.version)
 
+    def __eq__(self, other):
+        if isinstance(other, DependencyRef):
+            return self.__keys == other.__keys
+
+    def __hash__(self):
+        return hash((self.name, self.source, self.revision, self.version))
 
 class DependencyRef:
     def __init__(self, dep_id: int):
         self.id = dep_id
-
+    
+    def __eq__(self, other):
+        if isinstance(other, DependencyRef):
+            return self.id == other.id
+        return False
+    def __hash__(self):
+        return hash(self.id)
 
 class DependencyTable(object):
     def __init__(self):
@@ -115,7 +119,7 @@ class Config(object):
         self.directory = os.path.dirname(config_file)
         self.file_stat = os.stat(config_file)
         self.package = {}
-        self.dependencies = {}
+        self.dependencies: typing.MutableMapping[str, Dependency]= {}
         self.filesets = {}
         self.targets = {}
         self.tools = {}
@@ -145,10 +149,11 @@ class Config(object):
                 dep_path = dep_conf['path']
                 if 'path' in dep_conf and not os.path.isabs(dep_path):
                     dep_conf['path'] = realpath(dep_path)
-                self.dependencies[dep] = DependencySource(dep, dep_conf)
+                dep_conf['version'] = '>1.1.0'
+                self.dependencies[dep] = RawDependency.from_config(dep_conf).validate()
         
-        # for dep in self.dependencies.values():
-        #     print(dep.path, dep.name, dep.version)
+        for dep in self.dependencies.values():
+            print(dep.git_urls, dep.rev_ver)
 
         if not extract_dep_only:
             # targets configs

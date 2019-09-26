@@ -2,8 +2,10 @@ from enzi.file_manager import FileManager, FileManagerStatus, join_path
 import logging
 import os
 import shutil
+import typing
 import copy as py_copy
 import subprocess
+import semver
 from enzi.utils import Launcher, realpath
 from enzi.config import Config
 
@@ -16,9 +18,9 @@ class GitVersions(object):
         @param refs: Dict[str, str]
         @param revisions: List[str]
         """
-        self.verisons = verisons
-        self.refs = refs
-        self.revisions = revisions
+        self.verisons: typing.List[typing.Tuple[semver.VersionInfo, str]] = verisons
+        self.refs: typing.MutableMapping[str, str] = refs
+        self.revisions: typing.List[str] = revisions
 
 class GitRepo(FileManager):
     """
