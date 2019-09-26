@@ -12,7 +12,7 @@ all: build
 
 build: compile elaborate
 
-run:
+run: build
 {% if simulate_log %}
 	{% if silence_mode %}
 	vsim -c -do "run -a" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }}
@@ -27,7 +27,7 @@ run:
 	{% endif %}
 {% endif %}
 
-run-gui:
+run-gui: build
 {% if simulate_log %}
 	{% if silence_mode %}
 	vsim -do sim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }}
