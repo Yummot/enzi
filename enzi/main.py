@@ -8,7 +8,7 @@ import logging
 def parse_args():
     supported_targets = ['build', 'sim', 'run', 'program_device']
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers()
+    subparsers = parser.add_subparsers(title='Target')
 
     parser.add_argument("-l", "--log", dest="log_level", help='set Enzi self log level',
                         choices=[
@@ -49,6 +49,7 @@ def parse_args():
     if hasattr(args, 'target'):
         return args
     else:
+
         raise RuntimeError(
             'Target must be specified (option: {}).'.format(supported_targets))
 
@@ -69,7 +70,8 @@ def main():
 
     if args.log_level:
         logging.basicConfig(level=getattr(logging, args.log_level))
-
+    
+    s.init()
     s.silence_mode = args.silence_mode
     project_manager = ProjectFiles(s)
     project_manager.fetch(target)

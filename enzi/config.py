@@ -12,17 +12,18 @@ logger = logging.getLogger(__name__)
 
 
 class DependencySource(object):
-    def __init__(self, git_urls: str):
-        if not git_urls:
-            raise ValueError('git_urls must be str')
-        self.git_urls: str = git_urls
+    def __init__(self, git_url: str, is_local: bool):
+        if not git_url:
+            raise ValueError('git_url must be str')
+        self.git_url: str = git_url
+        self.is_local: bool = is_local
 
     def __eq__(self, other):
         if isinstance(other, DependencySource):
-            return self.git_urls == other.git_urls
+            return self.git_url == other.git_url and self.is_local == other.is_local
 
     def __hash__(self):
-        return hash(self.git_urls)
+        return hash((self.git_url, self.is_local))
 
     def is_git(self):
         return True
@@ -48,12 +49,14 @@ class DependencyVersion(object):
 
 
 class Dependency(object):
-    def __init__(self, git_urls: str, rev_ver: typing.Union[str, Version]):
-        self.git_urls = git_urls
+    def __init__(self, git_url: str, rev_ver: typing.Union[str, Version], use_version, is_local):
+        self.git_url = git_url
         self.rev_ver = rev_ver  # revision or version
+        self.use_version = use_version
+        self.is_local = is_local
 
     def __str__(self):
-        return 'Dependency { git_urls: %s, rev_ver: %s }' % (self.git_urls, self.rev_ver)
+        return 'Dependency { git_url: %s, rev_ver: %s }' % (self.git_url, self.rev_ver)
     # TODO: use a more elegant way
     __repr__ = __str__
 
@@ -84,9 +87,23 @@ class RawDependency(object):
         if self.path and self.url:
             raise ValueError(
                 'Dependency cannot specify `path` and `url` at the same time.')
-        git_urls = self.path if self.path else self.url
-        rev_ver = self.revision if self.revision else self.version
-        return Dependency(git_urls, rev_ver)
+        git_url = self.path if self.path else self.url
+
+        if self.path:
+            git_url = self.path
+            is_local = True
+        else:
+            git_url = self.url
+            is_local = False
+
+        if self.revision:
+            rev_ver = self.revision
+            use_version = False
+        else:
+            rev_ver = self.version
+            use_version = True
+
+        return Dependency(git_url, rev_ver, use_version, is_local)
         # if self.version:
         # return Dependency()
 
@@ -99,6 +116,8 @@ class DependencyEntry(object):
         @param revision: str | None
         @param version: semver.VersionInfo | None
         """
+        # help detect if this DependencyEntry is originally local repo
+        self.is_local = source.is_local
         self.name: str = name
         self.source: DependencySource = source
         if revision is None or type(revision) == str:
@@ -163,9 +182,11 @@ class LockedSource(object):
         self.url_path: str = url_path
 
     def __str__(self):
-        return "LockedSource({})".format(self.url_path)
+        return self.url_path
     # TODO: use a more elegant way
-    __repr__ = __str__
+
+    def __repr__(self):
+        return "LockedSource({})".format(self.url_path)
 
 
 class LockedDependency(object):
@@ -181,8 +202,8 @@ class LockedDependency(object):
         self.dependencies = dependencies
 
     def __str__(self):
-        return "LockedDependency{revision: %s, version: %s, \
-            source: %s, dependencies: %s}" % (self.revision, self.version, self.source, self.dependencies)
+        return "LockedDependency{{revision: \"{}\", version: \"{}\", \
+source: \"{}\", dependencies: {}}}".format(self.revision, self.version, self.source, self.dependencies)
     # TODO: use a more elegant way
     __repr__ = __str__
 
@@ -200,9 +221,61 @@ class Locked(object):
     # TODO: use a more elegant way
     __repr__ = __str__
 
+    def dumps(self):
+        d = {}
+        d['dependencies'] = {}
+        deps = d['dependencies']
+        for dep_name, dep in self.dependencies.items():
+            # deps[dep_name] =
+            dep_var = {
+                "source": str(dep.source),
+                "revision": dep.revision,
+                "version": dep.version,
+                "dependencies": dep.dependencies
+            }
+            deps[dep_name] = dep_var
+        return d
+
+    @staticmethod
+    def loads(config: dict):
+        """
+        load a Locked from a given dict
+        """
+        locked = Locked(dependencies={})
+        for dep_name, dep in config['dependencies'].items():
+            locked_dep = LockedDependency(
+                revision=dep.get('revision'),
+                version=dep.get('version'),
+                source=LockedSource(dep.get('source')),
+                dependencies=set(dep.get('dependencies', []))
+            )
+            locked.dependencies[dep_name] = locked_dep
+        return locked
+
+
+def validate_git_repo(dep_name: str, git_url: str):
+    from enzi.utils import Launcher
+    try:
+        Launcher('git', ['ls-remote', git_url]).run()
+    except:
+        msg = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'.format(
+            dep_name, git_url)
+        logger.error(msg)
+        raise ValueError(msg)
+
+
+def validate_dep_path(dep_name: str, dep_path: str):
+    dep_path = realpath(dep_path)
+    if os.path.isabs(dep_path):
+        return dep_path
+    else:
+        msg = 'validate_dep_path: {}(dep_path:{}) must have a absolute path'.format(dep_name, dep_path)
+        logger.error(msg)
+        raise ValueError(msg)
+
 
 class Config(object):
-    def __init__(self, config_file, from_str=False, base_path=None):
+    def __init__(self, config_file, from_str=False, base_path=None, is_local=True):
         conf = {}
         if from_str:
             conf = toml.loads(config_file)
@@ -213,15 +286,23 @@ class Config(object):
             logger.error('Config toml file is empty.')
             raise RuntimeError('Config toml file is empty.')
 
-        self.directory = base_path if from_str else os.path.dirname(
-            config_file)
-        self.file_stat = os.stat(config_file)
+        self.directory = base_path if from_str \
+            else os.path.dirname(config_file)
+        if from_str:
+            self.state = None
+        else:
+            self.file_stat = os.stat(config_file)
         self.package = {}
         self.dependencies: typing.MutableMapping[str, Dependency] = {}
         self.filesets = {}
         self.targets = {}
         self.tools = {}
-        self.is_local = (not 'provider' in conf)
+        self.is_local: bool = is_local
+        self.remote_repo = (not 'provider' in conf) # remote provider
+        if self.remote_repo:
+            self.is_local = False # makrsure remote is not marked as local
+
+        logger.debug('Config:__init__: directory = {}'.format(self.directory))
 
         if 'package' in conf:
             if not 'name' in conf['package']:
@@ -246,14 +327,18 @@ class Config(object):
             for dep, dep_conf in conf['dependencies'].items():
                 # TODO: make sure the existence of the path of each dependency
                 # TODO: add function to resolve abs dependency's path
-                # dep_path = dep_conf['path']
-                # if 'path' in dep_conf and not os.path.isabs(dep_path):
-                #     dep_conf['path'] = realpath(dep_path)
+                dep_path = dep_conf['path']
+                if 'path' in dep_conf and not os.path.isabs(dep_path):
+                    dep_conf['path'] = validate_dep_path(dep, dep_path)
                 self.dependencies[dep] = RawDependency.from_config(
                     dep_conf).validate()
 
+        # validate dependencies
+        for dep_name, dep in self.dependencies.items():
+            validate_git_repo(dep_name, dep.git_url)
+
         # for dep in self.dependencies.values():
-        #     print(dep.git_urls, dep.rev_ver)
+        #     print(dep.git_url, dep.rev_ver)
 
         # targets configs
         for target, values in conf.get('targets', {}).items():
@@ -288,7 +373,22 @@ class Config(object):
         return '\n'.join(str_buf)
 
     @staticmethod
-    def from_str(config_str: str, base_path):
+    def from_str(config_str: str, base_path, is_local: bool):
         logger.debug(
             'Config: construct from a given str with given base_path {}'.format(base_path))
-        return Config(config_str, from_str=True, base_path=base_path)
+        return Config(config_str, from_str=True, base_path=base_path, is_local=is_local)
+
+
+# d1 = LockedDependency(revision="1", version=None, source=LockedSource(
+#     '.'), dependencies=set(('d2',)))
+# d2 = LockedDependency(revision="1", version="1",
+#                       source=LockedSource('.'), dependencies=set())
+# l = Locked(dependencies={'d1': d1, 'd2': d2})
+# import toml, pprint
+# td = toml.dumps(l.dumps())
+# print(td)
+# tl = toml.loads(td)
+# l2 = Locked.loads(tl)
+# pprint.pprint(tl)
+# pprint.pprint(l2)
+# print(toml.dumps(l2.dumps()))

@@ -53,9 +53,10 @@ class PathBuf(object):
 # print(pb.join('xxxx').join('xxxx').path)
 # print(pb.path)
 
-def realpath(path, base_path=None):
+def realpath(path):
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
+    path = os.path.normpath(path)
     path = os.path.realpath(path)
     return path
 
@@ -73,9 +74,10 @@ class Launcher:
 
     # def run(self):
     def run(self, get_output=False):
-        logger.debug(self.cwd)
+        if self.cwd:
+            logger.debug('cwd:' + self.cwd)
         logger.debug('    ' + str(self))
-        _run = subprocess.check_call if get_output else subprocess.check_output
+        _run = subprocess.check_output if get_output else subprocess.check_call
         # _run = subprocess.check_output
         try:
             output = _run([self.cmd] + self.args,
@@ -85,7 +87,8 @@ class Launcher:
                 return output.decode("utf-8")
             else:
                 return output
-        except FileNotFoundError:
+        except FileNotFoundError as e:
+            logger.error("Launcher: {}".format(e))
             raise RuntimeError("Command '" + self.cmd +
                                "' not found. Make sure it is in $PATH")
         except subprocess.CalledProcessError:

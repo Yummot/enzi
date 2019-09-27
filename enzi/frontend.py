@@ -1,5 +1,5 @@
 import os
-
+import toml
 import copy as py_copy
 import logging
 import crypt
@@ -9,7 +9,7 @@ import enzi.project_manager
 from enzi import config
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencyRef, DependencySource
+from enzi.config import DependencyRef, DependencySource, Locked
 from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
 from enzi.utils import realpath, PathBuf, try_parse_semver
 from enzi.git import Git, GitVersions, TreeEntry
@@ -18,13 +18,11 @@ from enzi.git import Git, GitVersions, TreeEntry
 
 logger = logging.getLogger(__name__)
 
-
 def opts2str(opts):
     if type(opts) == list:
         return ' '.join(opts)
     else:
         return str(opts)
-
 
 class Enzi(object):
     supported_targets = ['build', 'sim', 'run', 'program_device']
@@ -55,6 +53,14 @@ class Enzi(object):
         self.known_backends = KnownBackends()
         self.backend_conf_generator = BackendConfigGen(self.known_backends)
         self.database: PathBuf = PathBuf(self.build_dir).join('database')
+    
+    def init(self):
+        """
+        Initialize the Enzi object, resolve dependencies and etc.
+        """
+        locked = LockLoader(self, self.work_dir).load()
+        import pprint
+        pprint.pprint(locked.dumps())
 
     @property
     def silence_mode(self):
@@ -73,13 +79,13 @@ class Enzi(object):
         else:
             setattr(self, '_silence_mode', value)
 
-    def load_dependency(self, name, dep: config.Dependency, config: EnziConfig):
+    def load_dependency(self, name, dep: config.Dependency, econfig: EnziConfig):
         if not isinstance(dep, config.Dependency):
             raise ValueError('dep must be an instance of config6.Dependency')
-        logger.debug('Loading dependency {} for {}'.format(name, config.name))
-        src = config.DependencySource(dep.git_urls)
+        logger.debug('Loading dependency {} for {}'.format(name, econfig.name))
+        src = config.DependencySource(dep.git_url, dep.is_local)
         dep_ref = self.dependencies.add(DependencyEntry(name, src))
-        print('loaded: ', self.dependencies.list[dep_ref])
+        print('loaded: ', self.dependencies.list[dep_ref.id])
         return dep_ref
 
     def dependecy(self, dep: DependencyRef) -> DependencyEntry:
@@ -183,6 +189,9 @@ class Enzi(object):
     #     self.targets[target_name]['filesets'] = new_fileset if isinstance(
     #         new_fileset, list) else []
 
+    def load_locked(self, locked: config.Locked):
+        pass
+
 
 class EnziIO(object):
     def __init__(self, enzi: Enzi):
@@ -190,25 +199,30 @@ class EnziIO(object):
 
     def dep_versions(self, dep_id):
         dep = self.enzi.dependecy(dep_id)
-        git_urls = dep.source.git_urls
-        dep_git = self.git_database(dep.name, git_urls)
+        git_url = dep.source.git_url
+        dep_git = self.git_database(dep.name, git_url)
         return self.git_versions(dep_git)
 
 
-    def git_database(self, name, git_urls) -> Git:
+    def git_database(self, name, git_url) -> Git:
+        # url_hash = crypt.crypt(git_url, crypt.METHOD_SHA256)[:16]
+        # logger.debug("EnziIO: {}, {}".format(type(name), type(url_hash)))
+        # logger.debug("EnziIO: {}, {}".format(name, url_hash))
+        # db_name = name + '-' + url_hash
         # TODO: change git database name format
-        url_hash = crypt.crypt(git_urls, crypt.METHOD_SHA256)[:16]
-        db_name = name + '-' + hash(url_hash)
-        # db_name = name
+        db_name = name
         # TODO: cache db_dir in Enzi
-        db_dir: PathBuf = self.enzi.git_db.join('git').join('db').join(db_name)
-        os.makedirs(db_dir, exist_ok=True)
-        git = Git(db_dir, self)
+        db_dir: PathBuf = self.enzi.database.join('git').join('db').join(db_name)
+        os.makedirs(db_dir.path, exist_ok=True)
+        git = Git(db_dir.path, self)
 
-        if db_dir.join("config").exits():
+        logger.debug("EnziIO:git_database: new git_db at {}, origin: {}".format(db_dir.path, git_url))
+
+        print(db_dir.join('config').path)
+        if not db_dir.join("config").exits():
             git.spawn_with(lambda x: x.arg('init').arg('--bare'))
             git.spawn_with(lambda x: x.arg('remote').arg('add')
-                .arg('origin').arg(git_urls))
+                .arg('origin').arg(git_url))
             git.fetch('origin')
             return git
         else:
@@ -219,8 +233,7 @@ class EnziIO(object):
             git.fetch('origin')
             return git
     
-    # def git_versions(self, git) -> GitVersions:
-    def git_versions(self, git: Git):
+    def git_versions(self, git: Git) -> GitVersions:
         dep_refs = git.list_refs()
         dep_revs = git.list_revs()
 
@@ -232,7 +245,7 @@ class EnziIO(object):
         tag_prefix = "refs/tags/"
         branch_prefix = "refs/remotes/origin/"
         for rev_id, ref in dep_refs:
-            if rev_id in rev_ids:
+            if not rev_id in rev_ids:
                 continue
             if ref.startswith(tag_prefix):
                 tags[ref[len(tag_prefix):]] = rev_id
@@ -248,7 +261,6 @@ class EnziIO(object):
 
         return GitVersions(versions, refs, dep_revs)
     
-    # def dep_config_version(self, dep_id: DependencyRef, version: GitVersions) -> typing.Optional[EnziConfig]:
     def dep_config_version(self, dep_id: DependencyRef, version: DependencyVersion) -> typing.Optional[EnziConfig]:
         # from enzi.config import DependencySource as DepSrc
         # from enzi.config import DependencyVersion as DepVer
@@ -258,15 +270,16 @@ class EnziIO(object):
 
         if dep.source.is_git() and version.is_git():
             dep_name = dep.name
-            git_urls = dep.source.git_urls
-            git_rev = version.git_rev
-            git_db = self.git_database(dep_name, git_urls)
+            git_url = dep.source.git_url
+            is_local = dep.is_local
+            git_rev = version.revision
+            git_db = self.git_database(dep_name, git_url)
 
             entries: typing.List[TreeEntry] = git_db.list_files(git_rev, 'Enzi.toml')
             # actually, there is only one entry
             entry = entries[0]
             data = git_db.cat_file(entry.hash)
-            dep_config = EnziConfig.from_str(data, git_db.path)
+            dep_config = EnziConfig.from_str(data, git_db.path, is_local)
             return dep_config
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')
@@ -364,3 +377,37 @@ class BackendConfigGen(object):
         config['silence_mode'] = questa_config.get('silence_mode', False)
 
         return config
+
+class LockLoader(object):
+    def __init__(self, enzi: Enzi, lock_path):
+        lock_file = os.path.join(lock_path, 'Enzi.lock')
+
+        self.lock_existing: typing.Optional[Locked]
+        self.lock_path: str = lock_path
+        self.enzi = enzi
+        self.lock_file = lock_file
+        if os.path.exists(lock_file):
+            with open(lock_file) as f:
+                data = f.read()
+                self.lock_existing = Locked.loads(data)
+        else:
+            self.lock_existing = None
+    
+    # TODO: Enzi add update arg
+    def load(self, update=False):
+        if update or not self.lock_existing:
+            if update:
+                logger.debug('LockLoader: lock file {} outdated'.format(self.lock_file))
+            else:
+                logger.debug('LockLoader: create new lock file {}'.format(self.lock_file))
+            
+            from enzi.deps_resolver import DependencyResolver
+            resolver = DependencyResolver(self.enzi)
+            new_locked = resolver.resolve()
+            locked_dump = new_locked.dumps()
+            with open(self.lock_file, 'w') as f:
+                toml.dump(locked_dump, f)
+            self.lock_existing = new_locked
+        else:
+            logger.debug('LockLoader: lock file {} up to date'.format(self.lock_file))
+        return self.lock_existing

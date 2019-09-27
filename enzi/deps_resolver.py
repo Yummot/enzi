@@ -3,7 +3,8 @@ from enzi.config import Config as EnziConfig
 from enzi.config import DependencyVersion, Locked
 from enzi.git import GitVersions
 from typing import List, Set, Dict, Tuple, Optional
-from enzi.frontend import Enzi, EnziIO
+from enzi.frontend import EnziIO
+from enzi.frontend import Enzi
 from enzi.utils import flat_map, unique
 from semver import VersionInfo as Version
 from enzi import config
@@ -11,6 +12,7 @@ import copy as py_copy
 import logging
 import itertools
 import typing
+import semver
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +60,11 @@ class DependencyConstraint(object):
         return DependencyConstraint('Revision', revision)
 
     @staticmethod
-    def From(dep: config.DependencySource):
+    def From(dep: config.Dependency):
         if dep.use_version:
-            return DependencyConstraint.Version(dep.version)
+            return DependencyConstraint.Version(dep.rev_ver)
         else:
-            return DependencyConstraint.Revision(dep.commit)
+            return DependencyConstraint.Revision(dep.rev_ver)
 
     def is_version(self):
         return self.cons == 'Version'
@@ -126,7 +128,7 @@ class State(object):
 
     @lock_id.setter
     def lock_id(self, value):
-        if not type(id) == int:
+        if not type(value) == int:
             raise ValueError('ids must be a int')
 
         if self.is_locked():
@@ -147,13 +149,14 @@ class State(object):
 
     @ids.setter
     def ids(self, ids):
-        if not type(id) == set:
+        if not type(ids) == set:
             raise ValueError('ids must be a set')
 
         if self.is_constrained():
             self.value = ids
         elif self.is_pick():
-            self.value[1] = ids
+            # self.value[1] = ids
+            self.value = (self.value[0], ids)
         else:
             raise RuntimeError(
                 'INTERNAL ERROR: try to set ids for a State::{}'.format(self.state))
@@ -166,7 +169,7 @@ def dump_cons_map(cons_map: dict):
     str_buf.append('{')
     for name in names:
         cons = cons_map[name]
-        str_buf.append('\n\t\"{{{}}}\" :'.format(name))
+        str_buf.append('\n\t\"{}\" :'.format(name))
         for pkg_name, con in cons:
             str_buf.append(' {}({});'.format(con, pkg_name))
     str_buf.append('\n}')
@@ -175,17 +178,31 @@ def dump_cons_map(cons_map: dict):
 
 class DependencySource(object):
     def __init__(self, dep_id: DependencyRef, versions: GitVersions, pick=None, options=None, state=State.Open()):
+        # self._id: DependencyRef = dep_id
         self.id: DependencyRef = dep_id
         self.versions: GitVersions = versions
         self.pick: typing.Optional[int] = pick
         self.options: typing.Optional[typing.MutableSet[int]] = options
         self.state: State = state
 
+    # @property
+    # def id(self):
+    #     return self._id.id
+
+    # @id.setter
+    # def id(self, val):
+    #     if type(val) == int:
+    #         self._id = DependencyRef(val)
+    #     elif isinstance(val, DependencyRef):
+    #         self._id = val
+    #     else:
+    #         raise ValueError('try to set id as {}'.format(type(val)))
+
     def current_pick(self) -> Optional[str]:
         if self.state.is_open() or self.state.is_constrained():
             return None
         else:
-            return DependencyVersion.Git(self.versions.revisions[self.id])
+            return DependencyVersion.Git(self.versions.revisions[self.id.id])
 
 
 class DepTableDumper(object):
@@ -203,7 +220,7 @@ class DepTableDumper(object):
         for name in names:
             dep = self.table[name]
             str_buf.append('\n\t{} :'.format(name))
-            for dep_id, src in dep.sources:
+            for dep_id, src in dep.sources.items():
                 str_buf.append('\n\t\t[{}] :'.format(dep_id))
                 state: State = src.state
                 if state.is_open():
@@ -240,8 +257,7 @@ class DependencyResolver(object):
         self.decisions: typing.MutableMapping[str, int] = {}  # <K=str, int>
         self.enzi = enzi
 
-    # def resolve(self) -> Locked:
-    def resolve(self):
+    def resolve(self) -> Locked:
         self.register_dep_in_config(
             self.enzi.config.dependencies, self.enzi.config)
 
@@ -266,9 +282,9 @@ class DependencyResolver(object):
             src: DependencySource = dep.source()
             enzi_src = enzi.dependency_source(src.id)
 
-            git_urls = ''
+            git_url = ''
             if enzi_src.is_git():
-                git_urls = enzi_src.git_urls
+                git_url = enzi_src.git_url
             else:
                 raise ValueError('INTERNAL ERROR: unreachable')
             pick = src.state.pick
@@ -278,13 +294,13 @@ class DependencyResolver(object):
             rev = src.versions.revisions[pick]
             version = find_version(src.versions.versions, rev)
             lock_dep = config.LockedDependency(
-                revision = rev,
-                version = version,
-                source = config.LockedSource(git_urls),
-                dependencies = deps
+                revision=rev,
+                version=version,
+                source=config.LockedSource(git_url),
+                dependencies=deps
             )
             locked[name] = lock_dep
-        
+
         return config.Locked(dependencies=locked)
 
     def init(self):
@@ -294,38 +310,41 @@ class DependencyResolver(object):
                     continue
                 logger.debug('resolve init {}[{}]'.format(dep.name, src.id))
 
-                ids = list(range(len(src.versions.revisions)))
+                ids = set(range(len(src.versions.revisions)))
                 src.state = State.Constrained(ids)
 
     def mark(self):
         def inner_dep(econfig: EnziConfig):
             pkg_name = econfig.package['name']
-            return map(lambda item: (item[0], (pkg_name, item[1])), econfig.dependencies)
+            return map(lambda item: (item[0], (pkg_name, item[1])), econfig.dependencies.items())
 
         other_econf = filter(lambda x: x, map(
-            lambda dep: dep.conf, self.table.values()))
+            lambda dep: dep.config, self.table.values()))
         econfig_iter = itertools.chain([self.enzi.config, ], other_econf)
         flat_dep = flat_map(inner_dep, econfig_iter)
+        flat_dep = list(flat_dep)
         dep_iter = map(lambda dep: (dep[0], dep[1][0], dep[1][1]), flat_dep)
 
         cons_map = {}  # <K=str, V=list[(str, DependencyConstraint)]>
         for name, pkg_name, dep in dep_iter:
+            # logger.debug('resolver.mark: {} {} {}'.format(name, pkg_name, dep))
             if not name in cons_map:
                 cons_map[name] = []
             v = cons_map[name]
-            v.append(pkg_name, DependencyConstraint.From(dep))
+            v.append((pkg_name, DependencyConstraint.From(dep)))
 
         logger.debug("resolve: gathered constraints {}".format(
             dump_cons_map(cons_map)))
 
-        new_table, old_table = {}, self.table
+        self.table, table = {}, self.table
         for name, cons in cons_map.items():
-            for con in cons.values():
+            for _, con in cons:
                 logger.debug("resolve: impose {} on {}".format(con, name))
-                for src in old_table[name].values():
+                for src in table[name].sources.values():
                     self.impose(name, con, src, cons)
 
-        self.table = new_table
+        # logger.debug("resolver.mark: new table {}".format(table))
+        self.table = table
 
     def pick(self):
         any_change = False
@@ -343,7 +362,7 @@ class DependencyResolver(object):
                     ids = state.ids
                     any_change = True
                     logger.debug(
-                        'resolve: picking version for {}[{}]'.format(dep.name, src.id))
+                        'resolve: picking version for {}[{}]'.format(dep.name, src.id.id))
                     pick_id = min(ids)
                     src.state = State.Pick(pick_id, ids)
                 elif state.is_pick():
@@ -376,7 +395,7 @@ class DependencyResolver(object):
 
         econfigs: typing.List[typing.Tuple[str, EnziConfig]] = []
         for dep in self.table.values():
-            src: DependencySource = dep.source
+            src: DependencySource = dep.source()
             version = src.current_pick()
             if not version:
                 continue
@@ -386,26 +405,35 @@ class DependencyResolver(object):
             if econfig:
                 logger.debug('resolve: for {} load enzi configuration {}'
                              .format(name, econfig.debug_str()))
+                self.register_dep_in_config(econfig.dependencies, econfig)
             self.table[name].config = econfig
 
     def req_indices(self, name: str, con: DependencyConstraint, src: DependencySource):
         if con.is_version():
+            logger.debug('req_indices: con is version')
             git_ver = src.versions
             con: GitVersions = con.value
             ids = dict(map(lambda eitem: (eitem[1], eitem[0]),
                            enumerate(git_ver.revisions)))
-
+            
+            # logger.debug(ids)
             def try_match_ver(item):
                 v, h = item
-                if con.match(v):
+                _con, v = str(con), str(v)
+                logger.debug('req_indices: con: {}, ver: {} => {}'.format(
+                    _con, v, semver.compare(_con, v)))
+                # TODO: see semver section in todolist
+                if semver.compare(_con, v) == 0:
                     return ids[h]
                 else:
                     return None
 
-            revs = set(filter(lambda x: x, map(
+            revs = set(filter(lambda x: (not x is None), map(
                 try_match_ver, git_ver.versions)))
+
             return revs
         elif con.is_revision():
+            logger.debug('req_indices: con is revision')
             git_ver = src.versions
             git_refs: dict = git_ver.refs
             git_revs: list = git_ver.revisions
@@ -432,11 +460,12 @@ class DependencyResolver(object):
 
     def impose(self, name: str, con: DependencyConstraint, src: DependencySource, all_cons: list):
         indices = self.req_indices(name, con, src)
+        logger.debug("impose: {}".format(indices))
         if not indices:
             raise RuntimeError(
                 'Dependency {} from {} cannot statisfy requirement {}'.format(
                     name,
-                    self.enzi.dependecy(src.id).source,
+                    self.enzi.dependecy(src.id).source.git_url,
                     str(con)
                 ))
 
@@ -446,7 +475,7 @@ class DependencyResolver(object):
             elif state.is_locked():
                 raise RuntimeError('INTERNAL ERROR: unreachable')
             elif state.is_constrained() or state.is_pick():
-                ids = state.get_ids()
+                ids = state.ids
                 is_ids = ids.intersection(indices)
                 if not is_ids:
                     msg_buf = ["Requirement {} conflicts with other requirement on dependency {}"
@@ -476,12 +505,12 @@ class DependencyResolver(object):
             raise RuntimeError('INTERNAL ERROR: unreachable')
 
     def register_dep(self, name: str, dep: DependencyRef, versions: GitVersions):
+        logger.debug('resolver.register_dep: name {} {}'.format(name, dep))
         if not name in self.table:
             self.table[name] = Dependency(name)
         entry = self.table[name]
-        entry_src = entry.source()
-        if not dep in entry_src:
-            entry_src[dep] = DependencySource(dep, versions)
+        if not dep in entry.sources:
+            entry.sources[dep] = DependencySource(dep, versions)
 
     def register_dep_in_config(self, deps: typing.MutableMapping[str, config.Dependency], enzi_config: EnziConfig):
         def fn(items):
@@ -501,6 +530,7 @@ class DependencyResolver(object):
         versions = dict(versions)
 
         for name, dep_id in names.items():
+            logger.debug('Registering {} {}'.format(name, dep_id.id))
             self.register_dep(name, dep_id, py_copy.copy(versions[dep_id]))
 
 

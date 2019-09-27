@@ -18,10 +18,11 @@ authors = ["Mot Yu"]
 # we can have a better version control over root package. Also helping resolve deps. 
 [dependencies.dep1]
 path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
-version = "0.1.0" # TODO: allow use semver compare string
+version = "0.2.0" # TODO: allow use semver compare string
 # commit = "commit hash"
 # dep must have verison or commit string
 # dep must have path or url string
+# dep path string must be an absolute path
 
 [filesets.rtl]
 files = [

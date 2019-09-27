@@ -22,8 +22,10 @@ class GitVersions(object):
         self.refs: typing.MutableMapping[str, str] = refs
         self.revisions: typing.List[str] = revisions
 
+# TODO: safely remove this class
 class GitRepo(FileManager):
     """
+    DEPRECATED
     Manage a git repo which a enzi project,
     assume this is call after deps is resolved
     """
@@ -124,7 +126,7 @@ class Git(object):
         self.enzi_io = enzi_io
 
     def spawn(self, cmd: GitCommand):
-        return Launcher(cmd.cmd, cmd.args, self.path).run()
+        return Launcher(cmd.cmd, cmd.args, self.path).run(True)
 
     def spawn_with(self, f):
         cmd = GitCommand()
