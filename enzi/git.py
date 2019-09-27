@@ -21,6 +21,14 @@ class GitVersions(object):
         self.versions: typing.List[typing.Tuple[semver.VersionInfo, str]] = versions
         self.refs: typing.MutableMapping[str, str] = refs
         self.revisions: typing.List[str] = revisions
+    
+    def __repr__(self):
+        str_buf = ['GitVersions {']
+        str_buf.append('\tversions: {}'.format(self.versions))
+        str_buf.append('\trefs: {}'.format(self.refs))
+        str_buf.append('\trevisions: {}'.format(self.revisions))
+        str_buf.append('}')
+        return '\n'.join(str_buf)
 
 # TODO: safely remove this class
 class GitRepo(FileManager):

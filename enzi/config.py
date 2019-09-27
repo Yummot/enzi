@@ -130,6 +130,12 @@ class DependencyEntry(object):
             raise RuntimeError(
                 'DependencyEntry.version must be semver.VersionInfo or None')
 
+    def dump_vars(self):
+        import copy as py_copy
+        vs = py_copy.deepcopy(vars(self))
+        vs['source'] = self.source.git_url
+        return vs
+
     def get_version(self):
         if self.revision:
             return DependencyVersion.Git(self.revision)
@@ -141,14 +147,14 @@ class DependencyEntry(object):
         return (self.name, self.source, self.revision, self.version)
 
     def __eq__(self, other):
-        if isinstance(other, DependencyRef):
+        if isinstance(other, DependencyEntry):
             return self.__keys == other.__keys
 
     def __hash__(self):
         return hash((self.name, self.source, self.revision, self.version))
 
 
-class DependencyRef:
+class DependencyRef(object):
     def __init__(self, dep_id: int):
         self.id: int = dep_id
 
@@ -159,6 +165,17 @@ class DependencyRef:
 
     def __hash__(self):
         return hash(self.id)
+
+    def __gt__(self, other):
+        if isinstance(other, DependencyRef):
+            return self.id > other.id
+
+    def __lt__(self, other):
+        if isinstance(other, DependencyRef):
+            return self.id < other.id
+
+    def __repr__(self):
+        return 'DependencyRef({})'.format(self.id)
 
 
 class DependencyTable(object):
@@ -173,7 +190,7 @@ class DependencyTable(object):
         else:
             dep_id = DependencyRef(len(self.list))
             self.list.append(entry)
-            self.ids[dep_id] = entry
+            self.ids[entry] = dep_id
             return dep_id
 
 
@@ -269,7 +286,8 @@ def validate_dep_path(dep_name: str, dep_path: str):
     if os.path.isabs(dep_path):
         return dep_path
     else:
-        msg = 'validate_dep_path: {}(dep_path:{}) must have a absolute path'.format(dep_name, dep_path)
+        msg = 'validate_dep_path: {}(dep_path:{}) must have a absolute path'.format(
+            dep_name, dep_path)
         logger.error(msg)
         raise ValueError(msg)
 
@@ -286,8 +304,8 @@ class Config(object):
             logger.error('Config toml file is empty.')
             raise RuntimeError('Config toml file is empty.')
 
-        self.directory = base_path if from_str \
-            else os.path.dirname(config_file)
+        self.directory = base_path if from_str else os.path.dirname(
+            config_file)
         if from_str:
             self.state = None
         else:
@@ -298,9 +316,9 @@ class Config(object):
         self.targets = {}
         self.tools = {}
         self.is_local: bool = is_local
-        self.remote_repo = (not 'provider' in conf) # remote provider
+        self.remote_repo = (not 'provider' in conf)  # remote provider
         if self.remote_repo:
-            self.is_local = False # makrsure remote is not marked as local
+            self.is_local = False  # makrsure remote is not marked as local
 
         logger.debug('Config:__init__: directory = {}'.format(self.directory))
 

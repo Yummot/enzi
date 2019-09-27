@@ -74,9 +74,9 @@ class Launcher:
 
     # def run(self):
     def run(self, get_output=False):
-        if self.cwd:
-            logger.debug('cwd:' + self.cwd)
-        logger.debug('    ' + str(self))
+        # if self.cwd:
+        #   logger.debug('cwd:' + self.cwd)
+        # logger.debug('    ' + str(self))
         _run = subprocess.check_output if get_output else subprocess.check_call
         # _run = subprocess.check_output
         try:
