@@ -231,7 +231,6 @@ class EnziIO(object):
         logger.debug("EnziIO:git_database: new git_db at {}, origin: {}".format(
             db_dir.path, git_url))
 
-        print(db_dir.join('config').path)
         if not db_dir.join("config").exits():
             git.spawn_with(lambda x: x.arg('init').arg('--bare'))
             git.spawn_with(lambda x: x.arg('remote').arg('add')

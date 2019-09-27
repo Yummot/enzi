@@ -402,18 +402,3 @@ class Config(object):
         logger.debug(
             'Config: construct from a given str with given base_path {}'.format(base_path))
         return Config(config_str, from_str=True, base_path=base_path, is_local=is_local)
-
-
-# d1 = LockedDependency(revision="1", version=None, source=LockedSource(
-#     '.'), dependencies=set(('d2',)))
-# d2 = LockedDependency(revision="1", version="1",
-#                       source=LockedSource('.'), dependencies=set())
-# l = Locked(dependencies={'d1': d1, 'd2': d2})
-# import toml, pprint
-# td = toml.dumps(l.dumps())
-# print(td)
-# tl = toml.loads(td)
-# l2 = Locked.loads(tl)
-# pprint.pprint(tl)
-# pprint.pprint(l2)
-# print(toml.dumps(l2.dumps()))
