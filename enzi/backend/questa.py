@@ -1,6 +1,7 @@
-from enzi.backend import Backend
-from collections import OrderedDict
 import logging
+from collections import OrderedDict
+
+from enzi.backend import Backend
 
 logger = logging.getLogger(__name__)
 

@@ -1,12 +1,12 @@
-import subprocess
 import logging
 import sys
 import os
-import copy as py_copy
-import importlib
-from itertools import chain
-from semver import VersionInfo as Version
+import subprocess
 import typing
+import copy as py_copy
+from itertools import chain
+
+from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
 

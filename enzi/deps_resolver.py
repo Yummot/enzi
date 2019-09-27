@@ -1,18 +1,19 @@
-from enzi.config import DependencyRef
-from enzi.config import Config as EnziConfig
-from enzi.config import DependencyVersion, Locked
-from enzi.git import GitVersions
-from typing import List, Set, Dict, Tuple, Optional
-from enzi.frontend import EnziIO
-from enzi.frontend import Enzi
-from enzi.utils import flat_map, unique
-from semver import VersionInfo as Version
-from enzi import config
-import copy as py_copy
 import logging
 import itertools
 import typing
 import semver
+import copy as py_copy
+from typing import List, Set, Dict, Tuple, Optional
+
+from enzi import config
+from enzi.config import DependencyRef
+from enzi.config import Config as EnziConfig
+from enzi.config import DependencyVersion, Locked
+from enzi.git import GitVersions
+from enzi.frontend import EnziIO
+from enzi.frontend import Enzi
+from enzi.utils import flat_map, unique
+from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
 

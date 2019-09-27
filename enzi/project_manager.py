@@ -1,7 +1,11 @@
+import logging
+import os
+import shutil
+
 from enzi.file_manager import LocalFiles, FileManager, FileManagerStatus
 from enzi.git import GitRepo
-import logging
-import os, shutil
+
+
 logger = logging.getLogger(__name__)
 
 

@@ -2,13 +2,14 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import copy as py_copy
 import jinja2
 import logging
 import os
 import stat
 import subprocess
+import copy as py_copy
 from collections import OrderedDict
+
 from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)

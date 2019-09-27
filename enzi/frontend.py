@@ -1,11 +1,11 @@
-import os
-import toml
-import copy as py_copy
-import logging
 import crypt
-import typing
+import logging
+import os
 import pprint
-# import file_manager
+import toml
+import typing
+import copy as py_copy
+
 import enzi.project_manager
 from enzi import config
 from enzi.backend import KnownBackends
@@ -14,8 +14,6 @@ from enzi.config import DependencyRef, DependencySource, Locked
 from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
 from enzi.utils import realpath, PathBuf, try_parse_semver
 from enzi.git import Git, GitVersions, TreeEntry
-# from typing import Optional
-# from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
 

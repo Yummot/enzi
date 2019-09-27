@@ -1,9 +1,10 @@
-import toml
 import logging
 import os
 import io
+import toml
 import typing
 from semver import VersionInfo as Version
+
 from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)

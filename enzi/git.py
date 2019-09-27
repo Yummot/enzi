@@ -1,13 +1,14 @@
-from enzi.file_manager import FileManager, FileManagerStatus, join_path
 import logging
 import os
 import shutil
-import typing
-import copy as py_copy
 import subprocess
 import semver
-from enzi.utils import Launcher, realpath
+import typing
+import copy as py_copy
+
 from enzi.config import Config
+from enzi.file_manager import FileManager, FileManagerStatus, join_path
+from enzi.utils import Launcher, realpath
 
 logger = logging.getLogger(__name__)
 

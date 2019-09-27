@@ -1,9 +1,10 @@
-from enzi.project_manager import ProjectFiles
-from enzi.frontend import Enzi
-
 import argparse
 import logging
 
+from enzi.project_manager import ProjectFiles
+from enzi.frontend import Enzi
+
+logger = logging.getLogger(__name__)
 
 def parse_args():
     supported_targets = ['build', 'sim', 'run', 'program_device']
@@ -81,6 +82,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # s = Enzi('.')
-    # project_manager = project_manager.ProjectFiles(s)
     main()
