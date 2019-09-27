@@ -4,6 +4,7 @@ import copy as py_copy
 import logging
 import crypt
 import typing
+import pprint
 # import file_manager
 import enzi.project_manager
 from enzi import config
@@ -61,8 +62,8 @@ class Enzi(object):
         Initialize the Enzi object, resolve dependencies and etc.
         """
         locked = LockLoader(self, self.work_dir).load()
-        import pprint
-        pprint.pprint(locked.dumps())
+        msg = pprint.pformat(locked.dumps())
+        logger.debug('Enzi:init: locked deps:\n{}'.format(msg))
 
     @property
     def silence_mode(self):
@@ -407,9 +408,7 @@ class LockLoader(object):
         self.enzi = enzi
         self.lock_file = lock_file
         if os.path.exists(lock_file):
-            with open(lock_file) as f:
-                data = f.read()
-                self.lock_existing = Locked.loads(data)
+            self.lock_existing = Locked.load(lock_file)
         else:
             self.lock_existing = None
 

@@ -268,7 +268,14 @@ class Locked(object):
             )
             locked.dependencies[dep_name] = locked_dep
         return locked
-
+    
+    @staticmethod
+    def load(config_path: typing.Union[str, bytes]):
+        """
+        load a Locked from a given path of a lock file
+        """
+        data = toml.load(config_path)
+        return Locked.loads(data)
 
 def validate_git_repo(dep_name: str, git_url: str):
     from enzi.utils import Launcher
