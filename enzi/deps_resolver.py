@@ -278,7 +278,7 @@ class DependencyResolver(object):
         enzi = self.enzi
         locked = {}
 
-        for name, dep in self.table:
+        for name, dep in self.table.items():
             dep_config: EnziConfig = dep.config
             deps: typing.Set[str] = set(dep_config.dependencies.keys())
             src: DependencySource = dep.source()
@@ -289,8 +289,8 @@ class DependencyResolver(object):
                 git_url = enzi_src.git_url
             else:
                 raise ValueError('INTERNAL ERROR: unreachable')
-            pick = src.state.pick
-            if not pick:
+            pick = src.state.pick()
+            if pick is None:
                 logger.error('resolver: pick is none')
                 raise ValueError('pick is none')
             rev = src.versions.revisions[pick]

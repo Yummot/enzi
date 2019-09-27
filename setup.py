@@ -26,7 +26,6 @@ setup(
     install_requires=[
         'toml',
         'semver',
-        'crypt'
+        'jinja2'
     ],
-    setup_requires=['setuptools_scm', 'setuptools_scm_about']
 )
