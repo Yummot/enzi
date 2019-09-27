@@ -280,7 +280,7 @@ class Locked(object):
 def validate_git_repo(dep_name: str, git_url: str):
     from enzi.utils import Launcher
     try:
-        Launcher('git', ['ls-remote', git_url]).run()
+        Launcher('git', ['ls-remote', '-q', git_url]).run()
     except:
         msg = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'.format(
             dep_name, git_url)

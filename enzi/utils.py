@@ -24,6 +24,8 @@ def try_parse_semver(tag_and_id):
         return None
 
 # TODO: code review, can we improve performance ?
+
+
 def unique(iterable: typing.Iterable[typing.Any]):
     seen = set()
     for item in iterable:
@@ -31,27 +33,35 @@ def unique(iterable: typing.Iterable[typing.Any]):
             seen.add(item)
             yield item
 
+
 class PathBuf(object):
     def __init__(self, base=''):
         self.path = base
+
     def join(self, paths):
         self_copy = py_copy.copy(self)
         self_copy.path = os.path.join(self.path, paths)
         return self_copy
+
     def exits(self):
         return os.path.exists(self.path)
+
     def isabs(self):
         return os.path.isabs(self.path)
+
     def isdir(self):
         return os.path.isdir(self.path)
+
     def dirname(self):
         return os.path.dirname(self.path)
+
     def basename(self):
         return os.path.basename(self.path)
 
 # pb = PathBuf('xxx')
 # print(pb.join('xxxx').join('xxxx').path)
 # print(pb.path)
+
 
 def realpath(path):
     path = os.path.expandvars(path)
@@ -60,11 +70,13 @@ def realpath(path):
     path = os.path.realpath(path)
     return path
 
+
 def flat_map(f, items):
     """
     Creates an iterator that works like map, but flattens nested Iteratorable.
     """
     return chain.from_iterable(map(f, items))
+
 
 class Launcher:
     def __init__(self, cmd, args=[], cwd=None):
@@ -73,7 +85,7 @@ class Launcher:
         self.cwd = cwd
 
     # def run(self):
-    def run(self, get_output=False):
+    def run(self, get_output: bool=False):
         # if self.cwd:
         #   logger.debug('cwd:' + self.cwd)
         # logger.debug('    ' + str(self))
@@ -81,8 +93,8 @@ class Launcher:
         # _run = subprocess.check_output
         try:
             output = _run([self.cmd] + self.args,
-                         cwd=self.cwd,
-                         stdin=subprocess.PIPE)
+                          cwd=self.cwd,
+                          stdin=subprocess.PIPE)
             if get_output:
                 return output.decode("utf-8")
             else:
