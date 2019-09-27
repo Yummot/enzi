@@ -10,10 +10,10 @@ from typing import List, Set, Dict, Tuple, Optional
 from enzi import config
 from enzi.config import DependencyRef
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencyVersion, Locked
+from enzi.config import DependencyVersion
+from enzi.frontend import Enzi, EnziIO
 from enzi.git import GitVersions
-from enzi.frontend import EnziIO
-from enzi.frontend import Enzi
+from enzi.config import Locked
 from enzi.utils import flat_map, unique
 from semver import VersionInfo as Version
 

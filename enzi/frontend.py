@@ -12,10 +12,10 @@ import enzi.project_manager
 from enzi import config
 from enzi.backend import KnownBackends
 from enzi.config import Config as EnziConfig
-from enzi.config import DependencyRef, DependencySource, Locked
+from enzi.config import DependencyRef, DependencySource
 from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
-from enzi.utils import realpath, PathBuf, try_parse_semver
 from enzi.git import Git, GitVersions, TreeEntry
+from enzi.utils import realpath, PathBuf, try_parse_semver
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,7 @@ class Enzi(object):
         """
         Initialize the Enzi object, resolve dependencies and etc.
         """
+        from enzi.lock import LockLoader
         locked = LockLoader(self, self.work_dir).load()
         msg = pprint.pformat(locked.dumps())
         logger.debug('Enzi:init: locked deps:\n{}'.format(msg))
@@ -202,9 +203,6 @@ class Enzi(object):
     #     self.targets[target_name]['filesets'] = new_fileset if isinstance(
     #         new_fileset, list) else []
 
-    def load_locked(self, locked: config.Locked):
-        pass
-
 
 class EnziIO(object):
     def __init__(self, enzi: Enzi):
@@ -302,10 +300,6 @@ class EnziIO(object):
             return dep_config
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')
-    # def checkout(self, dep)
-
-    # def __test__(self):
-    #     pass
 
 
 class BackendConfigGen(object):
@@ -397,39 +391,3 @@ class BackendConfigGen(object):
         config['silence_mode'] = questa_config.get('silence_mode', False)
 
         return config
-
-
-class LockLoader(object):
-    def __init__(self, enzi: Enzi, lock_path):
-        lock_file = os.path.join(lock_path, 'Enzi.lock')
-
-        self.lock_existing: typing.Optional[Locked]
-        self.lock_path: str = lock_path
-        self.enzi = enzi
-        self.lock_file = lock_file
-        if os.path.exists(lock_file):
-            self.lock_existing = Locked.load(lock_file)
-        else:
-            self.lock_existing = None
-
-    # TODO: Enzi add update arg
-    def load(self, update=False):
-        if update or not self.lock_existing:
-            if update:
-                logger.debug(
-                    'LockLoader: lock file {} outdated'.format(self.lock_file))
-            else:
-                logger.debug(
-                    'LockLoader: create new lock file {}'.format(self.lock_file))
-
-            from enzi.deps_resolver import DependencyResolver
-            resolver = DependencyResolver(self.enzi)
-            new_locked = resolver.resolve()
-            locked_dump = new_locked.dumps()
-            with open(self.lock_file, 'w') as f:
-                toml.dump(locked_dump, f)
-            self.lock_existing = new_locked
-        else:
-            logger.debug(
-                'LockLoader: lock file {} up to date'.format(self.lock_file))
-        return self.lock_existing
