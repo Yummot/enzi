@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from enzi.backend.backend import *
 from enzi.backend.ies import IES
 from enzi.backend.questa import Questa
