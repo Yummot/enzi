@@ -96,7 +96,7 @@ class Launcher:
                           cwd=self.cwd,
                           stdin=subprocess.PIPE)
             if get_output:
-                return output.decode("utf-8")
+                return output.decode("utf-8") # pylint: disable=E1101
             else:
                 return output
         except FileNotFoundError as e:
