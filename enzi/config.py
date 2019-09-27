@@ -3,8 +3,10 @@ import os
 import io
 import toml
 import typing
+import copy as py_copy
 from semver import VersionInfo as Version
 
+from enzi.utils import Launcher
 from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
@@ -132,7 +134,6 @@ class DependencyEntry(object):
                 'DependencyEntry.version must be semver.VersionInfo or None')
 
     def dump_vars(self):
-        import copy as py_copy
         vs = py_copy.deepcopy(vars(self))
         vs['source'] = self.source.git_url
         return vs
@@ -279,7 +280,6 @@ class Locked(object):
         return Locked.loads(data)
 
 def validate_git_repo(dep_name: str, git_url: str):
-    from enzi.utils import Launcher
     try:
         Launcher('git', ['ls-remote', '-q', git_url]).run()
     except:

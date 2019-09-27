@@ -51,7 +51,6 @@ class ProjectFiles(FileManager):
         #     ccfiles['files'] = dep_files + ccfiles['files']
         
         self.cache_files[target_name] = ccfiles
-        import pprint
         self.status = FileManagerStatus.FETCHED
 
     def clean_cache(self):

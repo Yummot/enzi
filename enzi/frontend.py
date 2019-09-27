@@ -18,6 +18,7 @@ from enzi.git import Git, GitVersions, TreeEntry
 logger = logging.getLogger(__name__)
 
 
+
 def opts2str(opts):
     if type(opts) == list:
         return ' '.join(opts)
