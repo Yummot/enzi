@@ -3,11 +3,7 @@ from setuptools import setup
 
 setup(
     name="enzi",
-    # use_scm_version={
-    #     "relative_to": __file__,
-    #     "write_to": "enzi/version.py",
-    # },
-    version="0.2.1",
+    version="0.3.1",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
     license="MIT",
