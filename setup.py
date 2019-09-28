@@ -7,7 +7,7 @@ setup(
     #     "relative_to": __file__,
     #     "write_to": "enzi/version.py",
     # },
-    version="0.1.6",
+    version="0.2.1",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
     license="MIT",
