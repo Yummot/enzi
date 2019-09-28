@@ -22,15 +22,20 @@ class ProjectFiles(FileManager):
                 config, enzi_project.work_dir, enzi_project.build_dir)
             self.cache_files[target] = {'files': []}
 
-        # self.dependencies = {}
+        self.git_db_records = {}
+        self.git_repos = {}
 
-        # if enzi_project.dependencies:
-        #     for dep_name, dep in enzi_project.dependencies.items():
-        #         repo_config = dep.git_repo_config()
-        #         self.dependencies[dep_name] = GitRepo(
-        #             repo_config,  enzi_project.work_dir, enzi_project.build_dir)
-        
-        # print(self.dependencies)
+        if enzi_project.git_db_records:
+            self.git_db_records = enzi_project.git_db_records
+            for name, paths in self.git_db_records.items():
+                if len(paths) != 1:
+                    msg = 'unimplemented: for multiple git db paths with the same name, {}({}).'.format(name, paths)
+                    logger.error(msg)
+                    raise RuntimeError(msg)
+                else:
+                    path = list(paths)[0]
+                    # self.git_repos[name] = GitRepo()
+                
 
         self.default_target = next(iter(enzi_project.targets.keys()))
         super(ProjectFiles, self).__init__(
@@ -51,7 +56,7 @@ class ProjectFiles(FileManager):
 
         # if dep_files:
         #     ccfiles['files'] = dep_files + ccfiles['files']
-        
+
         self.cache_files[target_name] = ccfiles
         self.status = FileManagerStatus.FETCHED
 
