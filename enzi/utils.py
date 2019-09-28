@@ -87,19 +87,18 @@ class Launcher:
         self.cwd = cwd
 
     # def run(self):
-    def run(self, get_output: bool=False):
-        # if self.cwd:
-        #   logger.debug('cwd:' + self.cwd)
-        # logger.debug('    ' + str(self))
-        _run = subprocess.check_output if get_output else subprocess.check_call
-        # _run = subprocess.check_output
+    def run(self, get_output: bool = False):
         try:
-            output = _run([self.cmd] + self.args,
-                          cwd=self.cwd,
-                          stdin=subprocess.PIPE)
             if get_output:
-                return output.decode("utf-8") # pylint: disable=E1101
+                output = subprocess.check_output([self.cmd] + self.args, # pylint: disable=E1123
+                                                 cwd=self.cwd,
+                                                 stdin=subprocess.PIPE) 
+                return output.decode("utf-8")  # pylint: disable=E1101
             else:
+                output = subprocess.check_call([self.cmd] + self.args,
+                                               cwd=self.cwd,
+                                               stdin=subprocess.PIPE,
+                                               stdout=subprocess.DEVNULL)
                 return output
         except FileNotFoundError as e:
             logger.error("Launcher: {}".format(e))
