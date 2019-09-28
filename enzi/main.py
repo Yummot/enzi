@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import coloredlogs
+import datetime
+import logging
+import colorama
+from colorama import Fore, Style
 
 from enzi.project_manager import ProjectFiles
 from enzi.frontend import Enzi
 
-try:
-    import coloredlogs, logging
-    coloredlogs.install(level='DEBUG')
-except:
-    import logging
-
 logger = logging.getLogger(__name__)
+
 
 def parse_args():
     supported_targets = ['build', 'sim', 'run', 'program_device']
@@ -75,17 +75,25 @@ def main():
         s = Enzi(args.root[0], args.config)
     else:
         s = Enzi(args.root[0])
-
+    
+    colorama.init()
+    
     if args.log_level:
         logging.basicConfig(level=getattr(logging, args.log_level))
-    
+        if coloredlogs:
+            coloredlogs.install(level=getattr(logging, args.log_level))
+    elif coloredlogs:
+        coloredlogs.install(level='WARNING')
+
     s.init()
     s.silence_mode = args.silence_mode
     project_manager = ProjectFiles(s)
     project_manager.fetch(target)
     fileset = project_manager.get_fileset(target)
     s.run_target(target, fileset, args.tool)
-    print('enzi {} done'.format(target))
+    now = datetime.datetime.now()
+    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' enzi {} done'
+    print(fmt_str.format(now.strftime("%Y-%m-%d %H:%M:%S"), target))
 
 
 if __name__ == "__main__":

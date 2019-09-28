@@ -27,9 +27,8 @@ setup(
     install_requires=[
         'toml>=0.10.0',
         'semver>=2.8',
-        'jinja2>=2.0.0'
+        'jinja2>=2.0.0',
+        'colorama>=0.4.0',
+        'coloredlogs>=10.0'
     ],
-    extras_require={
-        'color_log': ['coloredlogs>=10.0', ]
-    }
 )
