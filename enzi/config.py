@@ -284,7 +284,7 @@ class Locked(object):
                     git_records[name] = set(paths)
                 else:
                     # TODO: code review
-                    git_records[name] = set([paths,])
+                    git_records[name] = set([paths, ])
             locked.cache = config['cache']
             return locked
         else:
@@ -299,10 +299,13 @@ class Locked(object):
         return Locked.loads(data)
 
 
-def validate_git_repo(dep_name: str, git_url: str):
+def validate_git_repo(dep_name: str, git_url: str, test=False):
     try:
         Launcher('git', ['ls-remote', '-q', git_url]).run()
+        return True
     except:
+        if test:
+            return False
         msg = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'.format(
             dep_name, git_url)
         logger.error(msg)
@@ -320,8 +323,9 @@ def validate_dep_path(dep_name: str, dep_path: str):
         raise ValueError(msg)
 
 
+# TODO: seperate Config, using a new Config class for fileset_only usage
 class Config(object):
-    def __init__(self, config_file, from_str=False, base_path=None, is_local=True):
+    def __init__(self, config_file, from_str=False, base_path=None, is_local=True, *, fileset_only=False):
         conf = {}
         if from_str:
             conf = toml.loads(config_file)
@@ -368,6 +372,9 @@ class Config(object):
             # if 'dependencies' in v:
             #     fileset['dependencies'] = v['dependencies']
             self.filesets[k] = fileset
+
+        if fileset_only:
+            return
 
         if 'dependencies' in conf:
             for dep, dep_conf in conf['dependencies'].items():
@@ -419,7 +426,7 @@ class Config(object):
         return '\n'.join(str_buf)
 
     @staticmethod
-    def from_str(config_str: str, base_path, is_local: bool):
+    def from_str(config_str: str, base_path, is_local: bool, *, fileset_only=False):
         logger.debug(
             'Config: construct from a given str with given base_path {}'.format(base_path))
-        return Config(config_str, from_str=True, base_path=base_path, is_local=is_local)
+        return Config(config_str, from_str=True, base_path=base_path, is_local=is_local, fileset_only=fileset_only)

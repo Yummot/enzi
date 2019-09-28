@@ -8,12 +8,15 @@ from enum import Enum, unique
 
 logger = logging.getLogger(__name__)
 
+# use an environment variable `FM_DEBUG` to control Launcher debug output
+FM_DEBUG = os.environ.get('FM_DEBUG')
+
 
 @unique
 class FileManagerStatus(Enum):
     INIT = 0
     FETCHED = 1
-    OUTDATE = 2
+    OUTDATED = 2
     CLEANED = 3
 
 
@@ -27,6 +30,7 @@ class FileManager(object):
     """
 
     def __init__(self, name, config, proj_root, files_root):
+        _cname = self.__class__.__name__
         logger.debug('FileManager: new {}({}) with proj_root: {}, files_root: {}'.format(
             self.__class__.__name__, name, proj_root, files_root))
         self.name = name
@@ -66,12 +70,10 @@ class LocalFiles(FileManager):
         super(LocalFiles, self).__init__(name, config, proj_root, files_root)
         if not 'fileset' in config:
             raise RuntimeError('LocalFiles must be initilized with a fileset')
-        self.fileset = config['fileset']
 
-        # self.origin_files = [join_path(proj_root, file_path)
-        #                      for file_path in config['fileset']]
-        # self.cache_files = [join_path(files_root, file_path)
-        #                     for file_path in self.origin_files]
+        files = config['fileset'].get('files', [])
+        files_map = map(lambda p: os.path.normpath(p), files)
+        self.fileset = {'files': list(files_map)}
 
     def fetch(self):
         for file in self.fileset['files']:

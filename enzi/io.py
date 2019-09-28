@@ -11,15 +11,28 @@ from enzi.utils import PathBuf, try_parse_semver
 logger = logging.getLogger(__name__)
 
 # TODO: Currently, EnziIO only work in sync way. We may make async an option.
+
+
 class EnziIO(object):
     """
     IO Spawner class for Enzi
     """
+
     def __init__(self, enzi: Enzi):
         self.enzi = enzi
 
-    def git_repo(self, name, path, db_path) -> GitRepo:
-        pass
+    def git_repo(self, name, db_path, revision, *, proj_root=None) -> GitRepo:
+        """
+        create a git repo with given db_path and revision,
+        the storage path is build from enzi.build_deps_path + name
+        """
+        # TODO: change git database name format
+        repo_name = name
+        repo_path = self.enzi.build_deps_path.join(repo_name)
+        git = Git(repo_path.path, self)
+        if proj_root is None:
+            proj_root = self.enzi.work_dir
+        return GitRepo(repo_name, proj_root, git, db_path, revision, enzi_io=self)
 
     def dep_versions(self, dep_id):
         dep = self.enzi.dependecy(dep_id)
@@ -109,7 +122,7 @@ class EnziIO(object):
 
             entries: typing.List[TreeEntry] = git_db.list_files(
                 git_rev, 'Enzi.toml')
-            # actually, there is only one entry
+            # actually, there must be only one entry
             entry = entries[0]
             data = git_db.cat_file(entry.hash)
             logger.debug('dep_config_version: dep_name={}, db_path={}'.format(

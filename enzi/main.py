@@ -75,9 +75,9 @@ def main():
         s = Enzi(args.root[0], args.config)
     else:
         s = Enzi(args.root[0])
-    
+
     colorama.init()
-    
+
     if args.log_level:
         logging.basicConfig(level=getattr(logging, args.log_level))
         if coloredlogs:

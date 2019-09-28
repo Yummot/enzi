@@ -10,13 +10,15 @@ from enzi.config import Locked
 
 logger = logging.getLogger(__name__)
 
+
 def flat_records(item):
     name, records = item
     if len(records) == 1:
         record = list(records)[0]
-        return (name, { 'path': record })
+        return (name, {'path': record})
     else:
-        return (name, { 'path': records })
+        return (name, {'path': records})
+
 
 class LockLoader(object):
     def __init__(self, enzi, lock_path):
@@ -34,6 +36,7 @@ class LockLoader(object):
     # TODO: Enzi add update arg
     def load(self, update=False):
         if update or not self.lock_existing:
+            from enzi.deps_resolver import DependencyResolver
             if update:
                 logger.debug(
                     'LockLoader: lock file {} outdated'.format(self.lock_file))
@@ -41,7 +44,7 @@ class LockLoader(object):
                 logger.debug(
                     'LockLoader: create new lock file {}'.format(self.lock_file))
 
-            resolver = enzi.deps_resolver.DependencyResolver(self.enzi)
+            resolver = DependencyResolver(self.enzi)
             new_locked = resolver.resolve()
             locked_dump = new_locked.dumps()
 
@@ -50,14 +53,16 @@ class LockLoader(object):
             lock_file_buf.append(deps_map_str)
 
             if self.enzi.git_db_records:
-                git_db_records = dict(map(flat_records, self.enzi.git_db_records.items()))
-                caches_dict = { 'cache': { 'git' : git_db_records } }
-                
+                git_db_records = dict(
+                    map(flat_records, self.enzi.git_db_records.items()))
+                caches_dict = {'cache': {'git': git_db_records}}
+
                 caches_str = toml.dumps(caches_dict)
                 lock_file_buf.append(caches_str)
 
-                logger.debug('LockLoader: database records\n{}'.format(caches_str))
-            
+                logger.debug(
+                    'LockLoader: database records\n{}'.format(caches_str))
+
             lock_file_data = '\n'.join(lock_file_buf)
             with open(self.lock_file, 'w') as f:
                 f.write(lock_file_data)

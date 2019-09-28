@@ -198,8 +198,7 @@ class Backend(object):
                     script['name'], e.returncode))
 
     def _run_tool(self, cmd, args=[]):
-        logger.debug("Running " + cmd)
-        logger.debug("args  : " + ' '.join(args))
+        logger.debug("Running {} with args: {}" .format(cmd, args))
 
         try:
             if self.silence_mode:

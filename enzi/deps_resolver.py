@@ -276,7 +276,7 @@ class DependencyResolver(object):
             self.mark()
             any_change = self.pick()
             self.close()
-        
+
         logger.debug('resolve: resolved after {} iterations'.format(iteration))
 
         enzi = self.enzi
@@ -529,7 +529,7 @@ class DependencyResolver(object):
         names = dict(map(fn, deps.items()))
         # logger.debug('resolve::register_dep_in_config names {}'.format(names))
         dep_ids = set(map(lambda item: item[1], names.items()))
-        
+
         versions = map(
             lambda dep_id: (dep_id, enzi_io.dep_versions(dep_id)), dep_ids
         )
