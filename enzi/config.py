@@ -236,6 +236,7 @@ class Locked(object):
 
     def __init__(self, *, dependencies: typing.MutableMapping[str, LockedDependency]):
         self.dependencies = dependencies
+        self.cache = {}
 
     def __str__(self):
         return "Locked { %s }" % self.dependencies
@@ -274,8 +275,21 @@ class Locked(object):
                 dependencies=set(dep.get('dependencies', []))
             )
             locked.dependencies[dep_name] = locked_dep
-        return locked
-    
+
+        if 'cache' in config and 'git' in config['cache']:
+            git_records = config['cache']['git']
+            for name, paths in git_records.items():
+                paths = paths['path']
+                if type(paths) == list:
+                    git_records[name] = set(paths)
+                else:
+                    # TODO: code review
+                    git_records[name] = set([paths,])
+            locked.cache = config['cache']
+            return locked
+        else:
+            return locked
+
     @staticmethod
     def load(config_path: typing.Union[str, bytes]):
         """
@@ -283,6 +297,7 @@ class Locked(object):
         """
         data = toml.load(config_path)
         return Locked.loads(data)
+
 
 def validate_git_repo(dep_name: str, git_url: str):
     try:

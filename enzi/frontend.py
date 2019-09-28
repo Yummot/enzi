@@ -67,8 +67,15 @@ class Enzi(object):
         """
         from enzi.lock import LockLoader
         locked = LockLoader(self, self.work_dir).load()
-        msg = pprint.pformat(locked.dumps())
-        logger.debug('Enzi:init: locked deps:\n{}'.format(msg))
+
+        if locked.cache and 'git' in locked.cache:
+            self.git_db_records = locked.cache['git']
+
+        dep_msg = pprint.pformat(locked.dumps())
+        cache_msg = pprint.pformat(locked.cache)
+        logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
+        logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
+
 
     @property
     def silence_mode(self):
