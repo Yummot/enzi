@@ -1,10 +1,15 @@
 # -*- coding: utf-8 -*-
 
 import argparse
-import logging
 
 from enzi.project_manager import ProjectFiles
 from enzi.frontend import Enzi
+
+try:
+    import coloredlogs, logging
+    coloredlogs.install(level='DEBUG')
+except:
+    import logging
 
 logger = logging.getLogger(__name__)
 

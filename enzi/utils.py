@@ -88,6 +88,8 @@ class Launcher:
 
     # def run(self):
     def run(self, get_output: bool = False):
+        logger.debug('Launcher:run: cwd: {}'.format(self.cwd))
+        logger.debug('Launcher:run: cmd: \'{}\' with arg {}'.format(self.cmd, self.args))
         try:
             if get_output:
                 output = subprocess.check_output([self.cmd] + self.args, # pylint: disable=E1123

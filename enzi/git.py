@@ -146,9 +146,9 @@ class Git(object):
 
     # fetch the tags and refs of a remote git repository
     def fetch(self, remote):
-        self.spawn_with(lambda x: x.arg('fetch').arg('--prune').arg(remote))
+        self.spawn_with(lambda x: x.arg('fetch').arg('-q').arg('--prune').arg(remote))
         self.spawn_with(lambda x: 
-            x.arg('fetch').arg('--tags').arg('--prune').arg(remote))
+            x.arg('fetch').arg('-q').arg('--tags').arg('--prune').arg(remote))
 
     def init_repo(self, dst_path, url_path):
         """

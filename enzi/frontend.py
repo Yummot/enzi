@@ -57,25 +57,48 @@ class Enzi(object):
         self.backend_conf_generator = BackendConfigGen(self.known_backends)
 
         # database
-        self.database_path: PathBuf = PathBuf(self.build_dir).join('database')
+        self.database_path: PathBuf = PathBuf(self.work_dir).join('database')
         self.git_db_records: typing.MutableMapping[str,
-                                                  typing.MutableSet[str]] = {}
+                                                   typing.MutableSet[str]] = {}
+
+        # check if we need update database
+        potential_lock_file = os.path.join(self.work_dir, 'Enzi.lock')
+        if os.path.exists(potential_lock_file) and self.database_path.exits():
+            self.need_update = False
+        elif os.path.exists(potential_lock_file) and not self.database_path.exits():
+            if self.config.dependencies:
+                logger.warning(
+                    'Enzi: no database directory found, but there is a Enzi.lock file. Creating a new database.')
+            self.need_update = True
+        else:
+            self.need_update = None
 
     def init(self):
         """
         Initialize the Enzi object, resolve dependencies and etc.
         """
         from enzi.lock import LockLoader
-        locked = LockLoader(self, self.work_dir).load()
+        if self.need_update is None:
+            update = False
+        else:
+            update = self.need_update
 
-        if locked.cache and 'git' in locked.cache:
-            self.git_db_records = locked.cache['git']
+        # Currently, we only create and load lock file if the project has dependencies
+        # TODO: add more usefull data in lock file
+        if self.config.dependencies:
+            logger.debug(
+                'Enzi:init: this project has dependencies, launching LockLoader')
+            locked = LockLoader(self, self.work_dir).load(update)
 
-        dep_msg = pprint.pformat(locked.dumps())
-        cache_msg = pprint.pformat(locked.cache)
-        logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
-        logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
+            if locked.cache and 'git' in locked.cache:
+                self.git_db_records = locked.cache['git']
 
+            dep_msg = pprint.pformat(locked.dumps())
+            cache_msg = pprint.pformat(locked.cache)
+            logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
+            logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
+        else:
+            logger.debug('Enzi:init: this project has no dependencies')
 
     @property
     def silence_mode(self):
