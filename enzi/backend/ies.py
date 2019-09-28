@@ -40,7 +40,7 @@ class IES(Backend):
         self.elaborate_log = config.get('elaborate_log', None)
 
         # IES Simulation step config
-        self.simulate_log = config.get('compile_log', None)
+        self.simulate_log = config.get('simulate_log', None)
         self.sim_opts = config.get('sim_opts', None)
 
         self._gui_mode = False

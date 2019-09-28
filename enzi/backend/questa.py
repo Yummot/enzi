@@ -35,7 +35,7 @@ class Questa(Backend):
         self.elaborate_log = config.get('elaborate_log', None)
 
         self.link_libs = config.get('link_libs', [])
-        self.simulate_log = config.get('compile_log', None)
+        self.simulate_log = config.get('simulate_log', None)
         self.sim_opts = config.get('sim_opts', None)
 
         super(Questa, self).__init__(config=config, work_root=work_root)
