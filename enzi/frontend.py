@@ -20,7 +20,6 @@ from enzi.utils import realpath, PathBuf, try_parse_semver
 logger = logging.getLogger(__name__)
 
 
-
 def opts2str(opts):
     if type(opts) == list:
         return ' '.join(opts)
@@ -56,7 +55,11 @@ class Enzi(object):
         self.tools = config.tools
         self.known_backends = KnownBackends()
         self.backend_conf_generator = BackendConfigGen(self.known_backends)
-        self.database: PathBuf = PathBuf(self.build_dir).join('database')
+
+        # database
+        self.database_path: PathBuf = PathBuf(self.build_dir).join('database')
+        self.git_db_records: typing.MutableMapping[str,
+                                                  typing.MutableSet[str]] = {}
 
     def init(self):
         """
@@ -222,13 +225,19 @@ class EnziIO(object):
         # TODO: change git database name format
         db_name = name
         # TODO: cache db_dir in Enzi
-        db_dir: PathBuf = self.enzi.database.join(
+        db_dir: PathBuf = self.enzi.database_path.join(
             'git').join('db').join(db_name)
         os.makedirs(db_dir.path, exist_ok=True)
         git = Git(db_dir.path, self)
 
         logger.debug("EnziIO:git_database: new git_db at {}, origin: {}".format(
             db_dir.path, git_url))
+
+        git_db_records = self.enzi.git_db_records
+        if name in git_db_records:
+            git_db_records[name].add(db_dir.path)
+        else:
+            git_db_records[name] = set([db_dir.path])
 
         if not db_dir.join("config").exits():
             git.spawn_with(lambda x: x.arg('init').arg('--bare'))

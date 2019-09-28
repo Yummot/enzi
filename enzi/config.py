@@ -243,6 +243,9 @@ class Locked(object):
     __repr__ = __str__
 
     def dumps(self):
+        """
+        dump locked to a dict: typing.MutableMapping[str, str]
+        """
         d = {}
         d['dependencies'] = {}
         deps = d['dependencies']
@@ -251,7 +254,7 @@ class Locked(object):
             dep_var = {
                 "source": str(dep.source),
                 "revision": dep.revision,
-                "version": dep.version,
+                "version": str(dep.version),
                 "dependencies": dep.dependencies
             }
             deps[dep_name] = dep_var
