@@ -11,9 +11,10 @@ from enzi import config
 from enzi.config import DependencyRef
 from enzi.config import Config as EnziConfig
 from enzi.config import DependencyVersion
-from enzi.frontend import Enzi, EnziIO
-from enzi.git import GitVersions
 from enzi.config import Locked
+from enzi.frontend import Enzi
+from enzi.git import GitVersions
+from enzi.io import EnziIO
 from enzi.utils import flat_map, unique
 from semver import VersionInfo as Version
 

@@ -26,7 +26,10 @@ class FileManager(object):
     @param porj_root: current running project root, abspath/relpath.
     """
 
-    def __init__(self, config, proj_root, files_root):
+    def __init__(self, name, config, proj_root, files_root):
+        logger.debug('FileManager: new {}({}) with proj_root: {}, files_root: {}'.format(
+            self.__class__.__name__, name, proj_root, files_root))
+        self.name = name
         self.config = config
         self.proj_root = os.path.normpath(proj_root)
         self.files_root = os.path.normpath(files_root)
@@ -58,9 +61,9 @@ def join_path(root, file_path):
 
 
 class LocalFiles(FileManager):
-    def __init__(self, config, proj_root, files_root):
+    def __init__(self, name, config, proj_root, files_root):
         config['local'] = True  # LocalFiles must be local
-        super(LocalFiles, self).__init__(config, proj_root, files_root)
+        super(LocalFiles, self).__init__(name, config, proj_root, files_root)
         if not 'fileset' in config:
             raise RuntimeError('LocalFiles must be initilized with a fileset')
         self.fileset = config['fileset']

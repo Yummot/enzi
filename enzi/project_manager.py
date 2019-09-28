@@ -17,9 +17,10 @@ class ProjectFiles(FileManager):
         self.cache_files = {}
         for target in enzi_project.targets:
             fileset = enzi_project.gen_target_fileset(target)
+            name = '{}-target-{}'.format(enzi_project.name, target)
             config = {'fileset': fileset}
-            self.lf_managers[target] = LocalFiles(
-                config, enzi_project.work_dir, enzi_project.build_dir)
+            self.lf_managers[target] = LocalFiles(name,
+                                                  config, enzi_project.work_dir, enzi_project.build_dir)
             self.cache_files[target] = {'files': []}
 
         self.git_db_records = {}
@@ -29,17 +30,17 @@ class ProjectFiles(FileManager):
             self.git_db_records = enzi_project.git_db_records
             for name, paths in self.git_db_records.items():
                 if len(paths) != 1:
-                    msg = 'unimplemented: for multiple git db paths with the same name, {}({}).'.format(name, paths)
+                    msg = 'unimplemented: for multiple git db paths with the same name, {}({}).'.format(
+                        name, paths)
                     logger.error(msg)
                     raise RuntimeError(msg)
                 else:
                     path = list(paths)[0]
                     # self.git_repos[name] = GitRepo()
-                
 
         self.default_target = next(iter(enzi_project.targets.keys()))
-        super(ProjectFiles, self).__init__(
-            {}, enzi_project.work_dir, enzi_project.build_dir)
+        super(ProjectFiles, self).__init__(enzi_project.name,
+                                           {}, enzi_project.work_dir, enzi_project.build_dir)
 
     def fetch(self, target_name=None):
         if not target_name:

@@ -1,0 +1,121 @@
+import logging
+import os
+import typing
+
+from enzi.config import DependencyRef, DependencyVersion
+from enzi.config import Config as EnziConfig
+from enzi.frontend import Enzi
+from enzi.git import Git, GitRepo, GitVersions, TreeEntry
+from enzi.utils import PathBuf, try_parse_semver
+
+logger = logging.getLogger(__name__)
+
+# TODO: Currently, EnziIO only work in sync way. We may make async an option.
+class EnziIO(object):
+    """
+    IO Spawner class for Enzi
+    """
+    def __init__(self, enzi: Enzi):
+        self.enzi = enzi
+
+    def git_repo(self, name, path, db_path) -> GitRepo:
+        pass
+
+    def dep_versions(self, dep_id):
+        dep = self.enzi.dependecy(dep_id)
+        git_url = dep.source.git_url
+        dep_git = self.git_database(dep.name, git_url)
+        return self.git_versions(dep_git)
+
+    def git_database(self, name, git_url) -> Git:
+        # url_hash = crypt.crypt(git_url, crypt.METHOD_SHA256)[:16]
+        # logger.debug("EnziIO: {}, {}".format(type(name), type(url_hash)))
+        # logger.debug("EnziIO: {}, {}".format(name, url_hash))
+        # db_name = name + '-' + url_hash
+        # TODO: change git database name format
+        db_name = name
+        # TODO: cache db_dir in Enzi
+        db_dir: PathBuf = self.enzi.database_path.join(
+            'git').join('db').join(db_name)
+        os.makedirs(db_dir.path, exist_ok=True)
+        git = Git(db_dir.path, self)
+
+        logger.debug("EnziIO:git_database: new git_db at {}, origin: {}".format(
+            db_dir.path, git_url))
+
+        git_db_records = self.enzi.git_db_records
+        if name in git_db_records:
+            git_db_records[name].add(db_dir.path)
+        else:
+            git_db_records[name] = set([db_dir.path])
+
+        if not db_dir.join("config").exits():
+            git.spawn_with(lambda x: x.arg('init').arg('--bare'))
+            git.spawn_with(lambda x: x.arg('remote').arg('add')
+                           .arg('origin').arg(git_url))
+            git.fetch('origin')
+            return git
+        else:
+            db_mtime = os.stat(db_dir.join('FETCH_HEAD').path).st_mtime
+            if self.enzi.config_mtime < db_mtime:
+                logger.debug('skip update of {}'.format(db_dir.path))
+                return git
+            git.fetch('origin')
+            return git
+
+    def git_versions(self, git: Git) -> GitVersions:
+        dep_refs = git.list_refs()
+        dep_revs = git.list_revs()
+
+        rev_ids = set(dep_revs)
+
+        # get tags and branches
+        tags = {}
+        branches = {}
+        tag_prefix = "refs/tags/"
+        branch_prefix = "refs/remotes/origin/"
+        for rev_id, ref in dep_refs:
+            if not rev_id in rev_ids:
+                continue
+            if ref.startswith(tag_prefix):
+                tags[ref[len(tag_prefix):]] = rev_id
+            elif ref.startswith(branch_prefix):
+                branches[ref[len(branch_prefix):]] = rev_id
+
+        # extract the tags that look like semver
+        res_map = map(try_parse_semver, tags.items())
+        versions = list(filter(lambda x: x, res_map))
+        # TODO: check if this sort is correct.
+        versions.sort()
+        refs = {**branches, **tags}
+
+        return GitVersions(versions, refs, dep_revs)
+
+    def dep_config_version(self, dep_id: DependencyRef, version: DependencyVersion) -> typing.Optional[EnziConfig]:
+        # from enzi.config import DependencySource as DepSrc
+        # from enzi.config import DependencyVersion as DepVer
+        # TODO: cache dep_config to reduce io workload
+
+        dep = self.enzi.dependecy(dep_id)
+
+        logger.debug("dep_config_version: get dep {}".format(dep.dump_vars()))
+
+        if dep.source.is_git() and version.is_git():
+            dep_name = dep.name
+            git_url = dep.source.git_url
+            is_local = dep.is_local
+            git_rev = version.revision
+            git_db = self.git_database(dep_name, git_url)
+
+            entries: typing.List[TreeEntry] = git_db.list_files(
+                git_rev, 'Enzi.toml')
+            # actually, there is only one entry
+            entry = entries[0]
+            data = git_db.cat_file(entry.hash)
+            logger.debug('dep_config_version: dep_name={}, db_path={}'.format(
+                dep_name, git_db.path))
+            # logger.debug(data)
+            dep_config = EnziConfig.from_str(data, git_db.path, is_local)
+            return dep_config
+        else:
+            raise RuntimeError('INTERNAL ERROR: unreachable')

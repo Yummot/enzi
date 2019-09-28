@@ -4,8 +4,9 @@ import pprint
 import toml
 import typing
 import copy as py_copy
+
+import enzi
 from enzi.config import Locked
-from enzi.deps_resolver import DependencyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ class LockLoader(object):
                 logger.debug(
                     'LockLoader: create new lock file {}'.format(self.lock_file))
 
-            resolver = DependencyResolver(self.enzi)
+            resolver = enzi.deps_resolver.DependencyResolver(self.enzi)
             new_locked = resolver.resolve()
             locked_dump = new_locked.dumps()
 
