@@ -66,6 +66,10 @@ def main():
     args = parse_args()
     target = args.target
 
+    now = datetime.datetime.now()
+    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' Enzi: start `{}`'
+    print(fmt_str.format(now.strftime("%Y-%m-%d %H:%M:%S"), target))
+
     if len(args.root) > 1:
         raise RuntimeError('Currently, Enzi does not support multiple roots')
     if not args.root:
@@ -92,7 +96,7 @@ def main():
     fileset = project_manager.get_fileset(target)
     s.run_target(target, fileset, args.tool)
     now = datetime.datetime.now()
-    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' enzi {} done'
+    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' Enzi: `{}` done'
     print(fmt_str.format(now.strftime("%Y-%m-%d %H:%M:%S"), target))
 
 
