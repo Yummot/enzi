@@ -262,6 +262,8 @@ class BackendConfigGen(object):
             # return
         tool_name = tool_name.lower()
         if tool_name in self.known_backends:
+            logger.debug(
+                'BackendConfigGen: generated config for backend {}'.format(tool_name))
             config = getattr(self, tool_name)(
                 tool_config, work_name, work_root, toplevel, fileset)
             return py_copy.copy(config)
@@ -280,6 +282,11 @@ class BackendConfigGen(object):
             return config
 
         config['name'] = ies_config.get('name', '')
+        config['silence_mode'] = ies_config.get('silence_mode', False)
+
+        _ies_config = ies_config
+        ies_config = ies_config['params']
+
         config['gen_waves'] = ies_config.get('gen_waves', True)
 
         config['compile_log'] = ies_config.get('compile_log', '')
@@ -296,7 +303,6 @@ class BackendConfigGen(object):
 
         config['sim_opts'] = opts2str(ies_config.get('sim_opts', []))
         config['simulate_log'] = ies_config.get('simulate_log', '')
-        config['silence_mode'] = ies_config.get('silence_mode', False)
 
         return config
 
@@ -313,6 +319,10 @@ class BackendConfigGen(object):
             return config
 
         config['name'] = questa_config.get('name', '')
+        config['silence_mode'] = questa_config.get('silence_mode', False)
+
+        _questa_config = questa_config
+        questa_config = questa_config['params']
 
         config['compile_log'] = questa_config.get('compile_log', '')
         config['vlog_opts'] = opts2str(questa_config.get('vlog_opts', []))
@@ -328,6 +338,5 @@ class BackendConfigGen(object):
 
         config['sim_opts'] = opts2str(questa_config.get('sim_opts', []))
         config['simulate_log'] = questa_config.get('simulate_log', '')
-        config['silence_mode'] = questa_config.get('silence_mode', False)
 
         return config
