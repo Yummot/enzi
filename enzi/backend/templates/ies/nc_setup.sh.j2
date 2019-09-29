@@ -105,15 +105,17 @@ clean_up()
 
 setup()
 {
-  case $1 in
-    "--reset_run" )
-      reset_run
-      echo -e "INFO: Simulation run files deleted.\n"
-      exit 0
-    ;;
-    * )
-    ;;
-  esac
+  if [[ ($# == 1 ) ]]; then  
+    case $1 in
+      "--reset_run" )
+        reset_run
+        echo -e "INFO: Simulation run files deleted.\n"
+        exit 0
+      ;;
+      * )
+      ;;
+    esac
+  fi
 
   create_lib_mappings
   touch hdl.var
@@ -145,4 +147,4 @@ if [[ ($# == 1 ) ]]; then
   esac  
 fi
 
-setup $1
+setup

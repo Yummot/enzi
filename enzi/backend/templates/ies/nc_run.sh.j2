@@ -58,12 +58,12 @@ fi
 # elaboration
 ./nc_elaborate.sh
 
-if [[ ($1 == "--build")]]; then
+if [[ ($1 == "--build") ]]; then
   exit 0
 fi
 
 # simulation
-if [[ ($1 == "--gui")]]; then
+if [[ ($1 == "--gui") ]]; then
   ./nc_simulate.sh --gui
 else
   ./nc_simulate.sh

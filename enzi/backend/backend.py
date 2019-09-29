@@ -122,9 +122,9 @@ class Backend(object):
                 "config must be a dict.")
         try:
             self.name = config['name']
-        except KeyError:
+        except KeyError as e:
             raise RuntimeError(
-                "Missing required parameter \"name\" in config.")
+                "Missing required parameter \"name\" in config.") from e
 
         self.toplevel = config.get('toplevel', None)
         self.work_root = work_root if work_root is not None else ''
@@ -213,10 +213,10 @@ class Backend(object):
                                       stdin=subprocess.PIPE)
         except FileNotFoundError:
             _s = "Command '{}' not found. Make sure it is in $PATH."
-            raise RuntimeError(_s.format(cmd))
+            raise RuntimeError(_s.format(cmd)) from e
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                "Error: '{}' exited {}".format(cmd, e.returncode))
+                "Error: '{}' exited {}".format(cmd, e.returncode)) from e
 
     def run_main(self):
         pass
