@@ -303,13 +303,13 @@ def validate_git_repo(dep_name: str, git_url: str, test=False):
     try:
         Launcher('git', ['ls-remote', '-q', git_url]).run()
         return True
-    except:
+    except Exception as e:
         if test:
             return False
-        msg = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'.format(
-            dep_name, git_url)
+        fmt = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'
+        msg = fmt.format(dep_name, git_url)
         logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(msg) from e
 
 
 def validate_dep_path(dep_name: str, dep_path: str):

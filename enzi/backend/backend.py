@@ -211,7 +211,7 @@ class Backend(object):
                 subprocess.check_call([cmd] + args,
                                       cwd=self.work_root,
                                       stdin=subprocess.PIPE)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             _s = "Command '{}' not found. Make sure it is in $PATH."
             raise RuntimeError(_s.format(cmd)) from e
         except subprocess.CalledProcessError as e:

@@ -47,7 +47,7 @@ class Questa(Backend):
     @gui_mode.setter
     def gui_mode(self, value):
         if not isinstance(value, bool):
-            raise ValueError('score must be an integer!')
+            raise ValueError('gui mode type must be bool!')
         self._gui_mode = value
 
     def gen_scripts(self):
