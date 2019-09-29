@@ -1,4 +1,5 @@
 #! /bin/bash -f
+set -Eeuo pipefail
 
 if [ -z ${build_dir+x} ]; then
   mkdir -p ./waves
