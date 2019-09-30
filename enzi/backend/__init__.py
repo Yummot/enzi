@@ -15,14 +15,18 @@ class KnownBackends(object):
     """
 
     def __init__(self):
-        self.known_backends = Backend.__subclasses__()
+        known_backends = Backend.__subclasses__()
+        def fn(x):
+            return (x.__name__.lower(), x)
+        self.known_backends = dict(map(fn, known_backends))
+        self.known_backends['vsim'] = self.known_backends['questa']
 
     def get(self, backend_name, config, work_root):
         if not backend_name:
             raise RuntimeError('No backend name specified.')
-        for backend in self.known_backends:
-            if backend_name.lower() == backend.__name__.lower():
-                return backend(config, work_root)
-
-        # given backend name is not in support list.
-        raise NameError('backend name {} not found'.format(backend_name))
+        backend_name = backend_name.lower()
+        if backend_name in self.known_backends:
+            return self.known_backends[backend_name](config, work_root)
+        else:
+            # the given backend name is not in support list.
+            raise NameError('backend name {} not found'.format(backend_name))
