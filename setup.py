@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="enzi",
-    version="0.3.1",
+    version="0.3.2",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
     license="MIT",
