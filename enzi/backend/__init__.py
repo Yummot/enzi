@@ -4,6 +4,8 @@ from enzi.backend.backend import *
 from enzi.backend.ies import IES
 from enzi.backend.questa import Questa
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 class KnownBackends(object):
     """

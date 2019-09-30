@@ -130,12 +130,12 @@ class Launcher:
         except FileNotFoundError as e:
             msg = "Launcher: {}".format(e)
             logger.error(msg)
-            raise RuntimeError(msg)
+            raise RuntimeError(msg) from e
         except subprocess.CalledProcessError as e:
             msg = "Launcher: {}".format(e)
             logger.error(msg)
             self.errormsg = '"{}" exited with an error code. See stderr for details.'
-            raise RuntimeError(self.errormsg.format(str(self)))
+            raise RuntimeError(self.errormsg.format(str(self))) from e
 
     def __str__(self):
         return ' '.join([self.cmd] + self.args)

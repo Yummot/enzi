@@ -18,7 +18,7 @@ from enzi.git import Git, GitVersions, TreeEntry
 from enzi.lock import LockLoader
 from enzi.utils import realpath, PathBuf
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Enzi')
 
 
 def opts2str(opts):
@@ -71,20 +71,20 @@ class Enzi(object):
             self.need_update = False
         elif os.path.exists(potential_lock_file) and not self.database_path.exits():
             if self.config.dependencies:
-                logger.warning(
-                    'Enzi: no database directory found, but there is a Enzi.lock file. Creating a new database.')
+                logger.warning('no database directory found, but there is a Enzi.lock file.')
+                logger.warning('Create a new database.')
             self.need_update = True
         else:
             self.need_update = None
 
-    def init(self):
+    def init(self, *, update= False):
         """
         Initialize the Enzi object, resolve dependencies and etc.
         """
         if self.need_update is None:
             update = False
         else:
-            update = self.need_update
+            update |= self.need_update
 
         # Currently, we only create and load lock file if the project has dependencies
         # TODO: add more usefull data in lock file

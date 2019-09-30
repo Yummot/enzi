@@ -38,11 +38,14 @@ class LockLoader(object):
         if update or not self.lock_existing:
             from enzi.deps_resolver import DependencyResolver
             if update:
-                logger.debug(
-                    'LockLoader: lock file {} outdated'.format(self.lock_file))
+                fmt = 'LockLoader: lock file {} outdated'
+                msg = fmt.format(self.lock_file)
+                logger.debug(msg)
+                logger.debug('LockLoader: start updating')
             else:
-                logger.debug(
-                    'LockLoader: create new lock file {}'.format(self.lock_file))
+                fmt = 'LockLoader: create new lock file {}'
+                msg = fmt.format(self.lock_file)
+                logger.debug(msg)
 
             resolver = DependencyResolver(self.enzi)
             new_locked = resolver.resolve()
@@ -71,4 +74,7 @@ class LockLoader(object):
         else:
             logger.debug(
                 'LockLoader: lock file {} up to date'.format(self.lock_file))
+        
+        if update:
+                logger.debug('LockLoader: update finished')
         return self.lock_existing

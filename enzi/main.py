@@ -1,22 +1,64 @@
 # -*- coding: utf-8 -*-
-
 import argparse
 import coloredlogs
 import datetime
 import logging
+import os
+import shutil
+import sys
+
 import colorama
 from colorama import Fore, Style
 
 from enzi.project_manager import ProjectFiles
 from enzi.frontend import Enzi
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('Enzi')
+
+if not 'coloredlogs' in sys.modules:
+    coloredlogs = None
+
+
+def cur_time():
+    now = datetime.datetime.now()
+    return now.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def enzi_clean(self, confirm=False):
+    if not confirm:
+        logger.warning('clean will clean up the build directory')
+        logger.warning('Would you like to excute[y/N]:')
+        _choice = input()
+        choice = _choice.lower() if _choice else 'n'
+        err_msg = "must input yes(y)/no(n), not " + _choice
+        if not choice.startswith(('y', 'n')):
+            logger.error(err_msg)
+            return
+        if choice == 'y' or choice == 'yes':
+            confirm = True
+        elif choice == 'n' or choice == 'no':
+            logger.info("Nothing to do.")
+            return
+        else:
+            logger.warning(err_msg)
+
+    if confirm and os.path.exists('build'):
+        shutil.rmtree('build')
+
+    if confirm and os.path.exists('Enzi.lock'):
+        os.remove('Enzi.lock')
+
+    logger.info(Fore.BLUE + 'finished cleaning')
+
+def enzi_update(enzi: Enzi):
+    enzi.init(update=True)
 
 
 def parse_args():
     supported_targets = ['build', 'sim', 'run', 'program_device']
+    available_tasks = ['clean', 'update']
     parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(title='Target')
+    subparsers = parser.add_subparsers()
 
     parser.add_argument("-l", "--log", dest="log_level", help='set Enzi self log level',
                         choices=[
@@ -28,7 +70,17 @@ def parse_args():
                         default=False, action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
-    # TODO: Add clean up args.
+    # clean up args.
+    clean_parser = subparsers.add_parser(
+        'clean', help='clean all Enzi generated files')
+    clean_parser.add_argument(
+        '-y', '--yes', help='skip clean up confirmation', default=False, action='store_true')
+    clean_parser.set_defaults(task=enzi_clean)
+
+    # update dependencies
+    clean_parser = subparsers.add_parser(
+        'update', help='update dependencies')
+    clean_parser.set_defaults(task=enzi_update)
 
     # build subparser
     build_parser = subparsers.add_parser(
@@ -54,21 +106,36 @@ def parse_args():
     pd_parser.set_defaults(target='program_device')
 
     args = parser.parse_args()
-    if hasattr(args, 'target'):
+    if hasattr(args, 'target') or hasattr(args, 'task'):
         return args
     else:
-
-        raise RuntimeError(
-            'Target must be specified (option: {}).'.format(supported_targets))
+        logger.error('Target or Task must be specified')
+        logger.error('Supported targets: {}'.format(supported_targets))
+        logger.error('Available tasks: {}'.format(available_tasks))
+        exit(1)
+        # raise RuntimeError(
+        #     'Target must be specified (option: {}).'.format(supported_targets))
 
 
 def main():
     args = parse_args()
-    target = args.target
 
-    now = datetime.datetime.now()
-    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' Enzi: start `{}`'
-    print(fmt_str.format(now.strftime("%Y-%m-%d %H:%M:%S"), target))
+    colorama.init()
+
+    if args.log_level:
+        log_level = getattr(logging, args.log_level)
+        if coloredlogs:
+            coloredlogs.install(level=log_level)
+        else:
+            logging.basicConfig(level=log_level)
+    elif coloredlogs:
+        coloredlogs.install(level='INFO')
+    
+
+
+    if hasattr(args, 'task') and args.task == enzi_clean:
+        enzi_clean(args.yes)
+        return
 
     if len(args.root) > 1:
         raise RuntimeError('Currently, Enzi does not support multiple roots')
@@ -76,28 +143,29 @@ def main():
         raise RuntimeError('No root directory specified.')
 
     if args.config:
-        s = Enzi(args.root[0], args.config)
+        enzi = Enzi(args.root[0], args.config)
     else:
-        s = Enzi(args.root[0])
+        enzi = Enzi(args.root[0])
+    
+    if hasattr(args, 'task') and args.task == enzi_update:
+        logger.info('start updating')
+        enzi_update(enzi)
+        logger.info('updating finished')
+        return
 
-    colorama.init()
+    target = args.target
 
-    if args.log_level:
-        logging.basicConfig(level=getattr(logging, args.log_level))
-        if coloredlogs:
-            coloredlogs.install(level=getattr(logging, args.log_level))
-    elif coloredlogs:
-        coloredlogs.install(level='WARNING')
+    logger.info('start `{}`'.format(target))
 
-    s.init()
-    s.silence_mode = args.silence_mode
-    project_manager = ProjectFiles(s)
+    enzi.init()
+    enzi.silence_mode = args.silence_mode
+    project_manager = ProjectFiles(enzi)
     project_manager.fetch(target)
     fileset = project_manager.get_fileset(target)
-    s.run_target(target, fileset, args.tool)
-    now = datetime.datetime.now()
-    fmt_str = Fore.GREEN+'{}'+Style.RESET_ALL+' Enzi: `{}` done'
-    print(fmt_str.format(now.strftime("%Y-%m-%d %H:%M:%S"), target))
+    enzi.run_target(target, fileset, args.tool)
+
+    logger.info('`{}` done'.format(target))
+    xxx = '1'
 
 
 if __name__ == "__main__":

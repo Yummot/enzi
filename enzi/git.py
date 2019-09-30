@@ -283,7 +283,7 @@ class GitRepo(FileManager):
 # git.spawn_with(lambda x:
 #     x.arg('tag')
 #         .arg('tag-test')
-#         .arg('afd6f1cf0f04350d05ea28ad3ea567b623031ae4')
+#         .arg('afd6f1cf0f')
 #         .arg('--force')
 # )
 

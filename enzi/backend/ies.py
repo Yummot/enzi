@@ -6,6 +6,7 @@ from collections import OrderedDict
 from enzi.backend import Backend
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class IES(Backend):

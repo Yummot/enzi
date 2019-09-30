@@ -13,6 +13,7 @@ from collections import OrderedDict
 from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
 
 
 class FilesAction(argparse.Action):
@@ -93,6 +94,7 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
         return str_quote + str(value) + str_quote
     else:
         return str(value)
+
 
 class BackendCallback(object):
     def pre(self):
@@ -259,6 +261,6 @@ class Backend(object):
 
     def configure(self):
         self.configure_main()
-    
+
     def clean(self):
         pass
