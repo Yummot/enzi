@@ -61,7 +61,7 @@ class IES(Backend):
         return {}
 
     @property
-    def _simluate_vars(self):
+    def _simulate_vars(self):
         return {'sim_opts': self.sim_opts, 'toplevel': self.toplevel, 'gen_waves': self.gen_waves, "simulate_log": self.simulate_log}
 
     @property
@@ -110,7 +110,7 @@ class IES(Backend):
         self.render_template('nc_elaborate.sh.j2',
                              'nc_elaborate.sh', self._elaborate_vars)
         self.render_template('nc_simulate.sh.j2',
-                             'nc_simulate.sh', self._simluate_vars)
+                             'nc_simulate.sh', self._simulate_vars)
         self.render_template('nc_run.sh.j2', 'nc_run.sh', self._run_vars)
         self.render_template('nc_makefile.j2', 'Makefile', self._makefile_vars)
 

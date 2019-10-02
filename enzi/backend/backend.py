@@ -5,6 +5,7 @@ import argparse
 import jinja2
 import logging
 import os
+import platform
 import stat
 import subprocess
 import copy as py_copy
@@ -114,6 +115,8 @@ class Backend(object):
     """
 
     supported_ops = ['build', 'sim', 'run', 'program_device']
+    # backend are assumed to support at least Linux('s distribution)
+    supported_system = ('Linux', )
 
     def __init__(self, config={}, work_root=None):
         if config is None:
@@ -133,6 +136,8 @@ class Backend(object):
         self.env = os.environ.copy()
         self.env['WORK_ROOT'] = self.work_root
         self.silence_mode = config.get('silence_mode')
+
+        self.config = config
 
         # jinja2 environment
         self.j2_env = jinja2.Environment(
@@ -154,6 +159,7 @@ class Backend(object):
         }
 
         self._gen_scripts_name = None
+        self.current_system = platform.system()
 
     # TODO: Add a checker fn to abort running Backend without the corresponding Backend tool.
 
@@ -197,10 +203,12 @@ class Backend(object):
                                           env=backend_env)
             except subprocess.CalledProcessError as e:
                 raise RuntimeError("'{}' exited with error code {}".format(
-                    script['name'], e.returncode))
+                    script['name'], e.returncode)) from e
 
-    def _run_tool(self, cmd, args=[]):
+    def _run_tool(self, cmd, args=[], stdout=None):
         logger.debug("Running {} with args: {}" .format(cmd, args))
+
+        stdout = stdout if stdout else subprocess.DEVNULL
 
         try:
             if self.silence_mode:
@@ -208,7 +216,7 @@ class Backend(object):
                 subprocess.check_call([cmd] + args,
                                       cwd=self.work_root,
                                       stdin=subprocess.PIPE,
-                                      stdout=subprocess.DEVNULL)
+                                      stdout=stdout)
             else:
                 subprocess.check_call([cmd] + args,
                                       cwd=self.work_root,

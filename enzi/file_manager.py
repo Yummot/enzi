@@ -6,6 +6,8 @@ import shutil
 import copy as py_copy
 from enum import Enum, unique
 
+from enzi.utils import rmtree_onerror
+
 logger = logging.getLogger(__name__)
 
 # use an environment variable `FM_DEBUG` to control Launcher debug output
@@ -57,7 +59,7 @@ class FileManager(object):
 
     def clean_cache(self):
         if os.path.exists(self.files_root):
-            shutil.rmtree(self.files_root)
+            shutil.rmtree(self.files_root, onerror=rmtree_onerror)
 
 
 def join_path(root, file_path):

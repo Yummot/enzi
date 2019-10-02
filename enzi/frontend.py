@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import crypt
 import logging
 import os
 import pprint
@@ -188,8 +187,14 @@ class Enzi(object):
             tool_name = str(target['default_tool'])
             if 'tool_name' in kwargs and kwargs['tool_name']:
                 tool_name = str(kwargs['tool_name'])
-
-            tool_config = self.tools.get(tool_name, {})
+            
+            if tool_name == 'vsim':
+                logger.warning(
+                    'Treat vsim tool request as using questa simulator')
+                tool_config = self.tools.get('questa', {})
+            else:
+                tool_config = self.tools.get(tool_name, {})
+            
             tool_config['silence_mode'] = self.silence_mode
             tool_config['name'] = self.package['name']
 
@@ -205,11 +210,6 @@ class Enzi(object):
                 toplevel=target_toplevel,
                 fileset=target_fileset
             )
-
-            if tool_name == 'vsim':
-                logger.warning(
-                    'Treat Vsim tool request as using questa simulator')
-                tool_name = 'questa'
 
             backend = self.known_backends.get(
                 tool_name, backend_config, self.build_dir)
@@ -245,14 +245,13 @@ class Enzi(object):
 class BackendConfigGen(object):
     def __init__(self, known_backends):
         if isinstance(known_backends, KnownBackends):
-            self.known_backends = [x.__name__.lower()
-                                   for x in known_backends.known_backends]
+            self.known_backends = list(known_backends.known_backends.keys())
         elif isinstance(known_backends, list):
             self.known_backends = known_backends
         else:
             RuntimeError(
                 'known_backends must be list or an instance of KnownBackends.')
-        self.known_backends.append('vsim')
+        # self.known_backends.append('vsim')
         # print(self.known_backends)
 
     def get(self, *, tool_name, tool_config, work_name, work_root, toplevel, fileset):
@@ -285,7 +284,7 @@ class BackendConfigGen(object):
         config['silence_mode'] = ies_config.get('silence_mode', False)
 
         _ies_config = ies_config
-        ies_config = ies_config['params']
+        ies_config = ies_config.get('params', {})
 
         config['gen_waves'] = ies_config.get('gen_waves', True)
 
@@ -322,7 +321,7 @@ class BackendConfigGen(object):
         config['silence_mode'] = questa_config.get('silence_mode', False)
 
         _questa_config = questa_config
-        questa_config = questa_config['params']
+        questa_config = questa_config.get('params', {})
 
         config['compile_log'] = questa_config.get('compile_log', '')
         config['vlog_opts'] = opts2str(questa_config.get('vlog_opts', []))

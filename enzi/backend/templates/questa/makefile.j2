@@ -15,30 +15,30 @@ build: compile elaborate
 run: build
 {% if simulate_log %}
 	{% if silence_mode %}
-	vsim -c -do "run -a" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }}
+	vsim -c -do "run -a" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% else %}
-	vsim -c -do "run -a" -l {{ simulate_log }} {{ toplevel }}_opt {{ sim_opts }}
+	vsim -c -do "run -a" -l {{ simulate_log }} {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	vsim -c -do "run -a" -l simulate.log -quiet {{ toplevel }}_opt {{ sim_opts }}
+	vsim -c -do "run -a" -l simulate.log -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% else %}
-	vsim -c -do "run -a" -l simulate.log {{ toplevel }}_opt {{ sim_opts }}
+	vsim -c -do "run -a" -l simulate.log {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% endif %}
 
 run-gui: build
 {% if simulate_log %}
 	{% if silence_mode %}
-	vsim -do sim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }}
+	vsim -do sim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	vsim -do sim-gui.tcl -l {{ simulate_log }} {{ sim_opts }}
+	vsim -do sim-gui.tcl -l {{ simulate_log }} {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	vsim -do sim-gui.tcl -l simulate.log -quiet {{ sim_opts }}
+	vsim -do sim-gui.tcl -l simulate.log -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	vsim -do sim-gui.tcl -l simulate.log {{ sim_opts }}
+	vsim -do sim-gui.tcl -l simulate.log {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% endif %}
 
