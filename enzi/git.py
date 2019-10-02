@@ -10,7 +10,7 @@ import copy as py_copy
 
 from enzi.config import Config, validate_git_repo
 from enzi.file_manager import FileManager, FileManagerStatus, join_path
-from enzi.utils import Launcher, realpath
+from enzi.utils import Launcher, realpath, rmtree_onerror
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +253,7 @@ class GitRepo(FileManager):
 
     def clean_cache(self):
         if os.path.exists(self.git.path):
-            shutil.rmtree(self.git.path)
+            shutil.rmtree(self.git.path, onerror=rmtree_onerror)
 
     def checkout(self, revision: typing.Union[str, bytes]):
         """

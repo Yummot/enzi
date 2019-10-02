@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import logging
+import platform
+
 from enzi.backend.backend import *
 from enzi.backend.ies import IES
 from enzi.backend.questa import Questa
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+cur_system = platform.system()
+
 
 class KnownBackends(object):
     """
@@ -16,10 +22,20 @@ class KnownBackends(object):
 
     def __init__(self):
         known_backends = Backend.__subclasses__()
-        def fn(x):
-            return (x.__name__.lower(), x)
-        self.known_backends = dict(map(fn, known_backends))
+        def f(x): return (x.__name__.lower(), x)
+        def g(x): return cur_system in x[1].supported_system
+        self.known_backends = dict(filter(g, map(f, known_backends)))
+        # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
+
+    def register_backend(self, backend: Backend):
+        name = backend.__class__.__name__.lower()
+        if not issubclass(backend.__class__, Backend):
+            fmt = 'register_backend: backend(class:{}) must be a subclass of Backend'
+            msg = fmt.format(backend.__class__)
+            logger.error(msg)
+            raise ValueError(msg)
+        self.known_backends[name] = backend
 
     def get(self, backend_name, config, work_root):
         if not backend_name:

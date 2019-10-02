@@ -11,7 +11,7 @@ from enzi.file_manager import LocalFiles, FileManager
 from enzi.file_manager import FileManagerStatus
 from enzi.git import GitRepo
 from enzi.io import EnziIO
-from enzi.utils import relpath
+from enzi.utils import relpath, rmtree_onerror
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +112,7 @@ class ProjectFiles(FileManager):
 
     def clean_cache(self):
         if os.path.exists(self.files_root):
-            shutil.rmtree(self.files_root)
+            shutil.rmtree(self.files_root, onerror=rmtree_onerror)
         self.status = FileManagerStatus.CLEANED
 
     def get_fileset(self, target_name=None):

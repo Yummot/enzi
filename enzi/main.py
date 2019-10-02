@@ -11,6 +11,7 @@ import colorama
 from colorama import Fore, Style
 
 from enzi.project_manager import ProjectFiles
+from enzi.utils import rmtree_onerror
 from enzi.frontend import Enzi
 
 logger = logging.getLogger('Enzi')
@@ -43,7 +44,7 @@ def enzi_clean(self, confirm=False):
             logger.warning(err_msg)
 
     if confirm and os.path.exists('build'):
-        shutil.rmtree('build')
+        shutil.rmtree('build', onerror=rmtree_onerror)
 
     if confirm and os.path.exists('Enzi.lock'):
         os.remove('Enzi.lock')
@@ -165,7 +166,6 @@ def main():
     enzi.run_target(target, fileset, args.tool)
 
     logger.info('`{}` done'.format(target))
-    xxx = '1'
 
 
 if __name__ == "__main__":
