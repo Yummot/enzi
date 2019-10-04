@@ -102,11 +102,6 @@ class ProjectFiles(FileManager):
 
         ccfiles = self.lf_managers[target_name].fetch()
 
-        # print(ccfiles)
-        # print(self.lf_managers[target_name].fileset)
-        # if dep_files:
-        #     ccfiles['files'] = dep_files + ccfiles['files']
-
         self.cache_files[target_name] = ccfiles
         self.status = FileManagerStatus.FETCHED
 

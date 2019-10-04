@@ -182,25 +182,11 @@ def dump_cons_map(cons_map: dict):
 
 class DependencySource(object):
     def __init__(self, dep_id: DependencyRef, versions: GitVersions, pick=None, options=None, state=State.Open()):
-        # self._id: DependencyRef = dep_id
         self.id: DependencyRef = dep_id
         self.versions: GitVersions = versions
         self.pick: typing.Optional[int] = pick
         self.options: typing.Optional[typing.MutableSet[int]] = options
         self.state: State = state
-
-    # @property
-    # def id(self):
-    #     return self._id.id
-
-    # @id.setter
-    # def id(self, val):
-    #     if type(val) == int:
-    #         self._id = DependencyRef(val)
-    #     elif isinstance(val, DependencyRef):
-    #         self._id = val
-    #     else:
-    #         raise ValueError('try to set id as {}'.format(type(val)))
 
     def current_pick(self) -> Optional[DependencyVersion]:
         if self.state.is_open() or self.state.is_constrained():
@@ -527,15 +513,12 @@ class DependencyResolver(object):
         enzi_io = EnziIO(self.enzi)
 
         names = dict(map(fn, deps.items()))
-        # logger.debug('resolve::register_dep_in_config names {}'.format(names))
         dep_ids = set(map(lambda item: item[1], names.items()))
 
         versions = map(
             lambda dep_id: (dep_id, enzi_io.dep_versions(dep_id)), dep_ids
         )
         versions = dict(versions)
-
-        # logger.debug('resolve:register_dep_in_config versions {}'.format(versions))
 
         for name, dep_id in names.items():
             logger.debug('Registering {} {}'.format(name, dep_id.id))

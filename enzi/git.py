@@ -272,26 +272,3 @@ class GitRepo(FileManager):
             self.status = FileManagerStatus.FETCHED
 
         return self.fileset
-
-
-# import pprint
-# git = Git('./build/xxx')
-# if os.path.exists('./build/xxx'):
-#     shutil.rmtree('./build/xxx')
-# os.makedirs('./build/xxx')
-# git.init_repo('./build/xxx', 'https://github.com/Shoobx/python-graph.git')
-# git.spawn_with(lambda x:
-#     x.arg('tag')
-#         .arg('tag-test')
-#         .arg('afd6f1cf0f')
-#         .arg('--force')
-# )
-
-# git.spawn_with(lambda x:
-#     x.arg('clone')
-#         .arg(git.path)
-#         .arg('../yyy')
-#         .arg('--recursive')
-#         .arg('--branch')
-#         .arg('tag-test')
-# )

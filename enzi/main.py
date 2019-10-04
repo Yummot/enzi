@@ -114,8 +114,6 @@ def parse_args():
         logger.error('Supported targets: {}'.format(supported_targets))
         logger.error('Available tasks: {}'.format(available_tasks))
         exit(1)
-        # raise RuntimeError(
-        #     'Target must be specified (option: {}).'.format(supported_targets))
 
 
 def main():

@@ -130,13 +130,7 @@ class Enzi(object):
         dep_ref = self.dependencies.add(DependencyEntry(name, src))
         logger.debug('load_dependency: loaded(ref_id={}) {}'.format(
             dep_ref, self.dependencies.list[dep_ref.id].dump_vars()))
-        # if dep_ref.id == 2:
-        #     logger.debug('load_dependency: ppploaded(ref_id={}) {}'.format(
-        #         1, self.dependencies.list[1].dump_vars()))
-        #     logger.debug('load_dependency: ppptest = {}'.format(
-        #         self.dependencies.list[dep_ref.id] == self.dependencies.list[1]))
-        #     logger.debug('load_dependency: ppptest = {}'.format(
-        #         hash(self.dependencies.list[dep_ref.id]) == hash(self.dependencies.list[1])))
+
         return dep_ref
 
     def dependecy(self, dep: DependencyRef) -> DependencyEntry:
@@ -171,7 +165,6 @@ class Enzi(object):
     def excute(self, target_name, backend):
         self.check_target_availability(target_name)
 
-        # backend = self.get_backend(target_name)
         getattr(backend, target_name)()
 
     def get_backend(self, target_name, **kwargs):
@@ -225,21 +218,11 @@ class Enzi(object):
         self.check_target_availability(target_name)
 
         _files = []
-        # _deps = []
         for fileset_name in self.targets[target_name]['filesets']:
             fileset = self.filesets.get(
                 fileset_name, {'files': [], })
             _files = _files + fileset.get('files', [])
-            # _deps = _deps + fileset.get('dependencies', [])
-        # return {'files': _files, 'dependencies': _deps}
-        return {'files': _files, }
-
-    # def update_target_fileset(self, target_name, new_fileset):
-    #     if not target_name in self.targets:
-    #         raise KeyError('{} in not in targets'.format(target_name))
-
-    #     self.targets[target_name]['filesets'] = new_fileset if isinstance(
-    #         new_fileset, list) else []
+        return { 'files': _files, }
 
 
 class BackendConfigGen(object):
@@ -251,14 +234,8 @@ class BackendConfigGen(object):
         else:
             RuntimeError(
                 'known_backends must be list or an instance of KnownBackends.')
-        # self.known_backends.append('vsim')
-        # print(self.known_backends)
 
     def get(self, *, tool_name, tool_config, work_name, work_root, toplevel, fileset):
-        # if tool_name.lower() == 'ies':
-            # return py_copy.copy(self.ies(tool_config, work_name, work_root, toplevel, fileset))
-        # elif tool_name.lower() == 'questa':
-            # return
         tool_name = tool_name.lower()
         if tool_name in self.known_backends:
             logger.debug(
