@@ -28,7 +28,11 @@ class KnownBackends(object):
         # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
 
-    def register_backend(self, backend: Backend):
+    def register_backend(self, backend):
+        """
+        register new backend
+        :param backend: a subclass of Backend 
+        """
         name = backend.__class__.__name__.lower()
         if not issubclass(backend.__class__, Backend):
             fmt = 'register_backend: backend(class:{}) must be a subclass of Backend'

@@ -401,7 +401,6 @@ class DependencyResolver(object):
 
     def req_indices(self, name: str, con: DependencyConstraint, src: DependencySource):
         if con.is_version():
-            # logger.debug('req_indices: con is version')
             git_ver = src.versions
             con: GitVersions = con.value
             ids = dict(map(lambda eitem: (eitem[1], eitem[0]),
@@ -411,8 +410,6 @@ class DependencyResolver(object):
             def try_match_ver(item):
                 v, h = item
                 _con, v = str(con), str(v)
-                # logger.debug('req_indices: con: {}, ver: {} => {}'.format(
-                #     _con, v, semver.compare(_con, v)))
                 # TODO: see semver section in todolist
                 if semver.compare(_con, v) == 0:
                     return ids[h]
@@ -424,7 +421,6 @@ class DependencyResolver(object):
 
             return revs
         elif con.is_revision():
-            # logger.debug('req_indices: con is revision')
             git_ver = src.versions
             git_refs: dict = git_ver.refs
             git_revs: list = git_ver.revisions
@@ -451,7 +447,6 @@ class DependencyResolver(object):
 
     def impose(self, name: str, con: DependencyConstraint, src: DependencySource, all_cons: list):
         indices = self.req_indices(name, con, src)
-        # logger.debug("impose: {}".format(indices)) # xxxxxxx
         if not indices:
             raise RuntimeError(
                 'Dependency {} from {} cannot statisfy requirement {}'.format(
@@ -523,5 +518,3 @@ class DependencyResolver(object):
         for name, dep_id in names.items():
             logger.debug('Registering {} {}'.format(name, dep_id.id))
             self.register_dep(name, dep_id, py_copy.copy(versions[dep_id]))
-
-# dsrc = DependencySource(DependencyRef(0), GitVersions(None, None, None))

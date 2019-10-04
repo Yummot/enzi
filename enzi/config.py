@@ -13,8 +13,6 @@ from enzi.utils import realpath
 
 logger = logging.getLogger(__name__)
 
-# TODO: move to other pack
-
 
 class DependencySource(object):
     def __init__(self, git_url: str, is_local: bool):

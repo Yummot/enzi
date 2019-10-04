@@ -82,6 +82,9 @@ class Questa(Backend):
 
 
 class UnixDelegate(object):
+    """
+    Delegate class for Running Questa Simulator Backend in UNIX like systems
+    """
     def __init__(self, master: Questa):
         self.master = master
 
@@ -160,6 +163,9 @@ class UnixDelegate(object):
         return {"toplevel": self.master.toplevel}
 
 class WinDelegate(object):
+    """
+    Delegate class for Running Questa Simulator Backend in Windows
+    """
     def __init__(self, master: Questa):
         self.master: Questa = master
         self.clog = self.master.compile_log if self.master.compile_log else "compile.log"
@@ -264,8 +270,6 @@ class WinDelegate(object):
             args = [opts, defines, '-sv', file, sv]
             args = ' '.join(args)
             cmd = 'vlog ' + args
-            # p = subprocess.Popen(cmd, cwd=self.master.work_root)
-            # o, e = p.communicate()
             self._win_run_tool(cmd, fd)
         else:
             args = [opts, defines, file]
