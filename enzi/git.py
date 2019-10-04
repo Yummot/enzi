@@ -18,9 +18,9 @@ logger = logging.getLogger(__name__)
 class GitVersions(object):
     def __init__(self, versions, refs, revisions):
         """
-        @param versions: List[Tuple[semver.VersionInfo, str]]
-        @param refs: Dict[str, str]
-        @param revisions: List[str]
+        :param versions: List[Tuple[semver.VersionInfo, str]]
+        :param refs: Dict[str, str]
+        :param revisions: List[str]
         """
         self.versions: typing.List[typing.Tuple[semver.VersionInfo, str]] = versions
         self.refs: typing.MutableMapping[str, str] = refs

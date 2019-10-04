@@ -26,9 +26,9 @@ class FileManager(object):
     """
     FileManager: Manage files from different enzi project.
 
-    @param config: dict, contains extra configuration.
-    @param files_root: storage location, relative path, relative to proj_root.
-    @param porj_root: current running project root, abspath/relpath.
+    :param config: dict, contains extra configuration.
+    :param files_root: storage location, relative path, relative to proj_root.
+    :param porj_root: current running project root, abspath/relpath.
     """
 
     def __init__(self, name, config, proj_root, files_root):

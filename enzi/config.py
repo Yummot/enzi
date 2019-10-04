@@ -114,10 +114,10 @@ class RawDependency(object):
 class DependencyEntry(object):
     def __init__(self, name: str, source: DependencySource, revision=None, version=None):
         """
-        @param name: str
-        @param source: DependencySource
-        @param revision: str | None
-        @param version: semver.VersionInfo | None
+        :param name: str
+        :param source: DependencySource
+        :param revision: str | None
+        :param version: semver.VersionInfo | None
         """
         # help detect if this DependencyEntry is originally local repo
         self.is_local = source.is_local

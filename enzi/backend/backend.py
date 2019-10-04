@@ -81,8 +81,8 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
 
     Internally, this filter use the str() function.
 
-    @param str_quote: enclosed the given str with this given str_quote
-    @param bool_is_str: whether to treat bool as str.
+    :param str_quote: enclosed the given str with this given str_quote
+    :param bool_is_str: whether to treat bool as str.
     @return: filter result
     """
 
@@ -109,9 +109,9 @@ class Backend(object):
     """
     initialize an Backend object
 
-    @param  config:     An dict contains Backend configurations.
+    :param  config:     An dict contains Backend configurations.
                         It must contain an key name which store current project name.
-    @param  work_root:  The root directory of running this Backend work
+    :param  work_root:  The root directory of running this Backend work
     """
 
     supported_ops = ['build', 'sim', 'run', 'program_device']
@@ -176,7 +176,7 @@ class Backend(object):
 
     def _run_scripts(self, scripts):
         """
-        @param scripts: it contains a list of script to run, each script is a dict,
+        :param scripts: it contains a list of script to run, each script is a dict,
                         which may contains:
                             @key env: env for running this script.
                             @key cmd: script command to run.
