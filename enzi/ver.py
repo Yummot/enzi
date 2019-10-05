@@ -107,7 +107,7 @@ _REQ_OP_DICT = {
     "<": ReqOp.Lt,
     "<=": ReqOp.Le,
     "~": ReqOp.Tilde,
-    "^": ReqOp.Caret, # is compatible
+    "^": ReqOp.Caret,  # is compatible
 }
 
 
@@ -181,7 +181,7 @@ class Predicate(object):
             patch=version.patch,
             prerelease=version.pre
         )
-    
+
     def matches(self, ver: VersionInfo):
         if self.op == ReqOp.Exact:
             return self.is_exact(ver)
@@ -378,8 +378,13 @@ class VersionReq(object):
             logger.error(msg)
             raise ValueError(msg)
 
-        # if self.predicates
+        if not self.predicates:
+            return True
 
+        any_match = all(map(lambda p: p.matches(version), self.predicates))
+        any_compatible = any(map(lambda p: p.matches(version), self.predicates))
+
+        return any_match and any_compatible
 
 # v = semver.VersionInfo.parse('0.1.0-alpha+build1')
 # print(type(v.major))
