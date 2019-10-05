@@ -6,10 +6,12 @@ import io
 import toml
 import typing
 import copy as py_copy
+
 from semver import VersionInfo as Version
 
 from enzi.utils import Launcher
 from enzi.utils import realpath
+from enzi.ver import VersionReq
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class DependencyVersion(object):
 
 
 class Dependency(object):
-    def __init__(self, git_url: str, rev_ver: typing.Union[str, Version], use_version, is_local):
+    def __init__(self, git_url: str, rev_ver: VersionReq, use_version, is_local):
         self.git_url = git_url
         self.rev_ver = rev_ver  # revision or version
         self.use_version = use_version
@@ -83,7 +85,7 @@ class RawDependency(object):
         version = self.version
         if version:
             # TODO: allow version as a version compare string
-            version = Version.parse(self.version)
+            version = VersionReq.parse(self.version)
         if self.revision and self.version:
             raise ValueError(
                 'Dependency cannot specify `commit` and `version` at the same time.')
@@ -103,7 +105,7 @@ class RawDependency(object):
             rev_ver = self.revision
             use_version = False
         else:
-            rev_ver = self.version
+            rev_ver = version
             use_version = True
 
         return Dependency(git_url, rev_ver, use_version, is_local)

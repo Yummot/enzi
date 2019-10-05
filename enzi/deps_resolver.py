@@ -16,6 +16,7 @@ from enzi.frontend import Enzi
 from enzi.git import GitVersions
 from enzi.io import EnziIO
 from enzi.utils import flat_map, unique
+from enzi.ver import VersionReq
 from semver import VersionInfo as Version
 
 logger = logging.getLogger(__name__)
@@ -45,9 +46,8 @@ class DependencyConstraint(object):
         if not cons in self.__allow_cons__:
             raise ValueError('dep cons must in {}'.format(self.__allow_cons__))
         self.cons: str = cons
-        if val is None or isinstance(val, Version) or type(val) == str:
+        if val is None or isinstance(val, (VersionReq, Version)) or type(val) == str:
             self.value: typing.Union[str, Version, None] = val
-            # if self.value is str, it might be revision hash or version comparison str
         else:
             raise ValueError(
                 'dep cons\'s value must be semver.VersionInfo or str')
@@ -409,9 +409,7 @@ class DependencyResolver(object):
             # logger.debug(ids)
             def try_match_ver(item):
                 v, h = item
-                _con, v = str(con), str(v)
-                # TODO: see semver section in todolist
-                if semver.compare(_con, v) == 0:
+                if con.matches(v):
                     return ids[h]
                 else:
                     return None
