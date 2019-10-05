@@ -26,5 +26,6 @@ setup(
         'jinja2>=2.0.0',
         'colorama>=0.4.0',
         'coloredlogs>=10.0'
+        'pytest>=5.0.1',
     ],
 )

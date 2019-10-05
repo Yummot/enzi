@@ -20,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 PREFIX_REGEX = re.compile(
     r"""
-    ^(?P<prefix0>(>=|<=|>|<|~|^))\s*(?P<req0>(.+?))
-    ,?
-    (\s*(?P<prefix1>(>=|<=|>|<|~|^))\s*(?P<req1>(.+?)))?$
+    ^(?P<prefix>(>=|<=|>|<|=|~|\^))?\s*(?P<ver>(.+))$
     """, re.X)
 
 VERSION_REGEX = re.compile(
@@ -97,11 +95,27 @@ class ReqOp(enum.Enum):
     # WildcardMajor = 7
     # WildcardMinor = 8
     # WildcardPatch = 9
-    # def From(prefix_str: str):
+
+    def __str__(self):
+        if self == ReqOp.Exact:
+            return "="
+        elif self == ReqOp.Gt:
+            return ">"
+        elif self == ReqOp.Ge:
+            return ">="
+        elif self == ReqOp.Lt:
+            return "<"
+        elif self == ReqOp.Le:
+            return "<="
+        elif self == ReqOp.Tilde:
+            return "~"
+        elif self == ReqOp.Caret:
+            return "^"
 
 
 # map the requests operations string into ReqOp
 _REQ_OP_DICT = {
+    "=": ReqOp.Exact,
     ">": ReqOp.Gt,
     ">=": ReqOp.Ge,
     "<": ReqOp.Lt,
@@ -118,37 +132,61 @@ def into_req_op(op_str: str):
     return _REQ_OP_DICT[op_str]
 
 
+def complete(s: str):
+    """
+    Complete the Version to meet x.y.z-*+* format requirements of semver.VersionInfo
+    """
+    count_dot = s.count('.')
+    if count_dot == 0:
+        return (s + '.0.0', 2)
+    elif count_dot == 1:
+        return (s + '.0', 1)
+    else:
+        return (s, 0)
+
+
 def match_reqs(reqs_str: str):
     """
     Match the requests string. 
     Extract the request operations and the possible version string.
     """
-    reqs = PREFIX_REGEX.match(reqs_str)
-    reqs_dict = reqs.groupdict()
-
-    if not reqs_dict['prefix0']:
-        try:
-            return semver.parse(reqs['req0'])
-        except Exception:
+    if not reqs_str:
+        raise ValueError("input string is empty.")
+    if ',' in reqs_str:
+        reqs_map = map(str.strip, reqs_str.split(','))
+        reqs = list(reqs_map)
+        # test invalid
+        test = map(lambda x: not x, reqs)
+        if any(test):
             msg = "{} is not a valid version request string".format(reqs_str)
             logger.error(msg)
             raise ValueError(msg) from None
+    else:
+        reqs = [reqs_str]
 
-    # filter the non-exists groups
-    f = filter(lambda x: x[1], reqs_dict.items())
-    d = dict(f)
-
-    ret = {}
-
-    p = into_req_op(d['prefix0'])
-    v = semver.parse(d['req0'])
-    ret[p] = v
-
-    # extra request operation
-    if 'prefix1' in d:
-        p = into_req_op(d['prefix1'])
-        v = semver.parse(d['req1'])
-        ret[p] = v
+    ret = []
+    for req in reqs:
+        matched = PREFIX_REGEX.match(req)
+        gdict = matched.groupdict()
+        # if gdict['prefix'] is None:
+        try:
+            pre = gdict['ver']
+            completed, ccnt = complete(pre)
+            ver = semver.parse(completed)
+            if ccnt == 1:
+                ver['patch'] = None
+            if ccnt == 2:
+                ver['minor'] = None
+                ver['patch'] = None
+        except Exception:
+            msg = "{} is not a valid version request string".format(req)
+            logger.error(msg)
+            raise ValueError(msg) from None
+        if gdict['prefix'] is None:
+            op = ReqOp.Caret
+        else:
+            op = into_req_op(gdict['prefix'])
+        ret.append((op, ver))
 
     return ret
 
@@ -194,7 +232,7 @@ class Predicate(object):
         elif self.op == ReqOp.Le:
             return not self.is_greater(ver)
         elif self.op == ReqOp.Tilde:
-            return self.match_tilde(ver)
+            return self.matches_tilde(ver)
         elif self.op == ReqOp.Caret:
             return self.is_compatible(ver)
 
@@ -212,9 +250,7 @@ class Predicate(object):
         elif self.patch != ver.patch:
             return False
 
-        if self.pre is None:
-            return True
-        elif self.pre != ver.pre:
+        if self.pre != ver.prerelease:
             return False
 
         return True
@@ -231,24 +267,27 @@ class Predicate(object):
         elif self.minor != ver.minor:
             return ver.minor > self.minor
 
-        if self.minor is None:
+        if self.patch is None:
             return False
-        elif self.minor != ver.minor:
-            return ver.minor > self.minor
+        elif self.patch != ver.patch:
+            return ver.patch > self.patch
 
         if self.pre:
-            return _nat_cmp(ver.pre, self.pre) == 1
+            left = not ver.prerelease
+            return left or _nat_cmp(ver.prerelease, self.pre) == 1
 
         return False
 
-    def match_tilde(self, ver: VersionInfo):
+    def matches_tilde(self, ver: VersionInfo):
         # see https://www.npmjs.org/doc/misc/semver.html for behavior
-        if self.minor:
-            minor = self.minor
-        else:
+        if self.minor is None:
             return self.major == ver.major
+        else:
+            minor = self.minor
 
-        if self.patch:
+        if self.patch is None:
+            return self.major == ver.major and minor == ver.minor
+        else:
             patch = self.patch
             major_match = self.major == ver.major
             minor_match = minor == ver.minor
@@ -256,20 +295,23 @@ class Predicate(object):
                 ver.patch == patch and self.pre_is_compatible(ver)))
             ret = major_match and minor_match and patch_and_pre
             return ret
-        else:
-            return self.major == ver.major and minor == ver.minor
 
     def is_compatible(self, ver: VersionInfo):
         # see https://www.npmjs.org/doc/misc/semver.html for behavior
         if self.major != ver.major:
             return False
 
-        if self.minor:
-            minor = self.minor
-        else:
+        if self.minor is None:
             return self.major == ver.major
+        else:
+            minor = self.minor
 
-        if self.patch:
+        if self.patch is None:
+            if self.major == 0:
+                return ver.minor == minor
+            else:
+                return ver.minor >= minor
+        else:
             patch = self.patch
             if self.major == 0:
                 if minor == 0:
@@ -290,30 +332,75 @@ class Predicate(object):
                 pcompatible = self.pre_is_compatible(ver)
                 patch_and_pre = patch_gt or (patch_match and pcompatible)
                 return minor_gt or (minor_match and patch_and_pre)
-        else:
-            if self.major == 0:
-                return ver.minor == minor
-            else:
-                return ver.minor >= minor
 
     def pre_tag_is_compatible(self, ver: VersionInfo):
         # https://docs.npmjs.com/misc/semver#prerelease-tags
-        is_prerelease = (not ver.pre is None)
+        not_prerelease = (ver.prerelease is None)
         major_match = self.major == ver.major
         minor_match = self.minor == ver.minor
         patch_match = self.patch == ver.patch
-        has_pre = not self.pre
-        ret = not is_prerelease or (
+        has_pre = (not self.pre is None)
+        ret = not_prerelease or (
             major_match and minor_match and minor_match and patch_match and has_pre)
         return ret
 
     def pre_is_compatible(self, ver: VersionInfo):
-        is_empty = not ver.pre
-        return is_empty or _nat_cmp(ver.pre, self.pre) != -1
+        is_empty = not ver.prerelease
+        return is_empty or _nat_cmp(ver.prerelease, self.pre) != -1
+
+    def _vars(self):
+        return vars(self)
+
+    def _build_ver_str(self):
+        """
+        build a version string
+        """
+        tmajor = str(self.major)
+        str_buf = [tmajor]
+        if self.minor is None:
+            return str(tmajor)
+        str_buf.append('.{}'.format(self.minor))
+
+        if self.patch is None:
+            return ''.join(str_buf)
+        str_buf.append('.{}'.format(self.patch))
+
+        if self.pre is None:
+            return ''.join(str_buf)
+        str_buf.append('-{}'.format(self.pre))
+
+        return ''.join(str_buf)
 
     def __str__(self):
+        tmp = self._build_ver_str()
+        if self.op == ReqOp.Caret or self.op == ReqOp.Tilde:
+            return str(self.op) + tmp
+        else:
+            return str(self.op) + " " + tmp
+
+    def __repr__(self):
         _vars = vars(self)
         return "Predicate{}".format(_vars)
+
+    def __eq__(self, other):
+        if not isinstance(other, Predicate):
+            raise ValueError(
+                'try to compare Predicate with non-Predicate class')
+
+        return self._vars() == other._vars()
+
+    def __tuple__(self):
+        return (
+            self.op,
+            self.major,
+            self.minor,
+            self.patch,
+            self.pre
+        )
+
+    def __hash__(self):
+        h = self.__tuple__()
+        return hash(h)
 
 
 class VerReqVaildator(object):
@@ -332,7 +419,7 @@ class VerReqVaildator(object):
         """
         ret = []
         matched = match_reqs(self.input)
-        for op, ver_dict in matched.items():
+        for op, ver_dict in matched:
             p = Predicate.loads_with_op(op, ver_dict)
             ret.append(p)
         return ret
@@ -359,7 +446,8 @@ class VersionReq(object):
         take a version and return a VersionReq that contains corresponding requirements.
         """
         validator = VerReqVaildator(ver_req)
-        return validator.validate()
+        preds = validator.validate()
+        return VersionReq(preds)
 
     @staticmethod
     def exact(version: semver.VersionInfo):
@@ -381,10 +469,35 @@ class VersionReq(object):
         if not self.predicates:
             return True
 
-        any_match = all(map(lambda p: p.matches(version), self.predicates))
-        any_compatible = any(map(lambda p: p.matches(version), self.predicates))
+        all_match = all(map(lambda p: p.matches(version), self.predicates))
+        any_compatible = any(
+            map(lambda p: p.pre_tag_is_compatible(version), self.predicates))
 
-        return any_match and any_compatible
+        return all_match and any_compatible
+
+    def _vars(self):
+        return vars(self)
+
+    def __str__(self):
+        str_preds = list(map(lambda p: p.__str__(), self.predicates))
+        return ', '.join(str_preds)
+
+    def __repr__(self):
+        _vars = self._vars()
+        str_preds = map(lambda p: p.__repr__(), _vars['predicates'])
+        _vars['predicates'] = list(str_preds)
+        return "VersionReq{}".format(_vars)
+
+    def __eq__(self, other):
+        if not isinstance(other, VersionReq):
+            raise ValueError(
+                'try to compare VersionReq with non-VersionReq class')
+
+        return self.predicates == other.predicates
+
+    def __hash__(self):
+        return hash(tuple(self.predicates))
+
 
 # v = semver.VersionInfo.parse('0.1.0-alpha+build1')
 # print(type(v.major))
@@ -396,4 +509,7 @@ class VersionReq(object):
 # print(test1.groupdict())
 # print(test2.groupdict())
 # print(match_reqs('aaaaaa'))
-print(_nat_cmp('build1.2', 'build1.0'))
+# print(_nat_cmp('build1.2', 'build1.0'))
+# print(VersionReq.parse('>= 1.1.0, <= 1.1.8'))
+# print(VersionReq.parse('^ 1.1.0,~ 1.1.8'))
+# print(VersionReq.parse('1.1.0'))
