@@ -11,7 +11,7 @@ import copy as py_copy
 from semver import VersionInfo as Version
 
 from enzi.utils import Launcher
-from enzi.utils import realpath
+from enzi.utils import realpath, toml_load, toml_loads
 from enzi.ver import VersionReq
 
 logger = logging.getLogger(__name__)
@@ -361,7 +361,7 @@ class Locked(object):
         """
         load a Locked from a given path of a lock file
         """
-        data = toml.load(config_path)
+        data = toml_load(config_path)
         return Locked.loads(data)
 
 
@@ -388,15 +388,14 @@ def validate_dep_path(dep_name: str, dep_path: str):
         logger.error(msg)
         raise ValueError(msg)
 
-
 # TODO: seperate Config, using a new Config class for fileset_only usage
 class Config(object):
     def __init__(self, config_file, from_str=False, base_path=None, is_local=True, *, fileset_only=False):
         conf = {}
         if from_str:
-            conf = toml.loads(config_file)
+            conf = toml_loads(config_file)
         else:
-            conf = toml.load(config_file)
+            conf = toml_load(config_file)
 
         if not conf:
             logger.error('Config toml file is empty.')

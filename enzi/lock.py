@@ -35,8 +35,6 @@ class LockLoader(object):
             path_changed = config_path != self.enzi.config_path
             changed = mtime_changed or path_changed
             update = update or changed
-            logger.info('mtime {} {}'.format(config_mtime, self.enzi.config_mtime))
-            logger.info('xxxxload {} {}'.format(mtime_changed, path_changed))
             if changed:
                 msg = "Enzi Config File was modified since last execution"
                 logger.info(msg)
@@ -57,15 +55,9 @@ class LockLoader(object):
             new_locked = resolver.resolve()
 
             lock_file_buf = [LOCKED_HEADER]
-            # deps_map_str = toml.dumps(locked_dump)
-            # lock_file_buf.append(deps_map_str)
+
             if self.enzi.git_db_records:
                 git_db_records = self.enzi.git_db_records
-                # caches_dict = {'cache': {'git': git_db_records}}
-
-                # caches_str = toml.dumps(caches_dict)
-                # lock_file_buf.append(caches_str)
-                # new_locked.cache = caches_dict
                 new_locked.add_cache('git', git_db_records)
                 logger.debug(
                     'LockLoader: database records\n{}'.format(git_db_records))

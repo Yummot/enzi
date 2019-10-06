@@ -4,6 +4,7 @@ import logging
 import sys
 import os
 import subprocess
+import toml
 import typing
 import copy as py_copy
 from itertools import chain
@@ -113,6 +114,50 @@ def flat_map(f, items):
     """
     return chain.from_iterable(map(f, items))
 
+
+def toml_load(path):
+    """
+    Load a toml file from a given path.
+    Raise ValueError with nice error message if decode error.
+    :param path: a path like object
+    :return: dict
+    """
+    with open(path) as f:
+        content = f.read()
+    try:
+        d = toml.loads(content)
+        return d
+    except toml.TomlDecodeError as e:
+        lineno = e.lineno
+        err_line = content.splitlines()[lineno - 1]
+        if "Reserved escape" in e.msg:
+            fmt = "Reserved escape in {}(line:{}): {}"
+            msg = fmt.format(path, lineno, err_line)
+            logger.error(msg)
+            if '\\' in err_line:
+                logger.error("Error may be caused by \\ in this line")
+            raise ValueError(msg) from None
+
+def toml_loads(content):
+    """
+    Load a toml file from a given string.
+    Raise ValueError with nice error message if decode error.
+    :param content: a string which may be a valid toml file
+    :return: dict
+    """
+    try:
+        d = toml.loads(content)
+        return d
+    except toml.TomlDecodeError as e:
+        lineno = e.lineno
+        err_line = content.splitlines()[lineno - 1]
+        if "Reserved escape" in e.msg:
+            fmt = "Reserved escape in content(line:{}): {}"
+            msg = fmt.format(lineno, err_line)
+            logger.error(msg)
+            if '\\' in err_line:
+                logger.error("Error may be caused by \\ in this line")
+            raise ValueError(msg) from None
 
 # launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
 class Launcher:
