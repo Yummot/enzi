@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 
+import io
 import logging
 import os
-import io
+import pprint
 import toml
 import typing
 import copy as py_copy
@@ -15,6 +16,13 @@ from enzi.ver import VersionReq
 
 logger = logging.getLogger(__name__)
 
+def flat_git_records(item):
+    name, records = item
+    if len(records) == 1:
+        record = list(records)[0]
+        return (name, {'path': record})
+    else:
+        return (name, {'path': records})
 
 class DependencySource(object):
     def __init__(self, git_url: str, is_local: bool):
@@ -234,18 +242,54 @@ class Locked(object):
     A Lock, contains all the resolved dependencies
     """
 
-    def __init__(self, *, dependencies: typing.MutableMapping[str, LockedDependency]):
+    def __init__(self, *, dependencies: typing.MutableMapping[str, LockedDependency], config_path=None, config_mtime=None):
         self.dependencies = dependencies
+        # the last modified time of Enzi.toml
+        self.config_path: typing.Optional[str] = config_path
+        self.config_mtime: typing.Optional[int] = config_mtime
         self.cache = {}
 
     def __str__(self):
-        return "Locked { %s }" % self.dependencies
+        pstr = pprint.pformat(vars(self))
+        return "Locked { %s }" % pstr
     # TODO: use a more elegant way
     __repr__ = __str__
 
-    def dumps(self):
+    def add_cache(self, name, data):
         """
-        dump locked to a dict: typing.MutableMapping[str, str]
+        Add a cache section's sub section to lock file.
+        If name exists, overwrite with new data.
+        """
+        self.cache[name] = data
+    
+    def remove_cache(self, name):
+        """
+        remove a cache section's sub section in lock file
+        """
+        self.cache.pop(name, None)
+    
+    def cache_dumps(self):
+        # TODO: add more useful cache info in lock file
+        d = {}
+        if 'git' in self.cache:
+            d['git'] = self.git_cache_dumps()
+        
+        return d
+
+    def git_cache_dumps(self):
+        """
+        dump locked's git cache to a dict: typing.MutableMapping[str, str]
+        """
+        if 'git' in self.cache:
+            git_cache = self.cache['git']
+            ret = dict(map(flat_git_records, git_cache.items()))
+            return ret
+        else:
+            return {}
+
+    def dep_dumps(self):
+        """
+        dump locked's deps to a dict: typing.MutableMapping[str, str]
         """
         d = {}
         d['dependencies'] = {}
@@ -261,12 +305,34 @@ class Locked(object):
             deps[dep_name] = dep_var
         return d
 
+    def dumps(self):
+        """
+        dump locked's deps to a dict: typing.MutableMapping[str, str]
+        """
+        d = {}
+
+        config = {
+            'path': self.config_path,
+            'mtime': self.config_mtime,
+        }
+        d['metadata'] = {}
+        d['metadata']['config'] = config
+        
+        d['dependencies'] = self.dep_dumps()['dependencies']
+        d['cache'] = self.cache_dumps()
+
+        return d
+
     @staticmethod
     def loads(config: dict):
         """
         load a Locked from a given dict
         """
         locked = Locked(dependencies={})
+        metadata = config['metadata']
+        meta_config = metadata['config']
+        locked.config_path = meta_config['path']
+        locked.config_mtime = float(meta_config['mtime'])
         for dep_name, dep in config['dependencies'].items():
             locked_dep = LockedDependency(
                 revision=dep.get('revision'),

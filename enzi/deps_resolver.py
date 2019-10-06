@@ -37,7 +37,6 @@ class Dependency(object):
         return self.sources[min_source]
 
 
-
 class DependencyConstraint(object):
     # TODO: rewrite in more python way
     __allow_cons__ = ("Version", "Revision")
@@ -293,7 +292,10 @@ class DependencyResolver(object):
             )
             locked[name] = lock_dep
 
-        return config.Locked(dependencies=locked)
+        return config.Locked(
+            dependencies=locked, 
+            config_path=self.enzi.config_path, 
+            config_mtime=self.enzi.config_mtime)
 
     def init(self):
         for dep in self.table.values():

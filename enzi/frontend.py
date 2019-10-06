@@ -35,13 +35,15 @@ class Enzi(object):
         self.work_dir = realpath(work_dir)
         self.build_dir = self.work_dir + '/build'
         work_root_config = os.path.join(self.work_dir, config_name)
+        self.config_path = work_root_config
         if os.path.exists(work_root_config):
             config = EnziConfig(work_root_config)
             self.config = config
         else:
             raise RuntimeError('No Enzi.toml in this directory.')
-
-        self.config_mtime = self.config.file_stat.st_mtime
+        
+        # mitime in nanosecond
+        self.config_mtime = self.config.file_stat.st_mtime_ns
         # targets is a reference for self.config.targets for convenience.
         self.targets = config.targets
         self.is_local = config.is_local
@@ -85,22 +87,22 @@ class Enzi(object):
             update |= self.need_update
 
         # Currently, we only create and load lock file if the project has dependencies
-        # TODO: add more usefull data in lock file
-        if self.config.dependencies:
-            logger.debug(
-                'Enzi:init: this project has dependencies, launching LockLoader')
-            locked = LockLoader(self, self.work_dir).load(update)
+        # TODO: add more useful data in lock file
+        msg = 'Enzi:init: this project has dependencies, launching LockLoader'
+        logger.debug(msg)
+        locked = LockLoader(self, self.work_dir).load(update)
 
-            if locked.cache and 'git' in locked.cache:
-                self.git_db_records = locked.cache['git']
+        if locked.cache and 'git' in locked.cache:
+            self.git_db_records = locked.cache['git']
 
-            self.locked = locked
+        self.locked = locked
 
-            dep_msg = pprint.pformat(locked.dumps())
-            cache_msg = pprint.pformat(locked.cache)
-            logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
-            logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
-        else:
+        dep_msg = pprint.pformat(locked.dep_dumps())
+        cache_msg = pprint.pformat(locked.cache)
+        logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
+        logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
+        
+        if not self.config.dependencies:
             logger.debug('Enzi:init: this project has no dependencies')
 
     @property

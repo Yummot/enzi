@@ -69,7 +69,7 @@ class EnziIO(object):
             git.fetch('origin')
             return git
         else:
-            db_mtime = os.stat(db_dir.join('FETCH_HEAD').path).st_mtime
+            db_mtime = os.stat(db_dir.join('FETCH_HEAD').path).st_mtime_ns
             if self.enzi.config_mtime < db_mtime:
                 logger.debug('skip update of {}'.format(db_dir.path))
                 return git
