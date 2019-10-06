@@ -36,10 +36,10 @@ class Dependency(object):
         min_source = min(self.sources.keys())
         return self.sources[min_source]
 
-# TODO: rewrite in more python way
 
 
 class DependencyConstraint(object):
+    # TODO: rewrite in more python way
     __allow_cons__ = ("Version", "Revision")
 
     def __init__(self, cons, val=None):

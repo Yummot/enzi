@@ -10,13 +10,13 @@ from enzi.utils import PathBuf, try_parse_semver
 
 logger = logging.getLogger(__name__)
 
-# TODO: Currently, EnziIO only work in sync way. We may make async an option.
 
 
 class EnziIO(object):
     """
     IO Spawner class for Enzi
     """
+    # TODO: Currently, EnziIO only work in sync way. We may make async an option.
 
     def __init__(self, enzi: Enzi):
         self.enzi = enzi

@@ -46,7 +46,6 @@ class Enzi(object):
         self.targets = config.targets
         self.is_local = config.is_local
 
-        # TODO: currently the dependencies field in a fileset of config.filesets is just an placeholder.
         self.filesets = config.filesets
         self.package = config.package
         self.name = config.name

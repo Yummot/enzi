@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 # use an environment variable `LAUNCHER_DEBUG` to control Launcher debug output
 LAUNCHER_DEBUG = os.environ.get('LAUNCHER_DEBUG')
 
+
 def rmtree_onerror(func, path, exc_info):
     """
     Error handler for ``shutil.rmtree``.
@@ -45,10 +46,9 @@ def try_parse_semver(tag_and_id):
     else:
         return None
 
-# TODO: code review, can we improve performance ?
-
 
 def unique(iterable: typing.Iterable[typing.Any]):
+    # TODO: code review, can we improve performance ?
     seen = set()
     for item in iterable:
         if item not in seen:
@@ -100,7 +100,7 @@ def relpath(base_path: str, abs_path: str) -> typing.Optional[typing.Union[str, 
     """
     if not os.path.commonpath([abs_path, base_path]):
         return None
-    
+
     if os.path.isabs(abs_path) and os.path.isabs(base_path):
         return os.path.relpath(abs_path, start=base_path)
     else:

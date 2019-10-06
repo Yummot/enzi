@@ -33,7 +33,6 @@ class LockLoader(object):
         else:
             self.lock_existing = None
 
-    # TODO: Enzi add update arg
     def load(self, update=False):
         if update or not self.lock_existing:
             from enzi.deps_resolver import DependencyResolver
