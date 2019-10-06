@@ -33,9 +33,13 @@ class LockLoader(object):
             config_mtime = self.lock_existing.config_mtime
             mtime_changed = config_mtime < self.enzi.config_mtime
             path_changed = config_path != self.enzi.config_path
-            changed = mtime_changed and path_changed
+            changed = mtime_changed or path_changed
             update = update or changed
-            logger.info("Enzi Config File was modified since last execution")
+            logger.info('mtime {} {}'.format(config_mtime, self.enzi.config_mtime))
+            logger.info('xxxxload {} {}'.format(mtime_changed, path_changed))
+            if changed:
+                msg = "Enzi Config File was modified since last execution"
+                logger.info(msg)
 
         if update or not self.lock_existing:
             from enzi.deps_resolver import DependencyResolver

@@ -332,7 +332,7 @@ class Locked(object):
         metadata = config['metadata']
         meta_config = metadata['config']
         locked.config_path = meta_config['path']
-        locked.config_mtime = float(meta_config['mtime'])
+        locked.config_mtime = int(meta_config['mtime'])
         for dep_name, dep in config['dependencies'].items():
             locked_dep = LockedDependency(
                 revision=dep.get('revision'),
