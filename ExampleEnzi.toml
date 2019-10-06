@@ -18,11 +18,10 @@ authors = ["Mot Yu"]
 # we can have a better version control over root package. Also helping resolve deps. 
 [dependencies.dep1]
 path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
-version = "0.2.0" # TODO: allow use semver compare string
+version = ">0.4.3, <0.6.0" # TODO: allow use semver compare string
 # commit = "commit hash"
-# dep must have version or commit string
+# dep must have verison or commit string
 # dep must have path or url string
-# currently, dep path string must be an absolute path
 
 [filesets.rtl]
 files = [
@@ -73,7 +72,7 @@ name = "ies"
     simulate_log = "z.log" # string
 
 [[tools]]
-name = "ixs"
+name = "ixs" # just an example, not supported yet
     # detail of tools config is in each tools.param
     [tools.params]
     link_libs = [] # must be array
@@ -97,7 +96,7 @@ name = "questa"
     vhdl_opts = [] # *_opts can be string or array
     elab_opts = [] # *_opts can be string or array
     sim_opts = [] # *_opts can be string or array
-    vlog_defines = [] # must be a string array
+    vlog_defines = ['-define TEST_DEP'] # must be a string array
     vhdl_defines = [] # must be a string array
     compile_log = "x.log" # string
     elaborate_log = "y.log" # string
