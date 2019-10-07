@@ -8,7 +8,7 @@ import semver
 import typing
 import copy as py_copy
 
-from enzi.config import Config, validate_git_repo
+from enzi.config import RawConfig, validate_git_repo
 from enzi.file_manager import FileManager, FileManagerStatus, join_path
 from enzi.utils import Launcher, realpath, rmtree_onerror
 
@@ -216,7 +216,8 @@ class GitRepo(FileManager):
         data = git.cat_file(config_entry.hash)
         msg = 'GitRepo({}): loaded Enzi.toml'.format(self.name)
         logger.debug(msg)
-        enzi_config = Config.from_str(data, git.path, True, fileset_only=True)
+        enzi_config = RawConfig(data, from_str=True, base_path=git.path,
+                                fileset_only=True).validate()
 
         # extract repo's fileset
         _files = []

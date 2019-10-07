@@ -8,7 +8,7 @@ authors = ["Mot Yu"]
 # table, indicate this is a remote package
 # [provider]
 # name = '' # may be git
-# author = ''
+# authors = ''
 # version = ''
 # repo = ''
 

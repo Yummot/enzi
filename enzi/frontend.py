@@ -9,7 +9,7 @@ import copy as py_copy
 import enzi.project_manager
 from enzi import config
 from enzi.backend import KnownBackends
-from enzi.config import Config as EnziConfig
+from enzi.config import RawConfig
 from enzi.config import DependencyRef, DependencySource
 from enzi.config import DependencyVersion, DependencyEntry, DependencyTable
 from enzi.git import Git, GitVersions, TreeEntry
@@ -36,7 +36,7 @@ class Enzi(object):
         work_root_config = os.path.join(self.work_dir, config_name)
         self.config_path = work_root_config
         if os.path.exists(work_root_config):
-            config = EnziConfig(work_root_config)
+            config = RawConfig(work_root_config).validate()
             self.config = config
         else:
             raise RuntimeError('No Enzi.toml in this directory.')
@@ -121,7 +121,7 @@ class Enzi(object):
         else:
             setattr(self, '_silence_mode', value)
 
-    def load_dependency(self, name, dep: config.Dependency, econfig: EnziConfig):
+    def load_dependency(self, name, dep: config.Dependency, econfig):
         if not isinstance(dep, config.Dependency):
             raise ValueError('dep must be an instance of config.Dependency')
         logger.debug('Loading dependency {} for {} with {}'.format(

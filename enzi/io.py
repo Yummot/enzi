@@ -3,13 +3,12 @@ import os
 import typing
 
 from enzi.config import DependencyRef, DependencyVersion
-from enzi.config import Config as EnziConfig
+from enzi.config import RawConfig
 from enzi.frontend import Enzi
 from enzi.git import Git, GitRepo, GitVersions, TreeEntry
 from enzi.utils import PathBuf, try_parse_semver
 
 logger = logging.getLogger(__name__)
-
 
 
 class EnziIO(object):
@@ -104,7 +103,7 @@ class EnziIO(object):
 
         return GitVersions(versions, refs, dep_revs)
 
-    def dep_config_version(self, dep_id: DependencyRef, version: DependencyVersion) -> typing.Optional[EnziConfig]:
+    def dep_config_version(self, dep_id: DependencyRef, version: DependencyVersion):
         # from enzi.config import DependencySource as DepSrc
         # from enzi.config import DependencyVersion as DepVer
         # TODO: cache dep_config to reduce io workload
@@ -128,7 +127,8 @@ class EnziIO(object):
             logger.debug('dep_config_version: dep_name={}, db_path={}'.format(
                 dep_name, git_db.path))
             # logger.debug(data)
-            dep_config = EnziConfig.from_str(data, git_db.path, is_local)
+            dep_config = RawConfig(
+                data, from_str=True, base_path=git_db.path, is_local=is_local).validate()
             return dep_config
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')
