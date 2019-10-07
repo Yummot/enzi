@@ -2,6 +2,7 @@
 enzi.lock: module for managing the enzi lock file
 """
 
+import io
 import logging
 import os
 import pprint
@@ -88,8 +89,12 @@ class LockLoader(object):
             lock_file_buf.append(dumps_str)
 
             lock_file_data = '\n'.join(lock_file_buf)
-            with open(self.lock_file, 'w') as f:
-                f.write(lock_file_data)
+
+            f = io.FileIO(self.lock_file, 'w')
+            writer = io.BufferedWriter(f)
+            data = lock_file_data.encode('utf-8')
+            writer.write(data)
+            writer.close()
 
             self.lock_existing = new_locked
         else:

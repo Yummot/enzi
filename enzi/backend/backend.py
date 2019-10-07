@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import io
 import jinja2
 import logging
 import os
@@ -168,11 +169,16 @@ class Backend(object):
         template = self.j2_env.get_template(
             '/'.join([template_dir, template_file]))
         file_path = os.path.join(self.work_root, target_file)
-        with open(file_path, 'w') as f:
-            f.write(template.render(template_vars))
-            if file_path.endswith('.sh'):
-                script_stat = os.stat(file_path)
-                os.chmod(file_path, script_stat.st_mode | stat.S_IEXEC)
+
+        f = io.FileIO(file_path, 'w')
+        writer = io.BufferedWriter(f)
+        data = template.render(template_vars).encode('utf-8')
+        writer.write(data)
+        writer.close()
+        
+        if file_path.endswith('.sh'):
+            script_stat = os.stat(file_path)
+            os.chmod(file_path, script_stat.st_mode | stat.S_IEXEC)
 
     def _run_scripts(self, scripts):
         """
