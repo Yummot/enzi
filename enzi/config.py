@@ -405,6 +405,7 @@ class ValidatorError(ValueError):
         super(ValidatorError, self).__init__(emsg)
         self.chained = chained
         self.msg = msg
+        logger.error(self)
 
 
 class Validator(object):

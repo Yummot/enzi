@@ -40,7 +40,7 @@ class Enzi(object):
             self.config = config
         else:
             raise RuntimeError('No Enzi.toml in this directory.')
-        
+
         # mitime in nanosecond
         self.config_mtime = self.config.file_stat.st_mtime_ns
         # targets is a reference for self.config.targets for convenience.
@@ -70,22 +70,20 @@ class Enzi(object):
             self.need_update = False
         elif os.path.exists(potential_lock_file) and not self.database_path.exits():
             if self.config.dependencies:
-                logger.warning('no database directory found, but there is a Enzi.lock file.')
+                logger.warning(
+                    'no database directory found, but there is a Enzi.lock file.')
                 logger.warning('Create a new database.')
             self.need_update = True
         else:
             self.need_update = None
 
-    def init(self, *, update= False):
+    def init(self, *, update=False):
         """
         Initialize the Enzi object, resolve dependencies and etc.
         """
-        if self.need_update is None:
-            update = False
-        else:
+        if not self.need_update is None:
             update |= self.need_update
 
-        # Currently, we only create and load lock file if the project has dependencies
         # TODO: add more useful data in lock file
         msg = 'Enzi:init: this project has dependencies, launching LockLoader'
         logger.debug(msg)
@@ -100,7 +98,7 @@ class Enzi(object):
         cache_msg = pprint.pformat(locked.cache)
         logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
         logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
-        
+
         if not self.config.dependencies:
             logger.debug('Enzi:init: this project has no dependencies')
 
@@ -180,14 +178,14 @@ class Enzi(object):
             tool_name = str(target['default_tool'])
             if 'tool_name' in kwargs and kwargs['tool_name']:
                 tool_name = str(kwargs['tool_name'])
-            
+
             if tool_name == 'vsim':
                 logger.warning(
                     'Treat vsim tool request as using questa simulator')
                 tool_config = self.tools.get('questa', {})
             else:
                 tool_config = self.tools.get(tool_name, {})
-            
+
             tool_config['silence_mode'] = self.silence_mode
             tool_config['name'] = self.package['name']
 
@@ -222,7 +220,7 @@ class Enzi(object):
             fileset = self.filesets.get(
                 fileset_name, {'files': [], })
             _files = _files + fileset.get('files', [])
-        return { 'files': _files, }
+        return {'files': _files, }
 
 
 class BackendConfigGen(object):

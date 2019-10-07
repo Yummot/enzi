@@ -52,7 +52,9 @@ def enzi_clean(self, confirm=False):
     logger.info(Fore.BLUE + 'finished cleaning')
 
 def enzi_update(enzi: Enzi):
+    logger.info('start updating')
     enzi.init(update=True)
+    logger.info('updating finished')
 
 
 def parse_args():
@@ -147,9 +149,7 @@ def main():
         enzi = Enzi(args.root[0])
     
     if hasattr(args, 'task') and args.task == enzi_update:
-        logger.info('start updating')
         enzi_update(enzi)
-        logger.info('updating finished')
         return
 
     target = args.target
