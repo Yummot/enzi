@@ -1302,7 +1302,7 @@ class EnziConfigValidator(Validator):
         from io import StringIO
         f = StringIO()
         
-        f.write('# enzi configuration file version\n')
+        f.write('\n# enzi configuration file version\n')
         ev = { 'enzi_version': '|'.join(ENZI_CONFIG_VERSION) }
         toml.dump(ev, f)
 

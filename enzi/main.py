@@ -13,6 +13,7 @@ from colorama import Fore, Style
 from enzi.project_manager import ProjectFiles
 from enzi.utils import rmtree_onerror
 from enzi.frontend import Enzi
+from enzi.config import EnziConfigValidator
 
 logger = logging.getLogger('Enzi')
 
@@ -51,10 +52,18 @@ def enzi_clean(self, confirm=False):
 
     logger.info(Fore.BLUE + 'finished cleaning')
 
+
 def enzi_update(enzi: Enzi):
     logger.info('start updating')
     enzi.init(update=True)
     logger.info('updating finished')
+
+
+def enzi_config_help():
+    info = EnziConfigValidator.info()
+    # logger.info(Fore.BLUE + info)
+    logger.info('Here is the template Enzi.toml with values\' hints:')
+    print(info)
 
 
 def parse_args():
@@ -72,6 +81,9 @@ def parse_args():
     parser.add_argument('--silence-mode', help='only capture stderr',
                         default=False, action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
+
+    parser.add_argument('--enzi-config-help', '--config-help', help='show a Enzi.toml template and values information',
+                        default=False, action='store_true')
 
     # clean up args.
     clean_parser = subparsers.add_parser(
@@ -109,6 +121,10 @@ def parse_args():
     pd_parser.set_defaults(target='program_device')
 
     args = parser.parse_args()
+
+    if args.enzi_config_help:
+        return args
+
     if hasattr(args, 'target') or hasattr(args, 'task'):
         return args
     else:
@@ -131,8 +147,10 @@ def main():
             logging.basicConfig(level=log_level)
     elif coloredlogs:
         coloredlogs.install(level='INFO')
-    
 
+    if args.enzi_config_help:
+        enzi_config_help()
+        return
 
     if hasattr(args, 'task') and args.task == enzi_clean:
         enzi_clean(args.yes)
@@ -147,7 +165,7 @@ def main():
         enzi = Enzi(args.root[0], args.config)
     else:
         enzi = Enzi(args.root[0])
-    
+
     if hasattr(args, 'task') and args.task == enzi_update:
         enzi_update(enzi)
         return
