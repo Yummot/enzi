@@ -36,6 +36,40 @@ def flat_git_records(item):
     else:
         return (name, {'path': records})
 
+def validate_git_repo(dep_name: str, git_url: str, test=False):
+    try:
+        Launcher('git', ['ls-remote', '-q', git_url]).run()
+        return True
+    except Exception as e:
+        if test:
+            return False
+        fmt = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'
+        msg = fmt.format(dep_name, git_url)
+        logger.error(msg)
+        raise ValueError(msg) from e
+
+
+def validate_dep_path(dep_name: str, dep_path: str):
+    dep_path = realpath(dep_path)
+    if os.path.isabs(dep_path):
+        return dep_path
+    else:
+        msg = 'validate_dep_path: {}(dep_path:{}) must have a absolute path'.format(
+            dep_name, dep_path)
+        logger.error(msg)
+        raise ValueError(msg)
+
+def tools_section_line(line: str):
+    """
+    pretty print the line of a tools section
+    """
+    if not line:
+        return line
+    if line.startswith(('[[', 'name')):
+        return line + '\n'
+    
+    return '\t{}\n'.format(line)
+
 
 class DependencySource(object):
     def __init__(self, git_url: str, is_local: bool):
@@ -375,30 +409,6 @@ class Locked(object):
         """
         data = toml_load(config_path)
         return Locked.loads(data)
-
-
-def validate_git_repo(dep_name: str, git_url: str, test=False):
-    try:
-        Launcher('git', ['ls-remote', '-q', git_url]).run()
-        return True
-    except Exception as e:
-        if test:
-            return False
-        fmt = 'validate_git_repo: {}(git_url:{}) is a not valid git repo'
-        msg = fmt.format(dep_name, git_url)
-        logger.error(msg)
-        raise ValueError(msg) from e
-
-
-def validate_dep_path(dep_name: str, dep_path: str):
-    dep_path = realpath(dep_path)
-    if os.path.isabs(dep_path):
-        return dep_path
-    else:
-        msg = 'validate_dep_path: {}(dep_path:{}) must have a absolute path'.format(
-            dep_name, dep_path)
-        logger.error(msg)
-        raise ValueError(msg)
 
 
 class ValidatorError(ValueError):
@@ -1298,9 +1308,10 @@ class EnziConfigValidator(Validator):
             raise ValidatorError(self.chain_keys_str(), msg)
 
     @staticmethod
-    def info():
-        from io import StringIO
-        f = StringIO()
+    def info(*, f=None):
+        if f is None:
+            from io import StringIO
+            f = StringIO()
         
         f.write('\n# enzi configuration file version\n')
         ev = { 'enzi_version': '|'.join(ENZI_CONFIG_VERSION) }
@@ -1324,14 +1335,14 @@ class EnziConfigValidator(Validator):
 
         f.write('\n# tools configuration for this enzi project/package\n')
         tool = { 'tools': [ToolValidator.info()] }
-        toml.dump(tool, f)
-        f.write('\n\n')
-        toml.dump(tool, f)
+        lines = toml.dumps(tool).splitlines()
+        
+        toolinfo = list(map(tools_section_line, lines))
+        f.writelines(toolinfo)
+        f.write('\n')
+        f.writelines(toolinfo)
 
-        ret = f.getvalue()
-        f.close()
-
-        return ret
+        return f
 
 class PartialConfig(object):
     """

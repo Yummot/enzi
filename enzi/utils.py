@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import argparse
 import logging
-import sys
 import os
 import subprocess
+import sys
 import toml
 import typing
+
 import copy as py_copy
 from itertools import chain
 
@@ -138,6 +140,7 @@ def toml_load(path):
                 logger.error("Error may be caused by \\ in this line")
             raise ValueError(msg) from None
 
+
 def toml_loads(content):
     """
     Load a toml file from a given string.
@@ -159,7 +162,72 @@ def toml_loads(content):
                 logger.error("Error may be caused by \\ in this line")
             raise ValueError(msg) from None
 
+
+class FilesAction(argparse.Action):
+    """
+    argparse Action for Files args, support multiple inputs.
+    """
+
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 nargs=None,
+                 const=None,
+                 default=None,
+                 type=None,
+                 choices=None,
+                 required=False,
+                 help=None,
+                 metavar=None):
+        if nargs == 0:
+            raise ValueError(
+                'FileAction requires that nargs for append actions must be > 0')
+        if const is not None and nargs != argparse.OPTIONAL:
+            raise ValueError('nargs must be %r to supply const' %
+                             argparse.OPTIONAL)
+        super(FilesAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=nargs,
+            const=const,
+            default=default,
+            type=type,
+            choices=choices,
+            required=required,
+            help=help,
+            metavar=metavar)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        def _ensure_value(namespace, name, value):
+            if getattr(namespace, name, None) is None:
+                setattr(namespace, name, value)
+            return getattr(namespace, name)
+
+        path = realpath(values)
+
+        paths = py_copy.copy(_ensure_value(namespace, self.dest, []))
+        paths.append(path)
+
+        setattr(namespace, self.dest, paths)
+
+
+class FileAction(FilesAction):
+    """
+    argparse Action for File args, support only single input.
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        def _ensure_value(namespace, name, value):
+            if getattr(namespace, name, None) is None:
+                setattr(namespace, name, value)
+            return getattr(namespace, name)
+
+        path = realpath(values)
+        setattr(namespace, self.dest, path)
+
 # launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
+
+
 class Launcher:
     def __init__(self, cmd, args=[], cwd=None):
         self.cmd = cmd

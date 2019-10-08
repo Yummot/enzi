@@ -11,7 +11,7 @@ import colorama
 from colorama import Fore, Style
 
 from enzi.project_manager import ProjectFiles
-from enzi.utils import rmtree_onerror
+from enzi.utils import rmtree_onerror, FileAction
 from enzi.frontend import Enzi
 from enzi.config import EnziConfigValidator
 
@@ -60,7 +60,8 @@ def enzi_update(enzi: Enzi):
 
 
 def enzi_config_help():
-    info = EnziConfigValidator.info()
+    f_info = EnziConfigValidator.info()
+    info = f_info.getvalue()
     # logger.info(Fore.BLUE + info)
     logger.info('Here is the template Enzi.toml file\'s key-values hints:')
     print(info)
@@ -79,11 +80,11 @@ def parse_args():
     parser.add_argument('--root', help='Enzi project root directory',
                         default=[], action='append')
     parser.add_argument('--silence-mode', help='only capture stderr',
-                        default=False, action='store_true')
+                        action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
-    parser.add_argument('--enzi-config-help', '--config-help', help=' show a Enzi.toml file\'s key-values hints',
-                        default=False, action='store_true')
+    parser.add_argument('--enzi-config-help', '--config-help',
+                        help=' show a Enzi.toml file\'s key-values hints', action='store_true')
 
     # clean up args.
     clean_parser = subparsers.add_parser(
