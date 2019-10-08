@@ -84,7 +84,8 @@ def parse_args():
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
     parser.add_argument('--enzi-config-help', '--config-help',
-                        help=' show a Enzi.toml file\'s key-values hints', action='store_true')
+                        help='output an Enzi.toml file\'s key-values hints', 
+                        action=FileAction, default=sys.stdout)
 
     # clean up args.
     clean_parser = subparsers.add_parser(

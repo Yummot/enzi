@@ -71,7 +71,7 @@ class Enzi(object):
         elif os.path.exists(potential_lock_file) and not self.database_path.exits():
             if self.config.dependencies:
                 logger.warning(
-                    'no database directory found, but there is a Enzi.lock file.')
+                    'no database directory found, but there is an Enzi.lock file.')
                 logger.warning('Create a new database.')
             self.need_update = True
         else:
