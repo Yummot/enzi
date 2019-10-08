@@ -62,7 +62,7 @@ def enzi_update(enzi: Enzi):
 def enzi_config_help():
     info = EnziConfigValidator.info()
     # logger.info(Fore.BLUE + info)
-    logger.info('Here is the template Enzi.toml with values\' hints:')
+    logger.info('Here is the template enzi.toml file\'s key-values hints:')
     print(info)
 
 
@@ -82,7 +82,7 @@ def parse_args():
                         default=False, action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
-    parser.add_argument('--enzi-config-help', '--config-help', help='show a Enzi.toml template and values information',
+    parser.add_argument('--enzi-config-help', '--config-help', help=' show a enzi.toml file\'s key-values hints',
                         default=False, action='store_true')
 
     # clean up args.
