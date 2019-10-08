@@ -8,6 +8,7 @@ import toml
 import typing
 import copy as py_copy
 
+from abc import ABCMeta, abstractmethod
 from itertools import chain
 from semver import VersionInfo as Version
 
@@ -411,11 +412,12 @@ class ValidatorError(ValueError):
         logger.error(self)
 
 
-class Validator(object):
+class Validator(metaclass=ABCMeta):
     """
     Validator: Base class for validating Config
     """
-    __slots__ = ('key', 'val', 'parent', '__allow__')
+
+    __slots__ = ('key', 'val', 'parent', 'allows')
 
     def __init__(self, *, key, val=None, allows=None, parent=None):
         from typing import Optional, Mapping, Any
@@ -427,7 +429,7 @@ class Validator(object):
             self.parent = None
         # allow keys to contain if None, this is a leaf in config
         # if it is a dict, K = key, V = Validator
-        self.__allow__: Optional[Mapping[str, Validator]] = allows
+        self.allows: Optional[Mapping[str, Validator]] = allows
 
     def chain_keys(self):
         """
@@ -454,8 +456,20 @@ class Validator(object):
             msg = 'must be a key-value table' if emsg is None else emsg
             raise ValidatorError(self.chain_keys_str(), msg)
 
+    @abstractmethod
     def validate(self):
-        return True
+        """
+        prue virtual method for validating self.val
+        """
+        return None
+
+    @staticmethod
+    @abstractmethod
+    def info():
+        """
+        return a help information for the expected value
+        """
+        return ''
 
 
 class BaseTypeValidator(Validator):
@@ -485,6 +499,10 @@ class StringValidator(BaseTypeValidator):
             key=key, val=val, parent=parent, T=str, emsg=emsg)
         self.val: str
 
+    @staticmethod
+    def info():
+        return '<string>'
+
 
 class BoolValidator(BaseTypeValidator):
     """Validator for a string"""
@@ -494,6 +512,10 @@ class BoolValidator(BaseTypeValidator):
         super(BoolValidator, self).__init__(
             key=key, val=val, parent=parent, T=bool)
         self.val: bool
+
+    @staticmethod
+    def info():
+        return '<bool>'
 
 
 class IntValidator(BaseTypeValidator):
@@ -505,6 +527,10 @@ class IntValidator(BaseTypeValidator):
             key=key, val=val, parent=parent, T=int)
         self.val: int
 
+    @staticmethod
+    def info():
+        return '<int>'
+
 
 class FloatValidator(BaseTypeValidator):
     """Validator for a float"""
@@ -514,6 +540,10 @@ class FloatValidator(BaseTypeValidator):
         super(FloatValidator, self).__init__(
             key=key, val=val, parent=parent, T=float)
         self.val: float
+
+    @staticmethod
+    def info():
+        return '<float>'
 
 
 class VersionValidator(Validator):
@@ -543,6 +573,10 @@ class VersionValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return '<semver version string>'
+
 
 class VersionReqValidator(Validator):
     """Validator for a semver version"""
@@ -555,7 +589,8 @@ class VersionReqValidator(Validator):
 
     def validate(self):
         if not isinstance(self.val, (VersionReq, str)):
-            msg = '"{}" must be a semver version request string'.format(self.val)
+            msg = '"{}" must be a semver version request string'.format(
+                self.val)
             raise ValidatorError(self.chain_keys_str(), msg)
 
         if type(self.val) == VersionReq:
@@ -569,6 +604,10 @@ class VersionReqValidator(Validator):
             raise ValidatorError(self.chain_keys_str(), msg) from None
 
         return self.val
+
+    @staticmethod
+    def info():
+        return '<semver version request string>'
 
 
 class StringListValidator(Validator):
@@ -592,20 +631,25 @@ class StringListValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return '<array<string>>'
+
 
 class PackageValidator(Validator):
     """Validator for a package section"""
+
     __slots__ = ('val', )
+    __allow__ = {
+        'name': StringValidator,
+        'version': VersionValidator,
+        'authors': StringListValidator
+    }
 
     def __init__(self, *, key, val, parent=None):
         from typing import Any, Mapping
-        __allow__ = {
-            'name': StringValidator,
-            'version': VersionValidator,
-            'authors': StringListValidator
-        }
         super(PackageValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, allows=PackageValidator.__allow__, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -631,23 +675,32 @@ class PackageValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'name': StringValidator.info(),
+            'version': VersionValidator.info(),
+            'authors': StringListValidator.info()
+        }
+
 
 class DependencyValidator(Validator):
     """Validator for a single dependency section"""
+
     __slots__ = ('val', )
+    __allow__ = {
+        'path': StringValidator,
+        'url': StringValidator,
+        'version': VersionReqValidator,
+        'commit': StringValidator,
+    }
     opt_path_url = {'path', 'url'}
     opt_rev_ver = {'commit', 'version'}
 
     def __init__(self, *, key, val, parent=None):
         from typing import Any, Mapping
-        __allow__ = {
-            'path': StringValidator,
-            'url': StringValidator,
-            'version': VersionReqValidator,
-            'commit': StringValidator,
-        }
         super(DependencyValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, allows=DependencyValidator.__allow__, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -694,6 +747,13 @@ class DependencyValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'path/url': StringListValidator.info(),
+            'commit/version': StringListValidator.info(),
+        }
+
 
 class DepsValidator(Validator):
     """Validator for the whole dependencies section"""
@@ -702,9 +762,7 @@ class DepsValidator(Validator):
 
     def __init__(self, *, key, val, parent=None):
         # this specified each dependency Validator
-        __allow__ = None
-        super(DepsValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+        super(DepsValidator, self).__init__(key=key, val=val, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -719,19 +777,27 @@ class DepsValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'dep0': DependencyValidator.info(),
+            'dep1': DependencyValidator.info(),
+        }
+
 
 class FilesetValidator(Validator):
     """Validator for a single fileset section"""
 
     __slots__ = ('val', )
+    __allow__ = {
+        "files": StringListValidator
+    }
 
     def __init__(self, *, key, val, parent=None):
         # this specified each dependency Validator
-        __allow__ = {
-            "files": StringListValidator
-        }
+
         super(FilesetValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, allows=FilesetValidator.__allow__, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -759,6 +825,12 @@ class FilesetValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'files': StringListValidator.info(),
+        }
+
 
 class FilesetsValidator(Validator):
     """Validator for the whole filsets section"""
@@ -767,9 +839,8 @@ class FilesetsValidator(Validator):
 
     def __init__(self, *, key, val, parent=None):
         # this specified each dependency Validator
-        __allow__ = None
         super(FilesetsValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -782,28 +853,36 @@ class FilesetsValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'f0': FilesetValidator.info(),
+            'f1': FilesetValidator.info(),
+        }
+
 
 class ToolParamsValidator(Validator):
     """Validator for A tool's params section"""
 
-    __slots__ = ('val', )
+    __slots__ = ('val', 'params')
+    __allow__ = {}
 
     def __init__(self, *, key, val, parent=None, extras=None):
-        __allow__ = {}
         if extras:
             if type(extras) == dict:
                 logger.debug('ToolParamsValidator: filtered extras')
                 f = filter(lambda x: issubclass(
                     x[1], Validator), extras.items())
-                z = chain(__allow__.items(), f)
-                __allow__ = dict(z)
+                z = chain(ToolParamsValidator.__allow__.items(), f)
+                self.params = dict(z)
             else:
                 logger.warning(
                     'ToolParamsValidator: Ingore non-dict type extras')
         else:
+            self.params = ToolParamsValidator.__allow__
             logger.debug('ToolParamsValidator: No extras')
         super(ToolParamsValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, allows=self.params, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -813,14 +892,14 @@ class ToolParamsValidator(Validator):
         self.expect_kvs()
 
         kset = set(self.val.keys())
-        aset = set(self.__allow__.keys())
+        aset = set(self.params.keys())
         unknown = kset - aset
 
         if unknown:
             msg = 'unknown keys: {}'.format(unknown)
             raise ValidatorError(self.chain_keys_str(), msg)
 
-        for key, V in self.__allow__.items():
+        for key, V in self.params.items():
             if not key in kset:
                 continue
             val = self.val[key]
@@ -828,6 +907,13 @@ class ToolParamsValidator(Validator):
             self.val[key] = validator.validate()
 
         return self.val
+
+    @staticmethod
+    def info():
+        """
+        ToolParamsValidator is just a base class, so not details info
+        """
+        return {}
 
 
 class IESParamsValidator(ToolParamsValidator):
@@ -857,6 +943,24 @@ class IESParamsValidator(ToolParamsValidator):
             extras=IESParamsValidator.__extras__
         )
         self.val: typing.Mapping[str, typing.Any]
+
+    @staticmethod
+    def info():
+        base = ToolParamsValidator.info()
+        extras = {
+            'link_libs': StringListValidator.info(),
+            'gen_waves': BoolValidator.info(),
+            'vlog_opts': StringListValidator.info(),
+            'vhdl_opts': StringListValidator.info(),
+            'vlog_defines': StringListValidator.info(),
+            'vhdl_defines': StringListValidator.info(),
+            'elab_opts': StringListValidator.info(),
+            'sim_opts': StringListValidator.info(),
+            'compile_log': StringValidator.info(),
+            'elaborate_log': StringValidator.info(),
+            'simulate_log': StringValidator.info()
+        }
+        return {**base, **extras}
 
 
 class IXSParamsValidator(IESParamsValidator):
@@ -905,6 +1009,24 @@ class QuestaParamsValidator(ToolParamsValidator):
         )
         self.val: typing.Mapping[str, typing.Any]
 
+    @staticmethod
+    def info():
+        base = ToolParamsValidator.info()
+        extras = {
+            'link_libs': StringListValidator.info(),
+            'gen_waves': BoolValidator.info(),
+            'vlog_opts': StringListValidator.info(),
+            'vhdl_opts': StringListValidator.info(),
+            'vlog_defines': StringListValidator.info(),
+            'vhdl_defines': StringListValidator.info(),
+            'elab_opts': StringListValidator.info(),
+            'sim_opts': StringListValidator.info(),
+            'compile_log': StringValidator.info(),
+            'elaborate_log': StringValidator.info(),
+            'simulate_log': StringValidator.info()
+        }
+        return {**base, **extras}
+
 
 class VsimParamsValidator(QuestaParamsValidator):
     """Validator for A Vsim(Modelsim/Questasim) tool's params section"""
@@ -932,17 +1054,17 @@ class ToolValidator(Validator):
     """validator for a single tool section"""
 
     __slots__ = ('val', )
+    __allow__ = {
+        'name': StringValidator,
+        'params': ToolParamsValidator
+    }
 
     def __init__(self, *, key, val, parent=None):
-        __allow__ = {
-            'name': StringValidator,
-            'params': ToolParamsValidator
-        }
 
         super(ToolValidator, self).__init__(
             key=key,
             val=val,
-            allows=__allow__,
+            allows=ToolValidator.__allow__,
             parent=parent
         )
         self.val: typing.Mapping[str, typing.Any]
@@ -980,6 +1102,13 @@ class ToolValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'name': StringListValidator.info(),
+            'params': QuestaParamsValidator.info()
+        }
+
 
 class ToolsValidator(Validator):
     """Validator for the whole tools section"""
@@ -988,9 +1117,8 @@ class ToolsValidator(Validator):
 
     def __init__(self, *, key, val, parent=None):
         # this specified each dependency Validator
-        __allow__ = None
         super(ToolsValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -1007,22 +1135,29 @@ class ToolsValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        tool0 = ToolValidator.info()
+        tool1 = ToolValidator.info()
+        tool1['name'] += ' '
+        return [tool0, tool1]
+
 
 class TargetValidator(Validator):
     """validator for a single target section"""
 
     __slots__ = ('val', )
+    __allow__ = {
+        'default_tool': StringValidator,
+        'toplevel': StringValidator,
+        'filesets': StringListValidator
+    }
 
     def __init__(self, *, key, val, parent=None):
-        __allow__ = {
-            'default_tool': StringValidator,
-            'toplevel': StringValidator,
-            'filesets': StringListValidator
-        }
         super(TargetValidator, self).__init__(
             key=key,
             val=val,
-            allows=__allow__,
+            allows=TargetValidator.__allow__,
             parent=parent
         )
         self.val: typing.Mapping[str, typing.Any]
@@ -1050,6 +1185,14 @@ class TargetValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'default_tool': StringValidator.info(),
+            'toplevel': StringValidator.info(),
+            'filesets': StringListValidator.info()
+        }
+
 
 class TargetsValidator(Validator):
     """Validator for the whole tools section"""
@@ -1058,9 +1201,8 @@ class TargetsValidator(Validator):
 
     def __init__(self, *, key, val, parent=None):
         # this specified each dependency Validator
-        __allow__ = None
         super(TargetsValidator, self).__init__(
-            key=key, val=val, allows=__allow__, parent=parent)
+            key=key, val=val, parent=parent)
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
@@ -1075,6 +1217,12 @@ class TargetsValidator(Validator):
 
         return self.val
 
+    @staticmethod
+    def info():
+        return {
+            'sim': TargetValidator.info(),
+            'run': TargetValidator.info(),
+        }
 
 class EnziConfigValidator(Validator):
     """
@@ -1084,21 +1232,21 @@ class EnziConfigValidator(Validator):
     __slots__ = ('config_path', 'val')
     __must__ = {'enzi_version', 'package', 'filesets'}
     __options__ = {'dependencies', 'target', 'tools'}
+    __allow__ = {
+        'enzi_version': StringValidator,
+        'package': PackageValidator,
+        'dependencies': DepsValidator,
+        'filesets': FilesetsValidator,
+        'targets': TargetsValidator,
+        'tools': ToolsValidator
+    }
 
     def __init__(self, val, config_path=None):
-        __allow__ = {
-            'enzi_version': StringValidator,
-            'package': PackageValidator,
-            'dependencies': DepsValidator,
-            'filesets': FilesetsValidator,
-            'targets': TargetsValidator,
-            'tools': ToolsValidator
-        }
 
         super(EnziConfigValidator, self).__init__(
             key='<{}>'.format(config_path),
             val=val,
-            allows=__allow__,
+            allows=EnziConfigValidator.__allow__,
         )
         self.val: typing.Mapping[str, typing.Any]
 
@@ -1134,7 +1282,8 @@ class EnziConfigValidator(Validator):
         # check `enzi_version`
         enzi_version = self.val['enzi_version']
         if not enzi_version in ENZI_CONFIG_VERSION:
-            _v = Validator(key='enzi_version', parent=self)
+            _v = StringValidator(key='enzi_version',
+                                 val=enzi_version, parent=self)
             msg = 'unknown enzi_version: {}'.format(enzi_version)
             raise ValidatorError(_v.chain_keys_str(), msg)
 
@@ -1148,6 +1297,41 @@ class EnziConfigValidator(Validator):
             msg = 'must be a key-value table' if emsg is None else emsg
             raise ValidatorError(self.chain_keys_str(), msg)
 
+    @staticmethod
+    def info():
+        from io import StringIO
+        f = StringIO()
+        
+        f.write('# enzi configuration file version\n')
+        ev = { 'enzi_version': '|'.join(ENZI_CONFIG_VERSION) }
+        toml.dump(ev, f)
+
+        f.write('\n# this enzi project/package information\n')
+        pack = { 'package': PackageValidator.info() }
+        toml.dump(pack, f)
+
+        f.write('\n# dependencies for this enzi project/package\n')
+        deps = { 'dependencies': DepsValidator.info() }
+        toml.dump(deps, f)
+
+        f.write('\n# filesets for this enzi project/package\n')
+        filesets = { 'filesets': FilesetsValidator.info() }
+        toml.dump(filesets, f)
+
+        f.write('\n# targets for this enzi project/package\n')
+        targets = { 'targets': TargetsValidator.info() }
+        toml.dump(targets, f)
+
+        f.write('\n# tools configuration for this enzi project/package\n')
+        tool = { 'tools': [ToolValidator.info()] }
+        toml.dump(tool, f)
+        f.write('\n\n')
+        toml.dump(tool, f)
+
+        ret = f.getvalue()
+        f.close()
+
+        return ret
 
 class PartialConfig(object):
     """
