@@ -486,7 +486,7 @@ class VersionReq(object):
         _vars = self._vars()
         str_preds = map(lambda p: p.__repr__(), _vars['predicates'])
         _vars['predicates'] = list(str_preds)
-        return "VersionReq{}".format(_vars)
+        return "VersionReq<{}>{}".format(hex(id(self)), _vars)
 
     def __eq__(self, other):
         if not isinstance(other, VersionReq):

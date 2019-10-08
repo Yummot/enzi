@@ -18,10 +18,13 @@ except Exception:
 
 from enzi.utils import Launcher
 from enzi.utils import realpath, toml_load, toml_loads
+from enzi.ver import complete as complete_version
 from enzi.ver import VersionReq
 
 logger = logging.getLogger(__name__)
+
 KNOWN_BACKENDS = set(KnownBackends().known_backends.keys())
+ENZI_CONFIG_VERSION = {"0.1", "0.2"}
 
 
 def flat_git_records(item):
@@ -513,6 +516,61 @@ class FloatValidator(BaseTypeValidator):
         self.val: float
 
 
+class VersionValidator(Validator):
+    """Validator for a semver version"""
+    __slots__ = ('val',)
+
+    def __init__(self, *, key, val, parent=None):
+        super(VersionValidator, self).__init__(
+            key=key, val=val, parent=parent)
+        self.val: Version
+
+    def validate(self):
+        if not isinstance(self.val, (Version, str)):
+            msg = '"{}" must be a semver version string'.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg)
+
+        if type(self.val) == str:
+            val, _ = complete_version(self.val)
+        else:
+            return self.val
+
+        try:
+            Version.parse(val)
+        except Exception:
+            msg = '{} is not a valid semver version'.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg) from None
+
+        return self.val
+
+
+class VersionReqValidator(Validator):
+    """Validator for a semver version"""
+    __slots__ = ('val',)
+
+    def __init__(self, *, key, val, parent=None):
+        super(VersionReqValidator, self).__init__(
+            key=key, val=val, parent=parent)
+        self.val: Version
+
+    def validate(self):
+        if not isinstance(self.val, (VersionReq, str)):
+            msg = '"{}" must be a semver version request string'.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg)
+
+        if type(self.val) == VersionReq:
+            return self.val
+
+        try:
+            VersionReq.parse(self.val)
+        except Exception:
+            fmt = '{} is not a valid semver version request string'
+            msg = fmt.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg) from None
+
+        return self.val
+
+
 class StringListValidator(Validator):
     """Validator for a string list/vector/array"""
     __slots__ = ('val', )
@@ -543,7 +601,7 @@ class PackageValidator(Validator):
         from typing import Any, Mapping
         __allow__ = {
             'name': StringValidator,
-            'version': StringValidator,
+            'version': VersionValidator,
             'authors': StringListValidator
         }
         super(PackageValidator, self).__init__(
@@ -585,7 +643,7 @@ class DependencyValidator(Validator):
         __allow__ = {
             'path': StringValidator,
             'url': StringValidator,
-            'version': StringValidator,
+            'version': VersionReqValidator,
             'commit': StringValidator,
         }
         super(DependencyValidator, self).__init__(
@@ -1073,6 +1131,13 @@ class EnziConfigValidator(Validator):
             validator = V(key=key, val=val, parent=self)
             self.val[key] = validator.validate()
 
+        # check `enzi_version`
+        enzi_version = self.val['enzi_version']
+        if not enzi_version in ENZI_CONFIG_VERSION:
+            _v = Validator(key='enzi_version', parent=self)
+            msg = 'unknown enzi_version: {}'.format(enzi_version)
+            raise ValidatorError(_v.chain_keys_str(), msg)
+
         return self.val
 
     def expect_kvs(self, *, emsg=None):
@@ -1082,6 +1147,7 @@ class EnziConfigValidator(Validator):
         elif type(self.val) != dict:
             msg = 'must be a key-value table' if emsg is None else emsg
             raise ValidatorError(self.chain_keys_str(), msg)
+
 
 class PartialConfig(object):
     """

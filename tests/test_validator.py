@@ -11,6 +11,7 @@ from enzi.config import ValidatorError
 from enzi.config import Validator, BoolValidator
 from enzi.config import IntValidator, FloatValidator
 from enzi.config import StringValidator, StringListValidator
+from enzi.config import VersionValidator, VersionReqValidator
 from enzi.config import PackageValidator
 from enzi.config import DepsValidator, DependencyValidator
 from enzi.config import FilesetValidator, FilesetsValidator
@@ -106,6 +107,21 @@ def test_string_list_validator():
     excinfo = expected(validator)
     assert excinfo.value.msg == 'value(a) must be a string list'
 
+def test_version_validator():
+    val = '0.1.0'
+    validator = VersionValidator(key='v', val=val)
+    assert validator.validate() == val
+    
+    validator.val += '/'
+    expected(validator)
+
+def test_version_req_validator():
+    val = '>0.4.3, <0.6.0'
+    validator = VersionReqValidator(key='v', val=val)
+    assert validator.validate() == val
+
+    validator.val += '/'
+    expected(validator)
 
 def test_package_validator():
     val = {'name': 'a', 'version': '1', 'authors': ['a']}
@@ -120,7 +136,7 @@ def test_package_validator():
     validator.val['name'] = copy.copy(val['name'])
     validator.val['version'] = 1111
     excinfo = expected(validator)
-    assert excinfo.value.msg == 'type must be string'
+    assert 'must be a semver version string' in excinfo.value.msg
 
     validator.val['version'] = copy.copy(val['version'])
     validator.val['authors'] = 1111
@@ -144,7 +160,7 @@ def test_dependency_validator():
         'path': '/a/b/c',
         'url': 'http://localhost',
         'commit': '8aef1',
-        'version': 'v0.1.0'
+        'version': '0.1.0'
     }
 
     validator = DependencyValidator(key='d', val=copy.deepcopy(val))
@@ -164,6 +180,10 @@ def test_dependency_validator():
     del validator.val['unknown']
     del val['url']
     del val['commit']
+    assert validator.validate() == val
+
+    val['version'] = '>0.4.3, <0.6.0'
+    validator.val['version'] = val['version']
     assert validator.validate() == val
 
     validator.val = list(validator.val.items())
