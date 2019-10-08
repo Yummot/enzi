@@ -61,9 +61,9 @@ def enzi_update(enzi: Enzi):
 
 def enzi_config_help():
     f_info = EnziConfigValidator.info()
-    info = f_info.getvalue()
     # logger.info(Fore.BLUE + info)
     logger.info('Here is the template Enzi.toml file\'s key-values hints:')
+    info = f_info.getvalue()
     print(info)
 
 
@@ -84,8 +84,8 @@ def parse_args():
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
     parser.add_argument('--enzi-config-help', '--config-help',
-                        help='output an Enzi.toml file\'s key-values hints', 
-                        action=FileAction, default=sys.stdout)
+                        help='output an Enzi.toml file\'s key-values hints, use STDOUT for print to stdout',
+                        action=FileAction)
 
     # clean up args.
     clean_parser = subparsers.add_parser(
@@ -125,6 +125,7 @@ def parse_args():
     args = parser.parse_args()
 
     if args.enzi_config_help:
+        print(args.enzi_config_help)
         return args
 
     if hasattr(args, 'target') or hasattr(args, 'task'):
