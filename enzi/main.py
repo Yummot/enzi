@@ -17,6 +17,7 @@ from enzi.frontend import Enzi
 from enzi.config import EnziConfigValidator
 
 logger = logging.getLogger('Enzi')
+COLOREDLOGS_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
 
 if not 'coloredlogs' in sys.modules:
     coloredlogs = None
@@ -29,7 +30,13 @@ def cur_time():
 
 def enzi_clean(confirm=False, root=None, config_name=None):
     if not confirm:
-        logger.warning('clean will clean up the build directory')
+        if root:
+            fmt = 'clean will clean up the build directory in \'{}\''
+            msg = fmt.format(root)
+            logger.warning(msg)
+        else:
+            logger.warning('clean will clean up the build directory')
+
         logger.warning('Would you like to execute[y/N]:')
         _choice = input()
         choice = _choice.lower() if _choice else 'n'
@@ -183,11 +190,12 @@ def main():
     if args.log_level:
         log_level = getattr(logging, args.log_level)
         if coloredlogs:
-            coloredlogs.install(level=log_level)
+            coloredlogs.install(level=log_level, fmt=COLOREDLOGS_FMT)
+            # coloredlogs.
         else:
             logging.basicConfig(level=log_level)
     elif coloredlogs:
-        coloredlogs.install(level='INFO')
+        coloredlogs.install(level='INFO', fmt=COLOREDLOGS_FMT)
 
     if args.enzi_config_help:
         enzi_config_help(args.enzi_config_help)
