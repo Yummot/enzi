@@ -12,7 +12,7 @@ from enzi.config import Validator, BoolValidator
 from enzi.config import IntValidator, FloatValidator
 from enzi.config import StringValidator, StringListValidator
 from enzi.config import VersionValidator, VersionReqValidator
-from enzi.config import PackageValidator
+from enzi.config import PackageValidator, BaseTypeValidator
 from enzi.config import DepsValidator, DependencyValidator
 from enzi.config import FilesetValidator, FilesetsValidator
 from enzi.config import ToolParamsValidator, ToolValidator
@@ -67,16 +67,32 @@ def expected_kvs(validator, emsg=None):
 
 
 def test_validator_chained():
-    v0 = Validator(key='v0')
-    v1 = Validator(key='v1', parent=v0)
-    v2 = Validator(key='v2', parent=v1)
-    v3 = Validator(key='v3', parent=v2)
+    class BaseValidator(Validator):
+        def validate(self):
+            return self.val
+        @staticmethod
+        def info(this=None, *, extras=None):
+            return ''
+    
+    v0 = BaseValidator(key='v0')
+    v1 = BaseValidator(key='v1', parent=v0)
+    v2 = BaseValidator(key='v2', parent=v1)
+    v3 = BaseValidator(key='v3', parent=v2)
 
     keys = v3.chain_keys()
 
     assert keys == ['v0', 'v1', 'v2', 'v3']
     assert v3.chain_keys_str() == 'v0.v1.v2.v3'
+    assert v3.info() == ''
 
+def test_base_type_validator():
+    class V(BaseTypeValidator):
+        @staticmethod
+        def info(this=None, *, extras=None):
+            return ''
+    val = '11111'
+    validator = V(key='a', val=val, T=str)
+    assert validator.validate() == val
 
 def test_string_validator():
     val = '11111'
@@ -383,7 +399,6 @@ def test_targets_validator():
     assert validator.validate() == val
 
 def test_enzi_config_validator():
-    print(os.getcwd())
     try:
         f = io.FileIO('ExampleEnzi.toml', 'r')
         reader = io.BufferedReader(f)
@@ -396,6 +411,7 @@ def test_enzi_config_validator():
     validator = EnziConfigValidator(copy.deepcopy(conf), '.')
 
     assert validator.validate() == conf
+    assert validator.info() != None
     
 def test_raw_config_to_partial_config():
     try:

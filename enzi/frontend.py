@@ -66,12 +66,12 @@ class Enzi(object):
         # check if we need update database
         potential_lock_file = os.path.join(self.work_dir, 'Enzi.lock')
         self.locked = None
-        if os.path.exists(potential_lock_file) and self.database_path.exits():
+        if os.path.exists(potential_lock_file) and self.database_path.exists():
             self.need_update = False
-        elif os.path.exists(potential_lock_file) and not self.database_path.exits():
+        elif os.path.exists(potential_lock_file) and not self.database_path.exists():
             if self.config.dependencies:
                 logger.warning(
-                    'no database directory found, but there is a Enzi.lock file.')
+                    'no database directory found, but there is an Enzi.lock file.')
                 logger.warning('Create a new database.')
             self.need_update = True
         else:

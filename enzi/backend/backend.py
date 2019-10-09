@@ -12,68 +12,8 @@ import subprocess
 import copy as py_copy
 from collections import OrderedDict
 
-from enzi.utils import realpath
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
-
-
-class FilesAction(argparse.Action):
-    """
-    argparse Action for Files args, support multiple inputs.
-    """
-
-    def __init__(self,
-                 option_strings,
-                 dest,
-                 nargs=None,
-                 const=None,
-                 default=None,
-                 type=None,
-                 choices=None,
-                 required=False,
-                 help=None,
-                 metavar=None):
-        if nargs == 0:
-            raise ValueError(
-                'FileAction requires that nargs for append actions must be > 0')
-        if const is not None and nargs != argparse.OPTIONAL:
-            raise ValueError('nargs must be %r to supply const' %
-                             argparse.OPTIONAL)
-        super(FilesAction, self).__init__(
-            option_strings=option_strings,
-            dest=dest,
-            nargs=nargs,
-            const=const,
-            default=default,
-            type=type,
-            choices=choices,
-            required=required,
-            help=help,
-            metavar=metavar)
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        def _ensure_value(namespace, name, value):
-            if getattr(namespace, name, None) is None:
-                setattr(namespace, name, value)
-            return getattr(namespace, name)
-
-        path = realpath(values[0])
-
-        paths = py_copy.copy(_ensure_value(namespace, self.dest, []))
-        paths.append(path)
-
-        setattr(namespace, self.dest, paths)
-
-
-class FileAction(FilesAction):
-    """
-    argparse Action for File args, support only single input.
-    """
-
-    def __call__(self, parser, namespace, values, option_string=None):
-        super(FileAction, self).__call__(
-            parser, namespace, values, option_string)
 
 
 def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is_str=False):
@@ -175,7 +115,7 @@ class Backend(object):
         data = template.render(template_vars).encode('utf-8')
         writer.write(data)
         writer.close()
-        
+
         if file_path.endswith('.sh'):
             script_stat = os.stat(file_path)
             os.chmod(file_path, script_stat.st_mode | stat.S_IEXEC)

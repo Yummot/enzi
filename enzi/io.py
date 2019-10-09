@@ -61,7 +61,7 @@ class EnziIO(object):
         else:
             git_db_records[name] = set([db_dir.path])
 
-        if not db_dir.join("config").exits():
+        if not db_dir.join("config").exists():
             git.spawn_with(lambda x: x.arg('init').arg('--bare'))
             git.spawn_with(lambda x: x.arg('remote').arg('add')
                            .arg('origin').arg(git_url))

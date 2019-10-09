@@ -25,7 +25,7 @@ setup(
         'semver>=2.8',
         'jinja2>=2.0.0',
         'colorama>=0.4.0',
-        'coloredlogs>=10.0'
+        'coloredlogs>=9.3'
         'pytest>=5.0.1',
     ],
 )
