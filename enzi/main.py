@@ -77,7 +77,8 @@ def enzi_config_help(f):
         # Enzi will not create the directory if it doesn't exist.
         if outfile_dir and not os.path.exists(outfile_dir):
             outname = os.path.basename(f)
-            msg = 'path \'{}\' for \'{}\' does not exist'.format(outfile_dir, outname)
+            fmt = 'path \'{}\' for \'{}\' does not exist'
+            msg = fmt.format(outfile_dir, outname)
             logger.error(msg)
             sys.exit(msg)
 
@@ -85,8 +86,8 @@ def enzi_config_help(f):
         owriter = io.BufferedWriter(outfile)
         owriter.write(info)
         owriter.close()
-        logger.info(
-            'Generated the template Enzi.toml file\'s key-values hints in ' + f)
+        msg = 'Generated the template Enzi.toml file\'s key-values hints in ' + f
+        logger.info(msg)
 
 
 def parse_args():

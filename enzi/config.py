@@ -36,6 +36,7 @@ def flat_git_records(item):
     else:
         return (name, {'path': records})
 
+
 def validate_git_repo(dep_name: str, git_url: str, test=False):
     try:
         Launcher('git', ['ls-remote', '-q', git_url]).run()
@@ -59,6 +60,7 @@ def validate_dep_path(dep_name: str, dep_path: str):
         logger.error(msg)
         raise ValueError(msg)
 
+
 def tools_section_line(line: str):
     """
     pretty print the line of a tools section
@@ -67,7 +69,7 @@ def tools_section_line(line: str):
         return line
     if line.startswith(('[[', 'name')):
         return line + '\n'
-    
+
     return '\t{}\n'.format(line)
 
 
@@ -759,9 +761,12 @@ class DependencyValidator(Validator):
 
     @staticmethod
     def info():
+        c = StringValidator.info()
+        v = VersionReqValidator.info()
+        info = '{}/{}'.format(c, v)
         return {
-            'path/url': StringListValidator.info(),
-            'commit/version': StringListValidator.info(),
+            'path/url': StringValidator.info(),
+            'commit/version': info,
         }
 
 
@@ -1113,10 +1118,17 @@ class ToolValidator(Validator):
         return self.val
 
     @staticmethod
-    def info():
+    def info(*, tool_name=None):
+        tool_name = tool_name.lower() if type(tool_name) == str else tool_name
+        if tool_name is None or not tool_name in TPARAMS_VALIDATOR_MAP:
+            return {
+                'name': 'questa',
+                'params': QuestaParamsValidator.info()
+            }
+
         return {
-            'name': StringListValidator.info(),
-            'params': QuestaParamsValidator.info()
+            'name': tool_name,
+            'params': TPARAMS_VALIDATOR_MAP[tool_name].info()
         }
 
 
@@ -1234,6 +1246,7 @@ class TargetsValidator(Validator):
             'run': TargetValidator.info(),
         }
 
+
 class EnziConfigValidator(Validator):
     """
     Validator for "Enzi.toml"
@@ -1250,6 +1263,39 @@ class EnziConfigValidator(Validator):
         'targets': TargetsValidator,
         'tools': ToolsValidator
     }
+
+    HEADER_COMMENT = '''
+# Cheatsheet for an Enzi Configuration File, also known as `Enzi.toml`.
+'''
+    
+    ENZI_VERSION_COMMENT = '''
+# enzi configuration file version
+'''
+    PACKAGE_COMMENT = '''
+# This enzi project/package information:
+# All the keys listed bellow need to be specified.
+# No additional keys are allowed.
+'''
+    FILESETS_COMMENT = '''
+# Filesets for this enzi project/package
+'''
+
+    TARGETS_COMMENT = '''
+# Targets for this enzi project/package
+'''
+
+    DEPS_COMMENT = '''    
+# Dependencies for this enzi project/package:
+# A dependency must have a `path` or `url` key, but not have them the same time.
+# A dependency must have a `commit` or `path` key, but not have them the same time.
+'''
+    
+    TOOLS_COMMENT = '''
+# Tools configuration for this enzi project/package:
+# All parameters in a single tool param section are optional. You don\'t have to provide all parameters.
+# This section is just a reminder of all the available tools and their available optional parameters.
+# Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.
+'''
 
     def __init__(self, val, config_path=None):
 
@@ -1311,37 +1357,44 @@ class EnziConfigValidator(Validator):
     def info():
         from io import StringIO
         out = StringIO()
-        
-        out.write('\n# enzi configuration file version\n')
-        ev = { 'enzi_version': '|'.join(ENZI_CONFIG_VERSION) }
+
+        out.write(EnziConfigValidator.HEADER_COMMENT)
+
+        out.write(EnziConfigValidator.ENZI_VERSION_COMMENT)
+        ev = {'enzi_version': '|'.join(ENZI_CONFIG_VERSION)}
         toml.dump(ev, out)
 
-        out.write('\n# this enzi project/package information\n')
-        pack = { 'package': PackageValidator.info() }
+        out.write(EnziConfigValidator.PACKAGE_COMMENT)
+        pack = {'package': PackageValidator.info()}
         toml.dump(pack, out)
 
-        out.write('\n# dependencies for this enzi project/package\n')
-        deps = { 'dependencies': DepsValidator.info() }
+        out.write(EnziConfigValidator.DEPS_COMMENT)
+        deps = {'dependencies': DepsValidator.info()}
         toml.dump(deps, out)
 
-        out.write('\n# filesets for this enzi project/package\n')
-        filesets = { 'filesets': FilesetsValidator.info() }
+        out.write(EnziConfigValidator.FILESETS_COMMENT)
+        filesets = {'filesets': FilesetsValidator.info()}
         toml.dump(filesets, out)
 
-        out.write('\n# targets for this enzi project/package\n')
-        targets = { 'targets': TargetsValidator.info() }
+        out.write(EnziConfigValidator.TARGETS_COMMENT)
+        targets = {'targets': TargetsValidator.info()}
         toml.dump(targets, out)
 
-        out.write('\n# tools configuration for this enzi project/package\n')
-        tool = { 'tools': [ToolValidator.info()] }
-        lines = toml.dumps(tool).splitlines()
+        out.write(EnziConfigValidator.TOOLS_COMMENT)
+
+        def fn(tool_name):
+            tool = {'tools': [ToolValidator.info(tool_name=tool_name)]}
+            lines = toml.dumps(tool).splitlines()
+
+            toolinfo = list(map(tools_section_line, lines))
+            out.writelines(toolinfo)
+            out.write('\n')
         
-        toolinfo = list(map(tools_section_line, lines))
-        out.writelines(toolinfo)
-        out.write('\n')
-        out.writelines(toolinfo)
+        m = map(fn, TPARAMS_VALIDATOR_MAP.keys())
+        _ = list(m)
 
         return out
+
 
 class PartialConfig(object):
     """
