@@ -269,7 +269,7 @@ class GitRepo(FileManager):
         )
 
     def fetch(self):
-        if self.status == FileManagerStatus.INIT:
+        if self.status != FileManagerStatus.FETCHED:
             self.init_repo()
 
         if self.check_outdated():

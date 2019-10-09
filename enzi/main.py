@@ -171,12 +171,10 @@ def parse_args():
     clean_parser.add_argument(
         '-y', '--yes', help='Skip clean up confirmation', action='store_true')
     clean_parser.set_defaults(task=enzi_clean)
-    clean_parser.add_argument('--root', help='Enzi project root directory')
 
     # update dependencies
     update_parser = subparsers.add_parser(
         'update', help='Update dependencies')
-    update_parser.add_argument('--root', help='Enzi project root directory')
     update_parser.set_defaults(task=enzi_update)
 
     # build subparser
