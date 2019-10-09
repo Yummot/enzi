@@ -20,6 +20,8 @@ class FileManagerStatus(Enum):
     FETCHED = 1
     OUTDATED = 2
     CLEANED = 3
+    # a status for git repository to indicate it has been clone in the working directory
+    EXIST = 4
 
 
 class FileManager(object):

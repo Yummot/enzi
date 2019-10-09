@@ -27,7 +27,7 @@ def cur_time():
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
-def enzi_clean(self, confirm=False):
+def enzi_clean(confirm=False, root=None, config_name=None):
     if not confirm:
         logger.warning('clean will clean up the build directory')
         logger.warning('Would you like to execute[y/N]:')
@@ -45,6 +45,17 @@ def enzi_clean(self, confirm=False):
         else:
             logger.warning(err_msg)
 
+    root = root if root else '.'
+    config_name = config_name if config_name else 'Enzi.toml'
+    config_root = os.path.join(root, config_name)
+    valid_root = os.path.exists(config_root)
+    
+    if not valid_root:
+        msg = 'No {} in root directory \'{}\''.format(config_name, root)
+        logger.warning(msg)
+        logger.info("Nothing to do.")
+        return
+    
     if confirm and os.path.exists('build'):
         shutil.rmtree('build', onerror=rmtree_onerror)
 
@@ -100,8 +111,9 @@ def parse_args():
                         choices=[
                             'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
     # Global options
-    parser.add_argument('--root', help='Enzi project root directory',
-                        default=[], action='append')
+    # parser.add_argument('--root', help='Enzi project root directory',
+    #                     default=[], action='append')
+    parser.add_argument('--root', help='Enzi project root directory')
     parser.add_argument('--silence-mode', help='Only capture stderr',
                         action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
@@ -116,7 +128,7 @@ def parse_args():
     clean_parser = subparsers.add_parser(
         'clean', help='Clean all Enzi generated files')
     clean_parser.add_argument(
-        '-y', '--yes', help='Skip clean up confirmation', default=False, action='store_true')
+        '-y', '--yes', help='Skip clean up confirmation', action='store_true')
     clean_parser.set_defaults(task=enzi_clean)
 
     # update dependencies
@@ -180,11 +192,11 @@ def main():
         return
 
     if hasattr(args, 'task') and args.task == enzi_clean:
-        enzi_clean(args.yes)
+        enzi_clean(args.yes, args.root, args.config)
         return
 
-    if len(args.root) > 1:
-        raise RuntimeError('Currently, Enzi does not support multiple roots')
+    # if len(args.root) > 1:
+    #     raise RuntimeError('Currently, Enzi does not support multiple roots')
     if not args.root:
         raise RuntimeError('No root directory specified.')
 

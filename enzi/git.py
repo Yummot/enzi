@@ -8,7 +8,7 @@ import semver
 import typing
 import copy as py_copy
 
-from enzi.config import RawConfig, validate_git_repo
+from enzi.config import RawConfig, validate_git_repo, Config
 from enzi.file_manager import FileManager, FileManagerStatus, join_path
 from enzi.utils import Launcher, realpath, rmtree_onerror
 
@@ -167,9 +167,12 @@ class GitRepo(FileManager):
                                             typing.List[str]] = {'files': []}
         super(GitRepo, self).__init__(name, {}, proj_root, files_root)
 
+        if os.path.exists(self.git.path) and validate_git_repo(self.name, self.git.path, test=True):
+            self.status = FileManagerStatus.EXIST
+
     def init_repo(self):
         # lazy operation, skip init_repo if the destination of repo is exists
-        if os.path.exists(self.git.path) and validate_git_repo(self.name, self.git.path, test=True):
+        if self.status == FileManagerStatus.EXIST:
             fmt = 'GitRepo({}):init_repo: the repo is exists in {}, skipped init_repo'
             msg = fmt.format(self.name, self.git.path)
             logger.debug(msg)
@@ -177,6 +180,7 @@ class GitRepo(FileManager):
             self.detect_file()
             return
         else:
+            logging.getLogger('Enzi').info('fetch {}'.format(self.name))
             fmt = 'GitRepo({}):init_repo: initializing repo in {}'
             msg = fmt.format(self.name, self.git.path)
             logger.debug(msg)

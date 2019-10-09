@@ -993,7 +993,8 @@ class IXSParamsValidator(IESParamsValidator):
             parent=parent
         )
         msg = 'IXSParamsValidator: Currently, the IXS tool section is just a placeholder'
-        logger.warning(msg)
+        logging.getLogger('Enzi').warning(msg)
+        # logger.warning(msg)
 
 
 class QuestaParamsValidator(ToolParamsValidator):

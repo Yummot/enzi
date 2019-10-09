@@ -14,7 +14,7 @@ from enzi.io import EnziIO
 from enzi.utils import relpath, rmtree_onerror
 
 logger = logging.getLogger(__name__)
-
+# enzi_logger = logging.getLogger('Enzi')
 
 class ProjectFiles(FileManager):
     def __init__(self, enzi_project):
@@ -73,7 +73,13 @@ class ProjectFiles(FileManager):
         # TODO: generate fileset with deps order, maybe use DFS?
         _files = []
         _ccfiles = []
+        
         # fetch all git repos
+        m = map(lambda x: x.status != FileManagerStatus.EXIST, self.git_repos.values())
+        any_no_exist = any(m)
+        if any_no_exist:
+            print('')
+
         for dep_name, dep in self.git_repos.items():
             logger.debug('ProjectFiles:fetch GitRepo({})'.format(dep_name))
             cache = dep.fetch()
@@ -85,6 +91,9 @@ class ProjectFiles(FileManager):
             files = list(files_filter)
             _files = _files + files
             _ccfiles = _ccfiles + cache_files
+        
+        if any_no_exist:
+            print('')
 
         self.deps_fileset['files'] = _files
 
