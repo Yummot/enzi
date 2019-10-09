@@ -2,6 +2,7 @@
 import argparse
 import coloredlogs
 import datetime
+import io
 import logging
 import os
 import shutil
@@ -11,7 +12,7 @@ import colorama
 from colorama import Fore, Style
 
 from enzi.project_manager import ProjectFiles
-from enzi.utils import rmtree_onerror, FileAction
+from enzi.utils import rmtree_onerror, OptionalAction
 from enzi.frontend import Enzi
 from enzi.config import EnziConfigValidator
 
@@ -29,7 +30,7 @@ def cur_time():
 def enzi_clean(self, confirm=False):
     if not confirm:
         logger.warning('clean will clean up the build directory')
-        logger.warning('Would you like to excute[y/N]:')
+        logger.warning('Would you like to execute[y/N]:')
         _choice = input()
         choice = _choice.lower() if _choice else 'n'
         err_msg = "must input yes(y)/no(n), not " + _choice
@@ -59,12 +60,33 @@ def enzi_update(enzi: Enzi):
     logger.info('updating finished')
 
 
-def enzi_config_help():
-    f_info = EnziConfigValidator.info()
-    # logger.info(Fore.BLUE + info)
-    logger.info('Here is the template Enzi.toml file\'s key-values hints:')
-    info = f_info.getvalue()
-    print(info)
+def enzi_config_help(f):
+    if f is sys.stdout or isinstance(f, io.TextIOWrapper):
+        logger.info('Here is the template Enzi.toml file\'s key-values hints:')
+        sio = EnziConfigValidator.info()
+        print(sio.getvalue())
+        sio.close()
+    elif isinstance(f, (str, bytes)):
+        sio = EnziConfigValidator.info()
+        info = sio.getvalue().encode('utf-8')
+        sio.close()
+
+        outfile_dir = os.path.dirname(f)
+
+        # Make sure the output file directory exists.
+        # Enzi will not create the directory if it doesn't exist.
+        if outfile_dir and not os.path.exists(outfile_dir):
+            outname = os.path.basename(f)
+            msg = 'path \'{}\' for \'{}\' does not exist'.format(outfile_dir, outname)
+            logger.error(msg)
+            sys.exit(msg)
+
+        outfile = io.FileIO(f, 'w')
+        owriter = io.BufferedWriter(outfile)
+        owriter.write(info)
+        owriter.close()
+        logger.info(
+            'Generated the template Enzi.toml file\'s key-values hints in ' + f)
 
 
 def parse_args():
@@ -73,59 +95,60 @@ def parse_args():
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
-    parser.add_argument("-l", "--log", dest="log_level", help='set Enzi self log level',
+    parser.add_argument("-l", "--log", dest="log_level", help='Set Enzi self log level',
                         choices=[
                             'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
     # Global options
     parser.add_argument('--root', help='Enzi project root directory',
                         default=[], action='append')
-    parser.add_argument('--silence-mode', help='only capture stderr',
+    parser.add_argument('--silence-mode', help='Only capture stderr',
                         action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
-    parser.add_argument('--enzi-config-help', '--config-help',
-                        help='output an Enzi.toml file\'s key-values hints, use STDOUT for print to stdout',
-                        action=FileAction)
+    # Add default as a walk around for decision
+    parser.add_argument('--enzi-config-help',
+                        help='Output an Enzi.toml file\'s key-values hints. \
+                            If no output file is specified, Enzi will print to stdout.',
+                        action=OptionalAction, default=sys.stdout)
 
     # clean up args.
     clean_parser = subparsers.add_parser(
-        'clean', help='clean all Enzi generated files')
+        'clean', help='Clean all Enzi generated files')
     clean_parser.add_argument(
-        '-y', '--yes', help='skip clean up confirmation', default=False, action='store_true')
+        '-y', '--yes', help='Skip clean up confirmation', default=False, action='store_true')
     clean_parser.set_defaults(task=enzi_clean)
 
     # update dependencies
     clean_parser = subparsers.add_parser(
-        'update', help='update dependencies')
+        'update', help='Update dependencies')
     clean_parser.set_defaults(task=enzi_update)
 
     # build subparser
     build_parser = subparsers.add_parser(
-        'build', help='build the given project')
+        'build', help='Build the given project')
     build_parser.add_argument('--tool', help='Override the default target')
     build_parser.set_defaults(target='build')
 
     # run subparser
-    run_parser = subparsers.add_parser('run', help='run the given project')
+    run_parser = subparsers.add_parser('run', help='Run the given project')
     run_parser.add_argument('--tool', help='Override the default tool')
     run_parser.set_defaults(target='run')
 
     # sim subparser
     sim_parser = subparsers.add_parser(
-        'sim', help='simulate the given project')
+        'sim', help='Simulate the given project')
     sim_parser.add_argument('--tool', help='Override the default tool')
     sim_parser.set_defaults(target='sim')
 
     # program_device subparser
     pd_parser = subparsers.add_parser(
-        'program_device', help='program the given project to device')
+        'program_device', help='Program the given project to device')
     pd_parser.add_argument('--tool', help='Override the default tool')
     pd_parser.set_defaults(target='program_device')
 
     args = parser.parse_args()
 
-    if args.enzi_config_help:
-        print(args.enzi_config_help)
+    if not args.enzi_config_help is None:
         return args
 
     if hasattr(args, 'target') or hasattr(args, 'task'):
@@ -134,7 +157,7 @@ def parse_args():
         logger.error('Target or Task must be specified')
         logger.error('Supported targets: {}'.format(supported_targets))
         logger.error('Available tasks: {}'.format(available_tasks))
-        exit(1)
+        sys.exit(1)
 
 
 def main():
@@ -152,7 +175,7 @@ def main():
         coloredlogs.install(level='INFO')
 
     if args.enzi_config_help:
-        enzi_config_help()
+        enzi_config_help(args.enzi_config_help)
         return
 
     if hasattr(args, 'task') and args.task == enzi_clean:

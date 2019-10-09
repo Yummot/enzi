@@ -1308,41 +1308,40 @@ class EnziConfigValidator(Validator):
             raise ValidatorError(self.chain_keys_str(), msg)
 
     @staticmethod
-    def info(*, f=None):
-        if f is None:
-            from io import StringIO
-            f = StringIO()
+    def info():
+        from io import StringIO
+        out = StringIO()
         
-        f.write('\n# enzi configuration file version\n')
+        out.write('\n# enzi configuration file version\n')
         ev = { 'enzi_version': '|'.join(ENZI_CONFIG_VERSION) }
-        toml.dump(ev, f)
+        toml.dump(ev, out)
 
-        f.write('\n# this enzi project/package information\n')
+        out.write('\n# this enzi project/package information\n')
         pack = { 'package': PackageValidator.info() }
-        toml.dump(pack, f)
+        toml.dump(pack, out)
 
-        f.write('\n# dependencies for this enzi project/package\n')
+        out.write('\n# dependencies for this enzi project/package\n')
         deps = { 'dependencies': DepsValidator.info() }
-        toml.dump(deps, f)
+        toml.dump(deps, out)
 
-        f.write('\n# filesets for this enzi project/package\n')
+        out.write('\n# filesets for this enzi project/package\n')
         filesets = { 'filesets': FilesetsValidator.info() }
-        toml.dump(filesets, f)
+        toml.dump(filesets, out)
 
-        f.write('\n# targets for this enzi project/package\n')
+        out.write('\n# targets for this enzi project/package\n')
         targets = { 'targets': TargetsValidator.info() }
-        toml.dump(targets, f)
+        toml.dump(targets, out)
 
-        f.write('\n# tools configuration for this enzi project/package\n')
+        out.write('\n# tools configuration for this enzi project/package\n')
         tool = { 'tools': [ToolValidator.info()] }
         lines = toml.dumps(tool).splitlines()
         
         toolinfo = list(map(tools_section_line, lines))
-        f.writelines(toolinfo)
-        f.write('\n')
-        f.writelines(toolinfo)
+        out.writelines(toolinfo)
+        out.write('\n')
+        out.writelines(toolinfo)
 
-        return f
+        return out
 
 class PartialConfig(object):
     """

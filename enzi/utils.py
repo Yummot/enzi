@@ -68,7 +68,7 @@ class PathBuf(object):
         self_copy.path = os.path.join(self.path, paths)
         return self_copy
 
-    def exits(self):
+    def exists(self):
         return os.path.exists(self.path)
 
     def isabs(self):
@@ -139,6 +139,7 @@ def toml_load(path):
             if '\\' in err_line:
                 logger.error("Error may be caused by \\ in this line")
             raise ValueError(msg) from None
+        raise e
 
 
 def toml_loads(content):
@@ -161,6 +162,13 @@ def toml_loads(content):
             if '\\' in err_line:
                 logger.error("Error may be caused by \\ in this line")
             raise ValueError(msg) from None
+        raise e
+
+
+def _ensure_value(namespace, name, value):
+    if getattr(namespace, name, None) is None:
+        setattr(namespace, name, value)
+    return getattr(namespace, name)
 
 
 class FilesAction(argparse.Action):
@@ -173,13 +181,8 @@ class FilesAction(argparse.Action):
                  dest,
                  nargs=None,
                  const=None,
-                 default=None,
-                 type=None,
-                 choices=None,
-                 required=False,
-                 help=None,
-                 metavar=None):
-        if nargs == 0:
+                 **kwargs):
+        if not nargs is None and nargs == 0:
             raise ValueError(
                 'FileAction requires that nargs for append actions must be > 0')
         if const is not None and nargs != argparse.OPTIONAL:
@@ -190,19 +193,9 @@ class FilesAction(argparse.Action):
             dest=dest,
             nargs=nargs,
             const=const,
-            default=default,
-            type=type,
-            choices=choices,
-            required=required,
-            help=help,
-            metavar=metavar)
+            **kwargs)
 
     def __call__(self, parser, namespace, values, option_string=None):
-        def _ensure_value(namespace, name, value):
-            if getattr(namespace, name, None) is None:
-                setattr(namespace, name, value)
-            return getattr(namespace, name)
-
         path = realpath(values)
 
         paths = py_copy.copy(_ensure_value(namespace, self.dest, []))
@@ -211,31 +204,85 @@ class FilesAction(argparse.Action):
         setattr(namespace, self.dest, paths)
 
 
-class FileAction(FilesAction):
+class FileAction(argparse.Action):
     """
     argparse Action for File args, support only single input.
     """
 
-    def __call__(self, parser, namespace, values, option_string=None):
-        def _ensure_value(namespace, name, value):
-            if getattr(namespace, name, None) is None:
-                setattr(namespace, name, value)
-            return getattr(namespace, name)
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 nargs=None,
+                 const=None,
+                 **kwargs):
+        if not nargs is None and nargs > 1:
+            raise ValueError(
+                'FileAction requires that nargs for append actions must be 1')
+        if const is not None and nargs != argparse.OPTIONAL:
+            raise ValueError('nargs must be %r to supply const' %
+                             argparse.OPTIONAL)
+        super(FileAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=nargs,
+            const=const,
+            **kwargs)
 
+    def __call__(self, parser, namespace, values, option_string=None):
         path = realpath(values)
         setattr(namespace, self.dest, path)
 
-# launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
+
+class OptionalAction(argparse.Action):
+    """
+    argparse Action for Optional argument, 
+    it only set default value only if the corresponding argument is set without value.
+    """
+
+    def __init__(self,
+                 option_strings,
+                 dest,
+                 nargs=None,
+                 const=None,
+                 default=None,
+                 **kwargs):
+        if nargs is None:
+            nargs = argparse.OPTIONAL
+        if type(nargs) == int and nargs > 1:
+            raise ValueError(
+                'FileAction requires that nargs for append actions must be 0 or 1')
+
+        if type(nargs) == str and nargs != argparse.OPTIONAL:
+            raise ValueError('nargs must be \'%r\', 0, or 1' %
+                             argparse.OPTIONAL)
+
+        if not default is None:
+            self.option = default
+
+        super(OptionalAction, self).__init__(
+            option_strings=option_strings,
+            dest=dest,
+            nargs=nargs,
+            const=const,
+            default=None,
+            **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        if values is None or len(values) == 0:
+            values = self.option
+
+        setattr(namespace, self.dest, values)
 
 
 class Launcher:
+    # launcher from fusesoc https://github.com/olofk/fusesoc/tree/master/fusesoc
     def __init__(self, cmd, args=[], cwd=None):
         self.cmd = cmd
         self.args = args
         self.cwd = cwd
 
     # def run(self):
-    def run(self, get_output: bool = False, *, suppress_stderr=False):
+    def run(self, get_output: bool=False, *, suppress_stderr=False):
         if LAUNCHER_DEBUG:
             fmt = 'Launcher:run: cmd: \'{}\' with args: {}'
             logger.debug('Launcher:run: cwd: {}'.format(self.cwd))
