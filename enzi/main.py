@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import argparse
-import coloredlogs
 import datetime
 import io
 import logging
@@ -16,33 +15,67 @@ from enzi.utils import rmtree_onerror, OptionalAction
 from enzi.frontend import Enzi
 from enzi.config import EnziConfigValidator
 
-logger = logging.getLogger('Enzi')
-COLOREDLOGS_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
-
-if not 'coloredlogs' in sys.modules:
+# **************** LOGGING CONFIGURATION **************** #
+try:
+    import coloredlogs
+except Exception:
     coloredlogs = None
 
+logger = logging.getLogger('Enzi')
+LOG_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
+logging.basicConfig(format=LOG_FMT)
 
+colorama.init()
+
+
+# **************** UTILITIES FUCNTIONS **************** #
 def cur_time():
+    """
+    get current time string
+    """
     now = datetime.datetime.now()
     return now.strftime("%Y-%m-%d %H:%M:%S")
 
 
+def get_le_lw():
+    """
+    get properly log warnning and log error function
+    """
+    if coloredlogs:
+        effective_level = coloredlogs.get_level()
+    else:
+        effective_level = logger.getEffectiveLevel()
+
+    if effective_level > logging.WARNING:
+        lwarning = logger.critical
+    else:
+        lwarning = logger.warning
+
+    if effective_level > logging.ERROR:
+        lerror = logger.critical
+    else:
+        lerror = logger.error
+
+    return (lwarning, lerror)
+
+
+# **************** TARGETS and TASKS **************** #
 def enzi_clean(confirm=False, root=None, config_name=None):
+    (lwarning, lerror) = get_le_lw()
     if not confirm:
         if root:
             fmt = 'clean will clean up the build directory in \'{}\''
             msg = fmt.format(root)
-            logger.warning(msg)
+            lwarning(msg)
         else:
-            logger.warning('clean will clean up the build directory')
+            lwarning('clean will clean up the build directory')
 
-        logger.warning('Would you like to execute[y/N]:')
+        lwarning('Would you like to execute[y/N]:')
         _choice = input()
         choice = _choice.lower() if _choice else 'n'
         err_msg = "must input yes(y)/no(n), not " + _choice
         if not choice.startswith(('y', 'n')):
-            logger.error(err_msg)
+            lerror(err_msg)
             return
         if choice == 'y' or choice == 'yes':
             confirm = True
@@ -50,19 +83,19 @@ def enzi_clean(confirm=False, root=None, config_name=None):
             logger.info("Nothing to do.")
             return
         else:
-            logger.warning(err_msg)
+            lwarning(err_msg)
 
     root = root if root else '.'
     config_name = config_name if config_name else 'Enzi.toml'
     config_root = os.path.join(root, config_name)
     valid_root = os.path.exists(config_root)
-    
+
     if not valid_root:
         msg = 'No {} in root directory \'{}\''.format(config_name, root)
-        logger.warning(msg)
+        lwarning(msg)
         logger.info("Nothing to do.")
         return
-    
+
     if confirm and os.path.exists('build'):
         shutil.rmtree('build', onerror=rmtree_onerror)
 
@@ -108,6 +141,7 @@ def enzi_config_help(f):
         logger.info(msg)
 
 
+# **************** PARSER FUNCTION **************** #
 def parse_args():
     supported_targets = ['build', 'sim', 'run', 'program_device']
     available_tasks = ['clean', 'update']
@@ -182,20 +216,21 @@ def parse_args():
         sys.exit(1)
 
 
+# **************** MAIN **************** #
 def main():
     args = parse_args()
-
-    colorama.init()
 
     if args.log_level:
         log_level = getattr(logging, args.log_level)
         if coloredlogs:
-            coloredlogs.install(level=log_level, fmt=COLOREDLOGS_FMT)
-            # coloredlogs.
+            coloredlogs.install(level=log_level, fmt=LOG_FMT)
         else:
             logging.basicConfig(level=log_level)
+            ch = logging.StreamHandler()
+            formatter = logging.Formatter(LOG_FMT)
+            ch.setFormatter(formatter)
     elif coloredlogs:
-        coloredlogs.install(level='INFO', fmt=COLOREDLOGS_FMT)
+        coloredlogs.install(level='INFO', fmt=LOG_FMT)
 
     if args.enzi_config_help:
         enzi_config_help(args.enzi_config_help)
