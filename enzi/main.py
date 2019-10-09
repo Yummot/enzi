@@ -114,7 +114,7 @@ def parse_args():
     # parser.add_argument('--root', help='Enzi project root directory',
     #                     default=[], action='append')
     parser.add_argument('--root', help='Enzi project root directory')
-    parser.add_argument('--silence-mode', help='Only capture stderr',
+    parser.add_argument('--silence-mode', '-s', help='Only capture stderr',
                         action='store_true')
     parser.add_argument('--config', help='Specify the Enzi.toml file to use')
 
