@@ -1,5 +1,5 @@
 #! /bin/bash -f
-set -Eeuo pipefail
+set -Euo pipefail
 
 if [ -z ${build_dir+x} ]; then
   mkdir -p ./waves
@@ -31,12 +31,23 @@ ncsim_opts+=" -logfile nc_simulate.log"
 {% if toplevel %}
 if [[ ($# == 1 ) && ($1 == "--gui") ]]; then
   ncsim {{ toplevel }} $ncsim_opts -gui
+  exit 0
 else
   {% if gen_waves %}
-  ncsim {{ toplevel }} $ncsim_opts -input ./waves.tcl
+  nc_out=$(ncsim {{ toplevel }} $ncsim_opts -input ./waves.tcl 2>&1)
   {% else %}
-  ncsim {{ toplevel }} $ncsim_opts
+  nc_out=$(ncsim {{ toplevel }} $ncsim_opts 2>&1)
   {% endif %}
+  nc_ecode=$?
+
+  if [[ ($nc_ecode != 0) ]]; then
+    if [[ ($nc_out == *"ncsim> exit"*) ]]; then
+    # if [[ $rc != 0 ]];
+      printf '%s\n' "$nc_out"
+    else
+      exit $nc_ecode
+    fi
+  fi
 fi
 {%- endif %}
 
