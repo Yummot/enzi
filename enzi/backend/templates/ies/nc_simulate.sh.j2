@@ -42,7 +42,6 @@ else
 
   if [[ ($nc_ecode != 0) ]]; then
     if [[ ($nc_out == *"ncsim> exit"*) ]]; then
-    # if [[ $rc != 0 ]];
       printf '%s\n' "$nc_out"
     else
       exit $nc_ecode
