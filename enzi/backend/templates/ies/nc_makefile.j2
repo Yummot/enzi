@@ -3,22 +3,22 @@
 all: build
 
 build: nc_run.sh nc_setup.sh nc_compile.sh nc_elaborate.sh
-	./nc_run.sh --build
+	@./nc_run.sh --build
 
 run-gui: build
-	./nc_simulate.sh --gui
+	@./nc_simulate.sh --gui
 
 run: build
-	./nc_simulate.sh
+	@./nc_simulate.sh
 
 sim: build
-	./nc_simulate.sh
+	@./nc_simulate.sh
 
 sim-gui: build
-	./nc_simulate.sh --gui
+	@./nc_simulate.sh --gui
 
 clean:
-	./nc_run.sh --clean
+	@./nc_run.sh --clean
 
 {% if gen_waves %}
 clean_waves:

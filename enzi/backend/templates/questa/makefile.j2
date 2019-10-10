@@ -49,30 +49,30 @@ sim-gui: run-gui
 compile: compile.sh
 {% if compile_log %}
 	{% if silence_mode %}
-	./compile.sh | tee {{ compile_log }} > /dev/null
+	@./compile.sh | tee {{ compile_log }} > /dev/null
 	{% else %}
-	./compile.sh | tee {{ compile_log }}
+	@./compile.sh | tee {{ compile_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	./compile.sh | tee compile.log > /dev/null
+	@./compile.sh | tee compile.log > /dev/null
 	{% else %}
-	./compile.sh | tee compile.log
+	@./compile.sh | tee compile.log
 	{% endif %}
 {% endif %}
 
 elaborate: elaborate.sh
 {% if elaborate_log %}
 	{% if silence_mode %}
-	./elaborate.sh | tee {{ elaborate_log }} > /dev/null
+	@./elaborate.sh | tee {{ elaborate_log }} > /dev/null
 	{% else %}
-	./elaborate.sh | tee {{ elaborate_log }}
+	@./elaborate.sh | tee {{ elaborate_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	./elaborate.sh | tee elaborate.log > /dev/null
+	@./elaborate.sh | tee elaborate.log > /dev/null
 	{% else %}
-	./elaborate.sh | tee elaborate.log
+	@./elaborate.sh | tee elaborate.log
 	{% endif %}
 {% endif %}
 
