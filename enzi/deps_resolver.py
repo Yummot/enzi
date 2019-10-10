@@ -500,6 +500,11 @@ class DependencyResolver(object):
         it will try to terminate Enzi with raising an SystemExit exception.
         :raises: SystemExit
         """
+        base_estr = 'Enzi exit on error: '
+        if parent and name == parent.name:
+            msg = 'Possible self dependency for package: %s' % parent.name
+            logger.error(msg)
+            raise SystemExit(base_estr + msg)
         if name in self.git_urls and dep.git_url != self.git_urls[name]:
             pre_git_url = self.git_urls[name]
             
@@ -517,7 +522,7 @@ class DependencyResolver(object):
             logger.error(msg2)
             # raise an exception.SystemExit.
             # if not try..except caught it, it terminates Enzi.
-            raise SystemExit('Enzi exit on error: ' + msg)
+            raise SystemExit(base_estr + msg)
         self.git_urls[name] = dep.git_url
 
     def register_dep(self, name: str, dep: DependencyRef, versions: GitVersions):

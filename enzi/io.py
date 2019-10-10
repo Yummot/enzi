@@ -23,22 +23,41 @@ class EnziIO(object):
     def __init__(self, enzi: Enzi):
         self.enzi = enzi
 
-    def git_repo(self, name, db_path, revision, *, proj_root=None) -> GitRepo:
-        """
-        create a git repo with given db_path and revision,
-        the storage path is build from enzi.build_deps_path + name
-        """
+    def git_db_dir(self, name):
+        # TODO: change git database name format
+        if HASH_GDEP_NAME:
+            name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
+            db_name = '{}-{}'.format(name, name_hash_slice)
+        else:
+            db_name = name
+
+        db_dir: PathBuf = self.enzi.database_path.join(
+            'git').join('db').join(db_name)
+
+        return db_dir
+    
+    def git_repo_dir(self, name):
         # TODO: change git database name format
         if HASH_GDEP_NAME:
             name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
             repo_name = '{}-{}'.format(name, name_hash_slice)
         else:
             repo_name = name
-        repo_path = self.enzi.build_deps_path.join(repo_name)
-        git = Git(repo_path.path, self)
+        repo_dir = self.enzi.build_deps_path.join(repo_name)
+        
+        return repo_dir
+
+    def git_repo(self, name, db_path, revision, *, proj_root=None) -> GitRepo:
+        """
+        create a git repo with given db_path and revision,
+        the storage path is build from enzi.build_deps_path + name + Optional[blake2b[:16]]
+        """
+        # TODO: change git database name format
+        repo_dir = self.git_repo_dir(name)
+        git = Git(repo_dir.path, self)
         if proj_root is None:
             proj_root = self.enzi.work_dir
-        return GitRepo(repo_name, proj_root, git, db_path, revision, enzi_io=self)
+        return GitRepo(name, proj_root, git, db_path, revision, enzi_io=self)
 
     def dep_versions(self, dep_id):
         dep = self.enzi.dependecy(dep_id)
@@ -47,16 +66,9 @@ class EnziIO(object):
         return self.git_versions(dep_git)
 
     def git_database(self, name, git_url) -> Git:
-        # TODO: change git database name format
-        if HASH_GDEP_NAME:
-            name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
-            db_name = '{}-{}'.format(name, name_hash_slice)
-        else:
-            db_name = name
 
         # TODO: cache db_dir in Enzi
-        db_dir: PathBuf = self.enzi.database_path.join(
-            'git').join('db').join(db_name)
+        db_dir: PathBuf = self.git_db_dir(name)
         os.makedirs(db_dir.path, exist_ok=True)
         git = Git(db_dir.path, self)
 
