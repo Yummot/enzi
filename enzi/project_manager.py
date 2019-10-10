@@ -31,8 +31,7 @@ class ProjectFiles(FileManager):
             self.lf_managers[target] = LocalFiles(name,
                                                   config, 
                                                   enzi_project.work_dir, 
-                                                  build_src_dir,
-                                                  enzi_project.build_dir)
+                                                  build_src_dir)
             self.cache_files[target] = {'files': []}
 
         self.git_db_records = {}
