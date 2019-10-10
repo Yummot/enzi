@@ -223,7 +223,7 @@ class WinDelegate(object):
         sim_top = self.toplevel_opt
         link_libs = svars['link_libs']
         log_name = self.master.simulate_log
-        log_name = os.path.join(self.master.work_dir, log_name)
+        log_name = os.path.join(self.master.work_root, log_name)
 
         f = io.FileIO(log_name, 'w')
         writer = io.BufferedWriter(f)
@@ -266,7 +266,7 @@ class WinDelegate(object):
         vhdl_defines = cvars['vhdl_defines']
         sv = cvars['sv_input_port']
         log_name = self.master.compile_log
-        log_name = os.path.join(self.master.work_dir, log_name)
+        log_name = os.path.join(self.master.work_root, log_name)
 
         f = io.FileIO(log_name, 'w')
         writer = io.BufferedWriter(f)
@@ -289,7 +289,7 @@ class WinDelegate(object):
         args = ' '.join(args)
         cmd = 'vopt ' + args
         log_name = self.master.elaborate_log
-        log_name = os.path.join(self.master.work_dir, log_name)
+        log_name = os.path.join(self.master.work_root, log_name)
 
         f = io.FileIO(log_name, 'w')
         writer = io.BufferedWriter(f)
