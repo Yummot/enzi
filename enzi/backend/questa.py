@@ -19,7 +19,7 @@ class Questa(Backend):
     def __init__(self, config={}, work_root=None):
         self._gui_mode = False
 
-        self.compile_log = config.get('compile_log', None)
+        self.compile_log = config.get('compile_log', 'compile.log')
         self.vlog_opts = config.get('vlog_opts', None)
         self.vhdl_opts = config.get('vhdl_opts', None)
         self.vlog_defines = config.get('vlog_defines', None)
@@ -39,10 +39,10 @@ class Questa(Backend):
                 x for x in self.fileset if not x in self.vhdl_fileset]
 
         self.elab_opts = config.get('elab_opts', None)
-        self.elaborate_log = config.get('elaborate_log', None)
+        self.elaborate_log = config.get('elaborate_log', 'elaborate.log')
 
         self.link_libs = config.get('link_libs', [])
-        self.simulate_log = config.get('simulate_log', None)
+        self.simulate_log = config.get('simulate_log', 'simulate.log')
         self.sim_opts = config.get('sim_opts', None)
         super(Questa, self).__init__(config=config, work_root=work_root)
 
