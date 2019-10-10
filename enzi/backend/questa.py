@@ -264,20 +264,31 @@ class WinDelegate(object):
         vhdl_opts = cvars['vhdl_opts']
         vlog_defines = cvars['vlog_defines']
         vhdl_defines = cvars['vhdl_defines']
-        sv = cvars['sv_input_port']
+        sv_iport = cvars['sv_input_port']
         log_name = self.master.compile_log
         log_name = os.path.join(self.master.work_root, log_name)
 
         f = io.FileIO(log_name, 'w')
         writer = io.BufferedWriter(f)
 
+        # TODO: use map-reduce
+        vhdl = []
+        sv = []
+        verilog = []
         for file in fileset:
             if file.endswith((".vhd", '.vhdl')):
-                self._vhdl(file, vhdl_opts, vhdl_defines, writer)
+                vhdl.append(file)
             elif file.endswith(('.sv', '.svh')):
-                self._vlog(file, vlog_opts, vlog_defines, sv, writer)
+                sv.append(file)
             elif file.endswith(('.v', '.vh')):
-                self._vlog(file, vlog_opts, vlog_defines, sv, writer)
+                verilog.append(file)
+
+        if len(vhdl):
+            self._vhdl_f(vhdl, vhdl_opts, vhdl_defines, '', writer)
+        if len(sv):
+            self._vlog_f(sv, vlog_opts, vlog_defines, sv_iport, writer)
+        if len(verilog):
+            self._vlog_f(verilog, vlog_opts, vlog_defines, '', writer)
 
         writer.close()
 
@@ -295,6 +306,38 @@ class WinDelegate(object):
         writer = io.BufferedWriter(f)
         self._win_run_tool(cmd, writer)
         writer.close()
+
+    def _f_line(self, line: str):
+        line = line.replace('\\', '/')
+        line = '"{}"\n'.format(line)
+        return line.encode('utf-8')
+
+    def _vlog_f(self, files: list, opts: str, defines: str, sv: str = None, fd=None):
+        if sv:
+            f_path = os.path.join(self.master.work_root, 'sv.f')
+        else:
+            f_path = os.path.join(self.master.work_root, 'verilog.f')
+        f = io.FileIO(f_path, 'w')
+        writer = io.BufferedWriter(f)
+        lines = map(self._f_line, files)
+        writer.writelines(lines)
+        writer.close()
+        fake = os.path.relpath(f_path, self.master.work_root)
+        fake = fake.replace('\\', '/')
+        fake_file = '-f ' + fake
+        self._vlog(fake_file, opts, defines, sv, fd)
+
+    def _vhdl_f(self, files: list, opts: str, defines: str, dummy='', fd=None):
+        f_path = os.path.join(self.master.work_root, 'vhdl.f')
+        f = io.FileIO(f_path, 'w')
+        writer = io.BufferedWriter(f)
+        lines = map(self._f_line, files)
+        writer.writelines(lines)
+        writer.close()
+        fake = os.path.relpath(f_path, self.master.work_root)
+        fake = fake.replace('\\', '/')
+        fake_file = '-f ' + fake
+        self._vlog(fake_file, opts, defines, dummy, fd)
 
     def _vlog(self, file: str, opts: str, defines: str, sv: str = None, fd=None):
         if sv:

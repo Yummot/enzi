@@ -32,14 +32,14 @@ class Enzi(object):
 
     def __init__(self, work_dir='.', config_name='Enzi.toml'):
         self.work_dir = realpath(work_dir)
-        self.build_dir = self.work_dir + '/build'
+        self.build_dir = os.path.join(self.work_dir, 'build')
         work_root_config = os.path.join(self.work_dir, config_name)
         self.config_path = work_root_config
         if os.path.exists(work_root_config):
             config = RawConfig(work_root_config).validate()
             self.config = config
         else:
-            raise RuntimeError('No Enzi.toml in this directory.')
+            raise RuntimeError('No {} in this directory.'.format(config_name))
 
         # mitime in nanosecond
         self.config_mtime = self.config.file_stat.st_mtime_ns
@@ -273,7 +273,8 @@ class BackendConfigGen(object):
 
         config['elab_opts'] = opts2str(ies_config.get('elab_opts', []))
         config['link_libs'] = opts2str(ies_config.get('link_libs', []))
-        config['elaborate_log'] = ies_config.get('elaborate_log', 'elaborate.log')
+        config['elaborate_log'] = ies_config.get(
+            'elaborate_log', 'elaborate.log')
 
         config['sim_opts'] = opts2str(ies_config.get('sim_opts', []))
         config['simulate_log'] = ies_config.get('simulate_log', 'simulate.log')
@@ -308,9 +309,11 @@ class BackendConfigGen(object):
 
         config['elab_opts'] = opts2str(questa_config.get('elab_opts', []))
         config['link_libs'] = opts2str(questa_config.get('link_libs', []))
-        config['elaborate_log'] = questa_config.get('elaborate_log', 'elaborate.log')
+        config['elaborate_log'] = questa_config.get(
+            'elaborate_log', 'elaborate.log')
 
         config['sim_opts'] = opts2str(questa_config.get('sim_opts', []))
-        config['simulate_log'] = questa_config.get('simulate_log', 'simulate.log')
+        config['simulate_log'] = questa_config.get(
+            'simulate_log', 'simulate.log')
 
         return config
