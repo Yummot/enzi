@@ -1290,28 +1290,34 @@ class EnziConfigValidator(Validator):
 
     ENZI_VERSION_COMMENT = '''
 # enzi configuration file version
+# Mandatory enzi configuration file version section, must be specified.
 '''
     PACKAGE_COMMENT = '''
 # This enzi project/package information:
+# Mandatory package section, must be specified.
 # All the keys listed bellow need to be specified.
 # No additional keys are allowed.
 '''
     FILESETS_COMMENT = '''
 # Filesets for this enzi project/package
+# At least one fileset must be provided.
 '''
 
     TARGETS_COMMENT = '''
 # Targets for this enzi project/package
+# Optional Dependencies Section, use when you want to run a target.
 '''
 
-    DEPS_COMMENT = '''    
+    DEPS_COMMENT = '''
 # Dependencies for this enzi project/package:
+# Optional Dependencies Section, use when this Enzi package has dependencies.
 # A dependency must have a `path` or `url` key, but not have them the same time.
 # A dependency must have a `commit` or `path` key, but not have them the same time.
 '''
 
     TOOLS_COMMENT = '''
 # Tools configuration for this enzi project/package:
+# Optional Dependencies Section, use when you want to provide extra parameters for a tool.
 # All parameters in a single tool param section are optional. You don\'t have to provide all parameters.
 # This section is just a reminder of all the available tools and their available optional parameters.
 # Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.

@@ -131,7 +131,12 @@ def enzi_config_help(f):
             fmt = 'path \'{}\' for \'{}\' does not exist'
             msg = fmt.format(outfile_dir, outname)
             logger.error(msg)
-            sys.exit(msg)
+            sys.exit(1)
+        
+        if os.path.exists(f):
+            msg = '{} is already exists'.format(f)
+            logger.error(msg)
+            sys.exit(1)
 
         outfile = io.FileIO(f, 'w')
         owriter = io.BufferedWriter(outfile)
