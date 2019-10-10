@@ -178,6 +178,7 @@ class WinDelegate(object):
         self.fileset = list(map(lambda x: x.replace('/', '\\'), self.master.fileset))
 
     def _win_run_tool(self, cmd, log=None):
+        logger.debug('cmd: {}'.format(cmd))
         if log is None:
             p = subprocess.Popen(cmd, cwd=self.master.work_root)
         else:
@@ -249,13 +250,10 @@ class WinDelegate(object):
             for file in fileset:
                 if file.endswith((".vhd", '.vhdl')):
                     self._vhdl(file, vhdl_opts, vhdl_defines, f)
-                    pass
                 elif file.endswith(('.sv', '.svh')):
                     self._vlog(file, vlog_opts, vlog_defines, sv, f)
-                    pass
                 elif file.endswith(('.vhd', '.vhdl')):
                     self._vlog(file, vlog_opts, vlog_defines, f)
-                    pass
 
     def _elaborate(self):
         evars = self._elaborate_vars
@@ -307,11 +305,11 @@ class WinDelegate(object):
 
     @property
     def _compile_vars(self):
-        vlog_opts = "+cover=bcefsx -incr"
+        vlog_opts = "+cover=bcefsx -incr "
         vhdl_opts = "+cover=bcefsx "
         vlog_defines = ""
         vhdl_defines = ""
-        sv_input_port = "-svinputport=var"
+        sv_input_port = "-svinputport=var "
         if self.master.vlog_opts:
             vlog_opts = vlog_opts + self.master.vlog_opts
         if self.master.vhdl_opts:

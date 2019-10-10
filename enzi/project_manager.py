@@ -21,7 +21,6 @@ class ProjectFiles(FileManager):
         proj_root = enzi_project.work_dir
         build_src_dir = os.path.join(enzi_project.build_dir, enzi_project.name)
         
-        self.build_src_dir = os.path.relpath(build_src_dir, enzi_project.build_dir)
         self.lf_managers = {}
         self.cache_files = {}
         for target in enzi_project.targets:
@@ -30,7 +29,10 @@ class ProjectFiles(FileManager):
             config = {'fileset': fileset}
             # TODO: code review, whether we need that much of LocalFiles or not
             self.lf_managers[target] = LocalFiles(name,
-                                                  config, enzi_project.work_dir, self.build_src_dir)
+                                                  config, 
+                                                  enzi_project.work_dir, 
+                                                  build_src_dir,
+                                                  enzi_project.build_dir)
             self.cache_files[target] = {'files': []}
 
         self.git_db_records = {}

@@ -69,7 +69,8 @@ def join_path(root, file_path):
 
 
 class LocalFiles(FileManager):
-    def __init__(self, name, config, proj_root, files_root):
+    # def __init__(self, name, config, proj_root, files_root):
+    def __init__(self, name, config, proj_root, files_root, build_root=None):
         config['local'] = True  # LocalFiles must be local
         super(LocalFiles, self).__init__(name, config, proj_root, files_root)
         if not 'fileset' in config:
@@ -78,11 +79,15 @@ class LocalFiles(FileManager):
         files = config['fileset'].get('files', [])
         files_map = map(lambda p: os.path.normpath(p), files)
         self.fileset = {'files': list(files_map)}
+        self.build_root = build_root
 
     def fetch(self):
         for file in self.fileset['files']:
             src_file = join_path(self.proj_root, file)
             dst_file = join_path(self.files_root, file)
+            
+            if self.build_root:
+                dst_file = os.path.relpath(dst_file, self.build_root)
             
             if os.path.exists(src_file):
                 dst_dir = os.path.dirname(dst_file)
