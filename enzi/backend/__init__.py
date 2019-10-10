@@ -7,13 +7,13 @@ from enzi.backend.backend import *
 from enzi.backend.ies import IES
 from enzi.backend.questa import Questa
 
+__all__ = ['KnownBackends', 'Questa', 'IES',
+           'Backend', 'BackendCallback', 'value_str_filter']
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 cur_system = platform.system()
-
-__all__ = ['KnownBackends', 'Questa', 'IES',
-           'Backend', 'BackendCallback', 'value_str_filter']
 
 
 class KnownBackends(object):

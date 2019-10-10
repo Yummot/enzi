@@ -7,10 +7,11 @@ from collections import OrderedDict
 
 from enzi.backend import Backend
 
+__all__ = ('Questa', )
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-__all__ = ('Questa', )
 
 class Questa(Backend):
     supported_system = ('Linux', 'Windows',)
