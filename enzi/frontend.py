@@ -263,7 +263,7 @@ class BackendConfigGen(object):
 
         config['gen_waves'] = ies_config.get('gen_waves', True)
 
-        config['compile_log'] = ies_config.get('compile_log', '')
+        config['compile_log'] = ies_config.get('compile_log', 'compile.log')
         config['vlog_opts'] = opts2str(ies_config.get('vlog_opts', []))
         config['vhdl_opts'] = opts2str(ies_config.get('vhdl_opts', []))
         config['vlog_defines'] = opts2str(
@@ -273,10 +273,10 @@ class BackendConfigGen(object):
 
         config['elab_opts'] = opts2str(ies_config.get('elab_opts', []))
         config['link_libs'] = opts2str(ies_config.get('link_libs', []))
-        config['elaborate_log'] = ies_config.get('elaborate_log', '')
+        config['elaborate_log'] = ies_config.get('elaborate_log', 'elaborate.log')
 
         config['sim_opts'] = opts2str(ies_config.get('sim_opts', []))
-        config['simulate_log'] = ies_config.get('simulate_log', '')
+        config['simulate_log'] = ies_config.get('simulate_log', 'simulate.log')
 
         return config
 
@@ -298,7 +298,7 @@ class BackendConfigGen(object):
         _questa_config = questa_config
         questa_config = questa_config.get('params', {})
 
-        config['compile_log'] = questa_config.get('compile_log', '')
+        config['compile_log'] = questa_config.get('compile_log', 'compile.log')
         config['vlog_opts'] = opts2str(questa_config.get('vlog_opts', []))
         config['vhdl_opts'] = opts2str(questa_config.get('vhdl_opts', []))
         config['vlog_defines'] = opts2str(
@@ -308,9 +308,9 @@ class BackendConfigGen(object):
 
         config['elab_opts'] = opts2str(questa_config.get('elab_opts', []))
         config['link_libs'] = opts2str(questa_config.get('link_libs', []))
-        config['elaborate_log'] = questa_config.get('elaborate_log', '')
+        config['elaborate_log'] = questa_config.get('elaborate_log', 'elaborate.log')
 
         config['sim_opts'] = opts2str(questa_config.get('sim_opts', []))
-        config['simulate_log'] = questa_config.get('simulate_log', '')
+        config['simulate_log'] = questa_config.get('simulate_log', 'simulate.log')
 
         return config

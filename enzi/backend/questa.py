@@ -228,6 +228,7 @@ class WinDelegate(object):
                     self._win_run_tool(cmd, f)
 
     def sim_main(self):
+        self.build_main()
         self.run_main()
 
     def clean(self):        
