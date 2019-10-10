@@ -6,6 +6,7 @@ setup(
     version="0.6.3",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
+    url="https://github.com/Yummot/enzi",
     license="MIT",
     packages=['enzi'],
     package_data={
