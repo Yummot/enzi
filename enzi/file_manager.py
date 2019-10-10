@@ -86,14 +86,13 @@ class LocalFiles(FileManager):
             src_file = join_path(self.proj_root, file)
             dst_file = join_path(self.files_root, file)
             
-            if self.build_root:
-                dst_file = os.path.relpath(dst_file, self.build_root)
-            
             if os.path.exists(src_file):
                 dst_dir = os.path.dirname(dst_file)
                 if not os.path.exists(dst_dir):
                     os.makedirs(dst_dir)
                 shutil.copyfile(src_file, dst_file)
+                if self.build_root:
+                    dst_file = os.path.relpath(dst_file, self.proj_root)
                 self.cache_files['files'].append(dst_file)
             else:
                 msg = 'File {} not found.'.format(src_file)
