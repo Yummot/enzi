@@ -184,7 +184,7 @@ class WinDelegate(object):
             map(lambda x: x.replace('/', '\\'), self.master.fileset))
 
     def _win_run_tool(self, cmd, log=None):
-        logger.debug('cmd: {}'.format(cmd))
+        logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))
         if log is None:
             p = subprocess.Popen(cmd, cwd=self.master.work_root)
         else:
