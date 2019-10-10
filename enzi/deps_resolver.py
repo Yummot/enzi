@@ -75,10 +75,9 @@ class DependencyConstraint(object):
     def is_revision(self):
         return self.cons == 'Revision'
 
-# TODO: rewrite in more python way
-
 
 class State(object):
+    # TODO: rewrite in more python way
     __allow_states__ = ('Open', 'Locked', 'Constrained', 'Pick')
 
     def __init__(self, state, val=None):
@@ -244,7 +243,9 @@ class DependencyResolver(object):
     def __init__(self, enzi: Enzi):
         self.table: typing.MutableMapping[str,
                                           Dependency] = {}  # <K=str, Dependency>
-        self.decisions: typing.MutableMapping[str, int] = {}  # <K=str, int>
+        # self.decisions: typing.MutableMapping[str, int] = {}  # <K=str, int>
+        # a cache for dep name <-> dep git url, use for name/git url conflicts
+        self.git_urls: typing.MutableMapping[str, str] = {}
         self.enzi = enzi
 
     def resolve(self) -> Locked:
@@ -263,6 +264,8 @@ class DependencyResolver(object):
             self.close()
 
         logger.debug('resolve: resolved after {} iterations'.format(iteration))
+        logger.debug('resolve: resolved table {}'.format(
+            DepTableDumper(self.table)))
 
         enzi = self.enzi
         locked = {}
@@ -293,8 +296,8 @@ class DependencyResolver(object):
             locked[name] = lock_dep
 
         return config.Locked(
-            dependencies=locked, 
-            config_path=self.enzi.config_path, 
+            dependencies=locked,
+            config_path=self.enzi.config_path,
             config_mtime=self.enzi.config_mtime)
 
     def init(self):
@@ -490,6 +493,33 @@ class DependencyResolver(object):
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')
 
+    def cache_git_urls(self, name, dep: config.Dependency, parent=None):
+        """
+        cache git urls. Raise ValueError when name exists,
+        but git url is not the same as previous cache.
+        it will try to terminate Enzi with raising an SystemExit exception.
+        :raises: SystemExit
+        """
+        if name in self.git_urls and dep.git_url != self.git_urls[name]:
+            pre_git_url = self.git_urls[name]
+            
+            if parent:
+                fmt = 'try to add {} for package: {}, '
+                msg1 = fmt.format(dep.__str__(dep_name=name), parent.name)
+            else:
+                fmt = 'try to add {},'
+                msg1 = fmt.format(dep.__str__(dep_name=name))
+            
+            msg2 = 'but it already exists with git_url: {}.'.format(
+                pre_git_url)
+            msg = msg1 + msg2
+            logger.error(msg1)
+            logger.error(msg2)
+            # raise an exception.SystemExit.
+            # if not try..except caught it, it terminates Enzi.
+            raise SystemExit('Enzi exit on error: ' + msg)
+        self.git_urls[name] = dep.git_url
+
     def register_dep(self, name: str, dep: DependencyRef, versions: GitVersions):
         logger.debug('resolver.register_dep: name {} {}'.format(name, dep))
         if not name in self.table:
@@ -506,6 +536,10 @@ class DependencyResolver(object):
             return (name, self.enzi.load_dependency(name, dep, enzi_config))
 
         enzi_io = EnziIO(self.enzi)
+
+        # detect conflicts
+        m = map(lambda x: self.cache_git_urls(*x, enzi_config), deps.items())
+        _ = list(m)
 
         names = dict(map(fn, deps.items()))
         dep_ids = set(map(lambda item: item[1], names.items()))

@@ -133,8 +133,11 @@ class Dependency(object):
         self.use_version = use_version
         self.is_local = is_local
 
-    def __str__(self):
-        return 'Dependency { git_url: %s, rev_ver: %s }' % (self.git_url, self.rev_ver)
+    def __str__(self, *, dep_name=None):
+        if dep_name is None:
+            return 'Dependency { git_url: %s, rev_ver: %s }' % (self.git_url, self.rev_ver)
+        else:
+            return 'Dependency(%s) { git_url: %s, rev_ver: %s }' % (str(dep_name), self.git_url, self.rev_ver)
     # TODO: use a more elegant way
     __repr__ = __str__
 
