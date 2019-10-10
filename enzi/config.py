@@ -12,14 +12,11 @@ from abc import ABCMeta, abstractmethod
 from itertools import chain
 from semver import VersionInfo as Version
 
-try:
-    from enzi.backend import KnownBackends
-except Exception:
-    pass
 
+from enzi.backend import KnownBackends
 from enzi.utils import Launcher
 from enzi.utils import realpath, toml_load, toml_loads
-from enzi.ver import complete as complete_version
+from enzi.ver import complete_version
 from enzi.ver import VersionReq
 
 logger = logging.getLogger(__name__)

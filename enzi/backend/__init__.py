@@ -12,6 +12,9 @@ logger.setLevel(logging.WARNING)
 
 cur_system = platform.system()
 
+__all__ = ['KnownBackends', 'Questa', 'IES',
+           'Backend', 'BackendCallback', 'value_str_filter']
+
 
 class KnownBackends(object):
     """

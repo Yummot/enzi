@@ -8,6 +8,7 @@ from enzi.backend import Backend
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+__all__ = ('IES', )
 
 class IES(Backend):
     def __init__(self, config={}, work_root=None):

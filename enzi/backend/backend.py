@@ -15,6 +15,8 @@ from collections import OrderedDict
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+__all__ = ['value_str_filter', 'BackendCallback', 'Backend']
+
 
 def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is_str=False):
     """
@@ -72,7 +74,7 @@ class Backend(object):
             raise RuntimeError(
                 "Missing required parameter \"name\" in config.") from e
 
-        self.toplevel = config.get('toplevel', None)
+        self.toplevel = config.get('toplevel')
         self.work_root = work_root if work_root is not None else ''
         self.env = os.environ.copy()
         self.env['WORK_ROOT'] = self.work_root

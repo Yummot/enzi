@@ -15,6 +15,10 @@ import typing
 
 from semver import VersionInfo
 
+__all__ = [
+    'PREFIX_REGEX', 'VERSION_REGEX',
+    'complete_version', 'Predicate', 'VersionReq'
+]
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +49,6 @@ VERSION_REGEX = re.compile(
 
 # _nat_cmp from semver https://github.com/k-bx/python-semver
 # this is a backup to make sure change to semver api does not affect this module
-
 def _cmp(a, b):
     if a > b:
         return 1
@@ -132,7 +135,7 @@ def into_req_op(op_str: str):
     return _REQ_OP_DICT[op_str]
 
 
-def complete(s: str):
+def complete_version(s: str):
     """
     Complete the Version to meet x.y.z-*+* format requirements of semver.VersionInfo
     """
@@ -171,7 +174,7 @@ def match_reqs(reqs_str: str):
         # if gdict['prefix'] is None:
         try:
             pre = gdict['ver']
-            completed, ccnt = complete(pre)
+            completed, ccnt = complete_version(pre)
             ver = semver.parse(completed)
             if ccnt == 1:
                 ver['patch'] = None

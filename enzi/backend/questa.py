@@ -10,6 +10,7 @@ from enzi.backend import Backend
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+__all__ = ('Questa', )
 
 class Questa(Backend):
     supported_system = ('Linux', 'Windows',)
