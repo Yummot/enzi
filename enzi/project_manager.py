@@ -19,7 +19,9 @@ logger = logging.getLogger(__name__)
 class ProjectFiles(FileManager):
     def __init__(self, enzi_project):
         proj_root = enzi_project.work_dir
-
+        build_src_dir = os.path.join(enzi_project.build_dir, enzi_project.name)
+        
+        self.build_src_dir = os.path.relpath(build_src_dir, proj_root)
         self.lf_managers = {}
         self.cache_files = {}
         for target in enzi_project.targets:
@@ -28,7 +30,7 @@ class ProjectFiles(FileManager):
             config = {'fileset': fileset}
             # TODO: code review, whether we need that much of LocalFiles or not
             self.lf_managers[target] = LocalFiles(name,
-                                                  config, enzi_project.work_dir, enzi_project.build_dir)
+                                                  config, enzi_project.work_dir, self.build_src_dir)
             self.cache_files[target] = {'files': []}
 
         self.git_db_records = {}
@@ -130,7 +132,7 @@ class ProjectFiles(FileManager):
             raise RuntimeError('target {} is not fetched.'.format(target_name))
         
         # merge deps fileset
-        local_fileset = self.lf_managers[target_name].fileset['files']
+        local_fileset = self.lf_managers[target_name].cache_files['files']
         deps_fileset = self.deps_fileset['files']
         files = deps_fileset + local_fileset
         fileset = { 'files': files }
