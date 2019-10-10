@@ -11,6 +11,8 @@ from enzi.utils import PathBuf, try_parse_semver
 
 logger = logging.getLogger(__name__)
 
+HASH_GDEP_NAME = os.environ.get('HASH_GDEP_NAME')
+
 
 class EnziIO(object):
     """
@@ -27,9 +29,11 @@ class EnziIO(object):
         the storage path is build from enzi.build_deps_path + name
         """
         # TODO: change git database name format
-        name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
-        repo_name = '{}-{}'.format(name, name_hash_slice)
-        repo_name = name
+        if HASH_GDEP_NAME:
+            name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
+            repo_name = '{}-{}'.format(name, name_hash_slice)
+        else:
+            repo_name = name
         repo_path = self.enzi.build_deps_path.join(repo_name)
         git = Git(repo_path.path, self)
         if proj_root is None:
@@ -43,14 +47,13 @@ class EnziIO(object):
         return self.git_versions(dep_git)
 
     def git_database(self, name, git_url) -> Git:
-        # url_hash = crypt.crypt(git_url, crypt.METHOD_SHA256)[:16]
-        # logger.debug("EnziIO: {}, {}".format(type(name), type(url_hash)))
-        # logger.debug("EnziIO: {}, {}".format(name, url_hash))
-        # db_name = name + '-' + url_hash
         # TODO: change git database name format
-        name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
-        db_name = '{}-{}'.format(name, name_hash_slice)
-        db_name = name
+        if HASH_GDEP_NAME:
+            name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
+            db_name = '{}-{}'.format(name, name_hash_slice)
+        else:
+            db_name = name
+
         # TODO: cache db_dir in Enzi
         db_dir: PathBuf = self.enzi.database_path.join(
             'git').join('db').join(db_name)
