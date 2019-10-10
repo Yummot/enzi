@@ -21,7 +21,7 @@ class ProjectFiles(FileManager):
         proj_root = enzi_project.work_dir
         build_src_dir = os.path.join(enzi_project.build_dir, enzi_project.name)
         
-        self.build_src_dir = os.path.relpath(build_src_dir, proj_root)
+        self.build_src_dir = os.path.relpath(build_src_dir, enzi_project.build_dir)
         self.lf_managers = {}
         self.cache_files = {}
         for target in enzi_project.targets:

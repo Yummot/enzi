@@ -1,3 +1,4 @@
+from hashlib import blake2b
 import logging
 import os
 import typing
@@ -26,6 +27,8 @@ class EnziIO(object):
         the storage path is build from enzi.build_deps_path + name
         """
         # TODO: change git database name format
+        name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
+        repo_name = '{}-{}'.format(name, name_hash_slice)
         repo_name = name
         repo_path = self.enzi.build_deps_path.join(repo_name)
         git = Git(repo_path.path, self)
@@ -45,6 +48,8 @@ class EnziIO(object):
         # logger.debug("EnziIO: {}, {}".format(name, url_hash))
         # db_name = name + '-' + url_hash
         # TODO: change git database name format
+        name_hash_slice = blake2b(name.encode('utf-8')).hexdigest()[:16]
+        db_name = '{}-{}'.format(name, name_hash_slice)
         db_name = name
         # TODO: cache db_dir in Enzi
         db_dir: PathBuf = self.enzi.database_path.join(

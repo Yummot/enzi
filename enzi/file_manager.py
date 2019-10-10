@@ -83,6 +83,7 @@ class LocalFiles(FileManager):
         for file in self.fileset['files']:
             src_file = join_path(self.proj_root, file)
             dst_file = join_path(self.files_root, file)
+            
             if os.path.exists(src_file):
                 dst_dir = os.path.dirname(dst_file)
                 if not os.path.exists(dst_dir):
