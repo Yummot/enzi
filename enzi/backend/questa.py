@@ -277,7 +277,7 @@ class WinDelegate(object):
             elif file.endswith(('.sv', '.svh')):
                 self._vlog(file, vlog_opts, vlog_defines, sv, writer)
             elif file.endswith(('.v', '.vh')):
-                self._vlog(file, vlog_opts, vlog_defines, writer)
+                self._vlog(file, vlog_opts, vlog_defines, sv, writer)
 
         writer.close()
 
