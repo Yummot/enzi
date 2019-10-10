@@ -1313,6 +1313,7 @@ class EnziConfigValidator(Validator):
 # Optional Dependencies Section, use when this Enzi package has dependencies.
 # A dependency must have a `path` or `url` key, but not have them the same time.
 # A dependency must have a `commit` or `path` key, but not have them the same time.
+# (WARNING) if using the path key in a dependency section, it must be a absolute path.
 '''
 
     TOOLS_COMMENT = '''

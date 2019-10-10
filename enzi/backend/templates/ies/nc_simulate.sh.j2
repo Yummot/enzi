@@ -43,9 +43,12 @@ else
   if [[ ($nc_ecode != 0) ]]; then
     if [[ ($nc_out == *"ncsim> exit"*) ]]; then
       printf '%s\n' "$nc_out"
+      echo 'enzi exit normally'
     else
       exit $nc_ecode
     fi
+  else
+    printf '%s\n' "$nc_out"
   fi
 fi
 {%- endif %}
