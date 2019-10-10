@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import io
 import logging
 import os
 import subprocess
@@ -87,6 +88,7 @@ class UnixDelegate(object):
     """
     Delegate class for Running Questa Simulator Backend in UNIX like systems
     """
+
     def __init__(self, master: Questa):
         self.master = master
 
@@ -164,29 +166,40 @@ class UnixDelegate(object):
     def _sim_gui_vars(self):
         return {"toplevel": self.master.toplevel}
 
+
 class WinDelegate(object):
     """
     Delegate class for Running Questa Simulator Backend in Windows
     """
+
     def __init__(self, master: Questa):
         self.master: Questa = master
+        self.silence_mode = self.master.silence_mode
         self.clog = self.master.compile_log if self.master.compile_log else "compile.log"
         self.elog = self.master.elaborate_log if self.master.elaborate_log else "elaborate.log"
         self.slog = self.master.simulate_log if self.master.simulate_log else "simulate.log"
         self.toplevel = self.master.toplevel
         self.toplevel_opt = self.master.toplevel + '_opt'
-        self.fileset = list(map(lambda x: x.replace('/', '\\'), self.master.fileset))
+        self.fileset = list(
+            map(lambda x: x.replace('/', '\\'), self.master.fileset))
 
     def _win_run_tool(self, cmd, log=None):
         logger.debug('cmd: {}'.format(cmd))
         if log is None:
             p = subprocess.Popen(cmd, cwd=self.master.work_root)
         else:
-            p = subprocess.Popen(cmd, cwd=self.master.work_root, stdout=log, stderr=log)
-        p.communicate()
+            p = subprocess.Popen(cmd, cwd=self.master.work_root,
+                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, _ = p.communicate()
+
+        if not self.silence_mode:
+            print(out.decode('utf-8'))
+        log.write(out)
+
         if p.returncode:
             log_name = log.name
-            raise RuntimeError('cmd: {} error, see {} for details'.format(cmd, log_name))
+            raise RuntimeError(
+                'cmd: {} error, see {} for details'.format(cmd, log_name))
 
     @property
     def gui_mode(self):
@@ -210,29 +223,37 @@ class WinDelegate(object):
         sim_top = self.toplevel_opt
         link_libs = svars['link_libs']
         log_name = self.master.simulate_log
-        with open(log_name, 'w') as f:
-            if self.gui_mode:
-                cmd_fmt = 'vsim {} -do sim-gui.tcl {} {} {} {}'
-                if self.master.silence_mode:
-                    cmd = cmd_fmt.format('', '-quiet', sim_top, sim_opts, link_libs)
-                    self._win_run_tool(cmd, f)
-                else:
-                    cmd = cmd_fmt.format('', '', sim_top, sim_opts, link_libs)
-                    self._win_run_tool(cmd,f )
+
+        f = io.FileIO(log_name, 'w')
+        writer = io.BufferedWriter(f)
+
+        if self.gui_mode:
+            cmd_fmt = 'vsim {} -do sim-gui.tcl {} {} {} {}'
+            if self.master.silence_mode:
+                cmd = cmd_fmt.format(
+                    '', '-quiet', sim_top, sim_opts, link_libs)
+                self._win_run_tool(cmd, writer)
             else:
-                cmd_fmt = 'vsim {} -do "run -a" {} {} {} {}'
-                if self.master.silence_mode:
-                    cmd = cmd_fmt.format('-c', '-quiet', sim_top, sim_opts, link_libs)
-                    self._win_run_tool(cmd, f)
-                else:
-                    cmd = cmd_fmt.format('-c', '', sim_top, sim_opts, link_libs)
-                    self._win_run_tool(cmd, f)
+                cmd = cmd_fmt.format('', '', sim_top, sim_opts, link_libs)
+                self._win_run_tool(cmd, writer)
+        else:
+            cmd_fmt = 'vsim {} -do "run -a" {} {} {} {}'
+            if self.master.silence_mode:
+                cmd = cmd_fmt.format(
+                    '-c', '-quiet', sim_top, sim_opts, link_libs)
+                self._win_run_tool(cmd, writer)
+            else:
+                cmd = cmd_fmt.format(
+                    '-c', '', sim_top, sim_opts, link_libs)
+                self._win_run_tool(cmd, writer)
+
+        writer.close()
 
     def sim_main(self):
         self.build_main()
         self.run_main()
 
-    def clean(self):        
+    def clean(self):
         pass
 
     def _compile(self):
@@ -246,14 +267,19 @@ class WinDelegate(object):
         log_name = self.master.compile_log
         if os.path.exists(log_name):
             os.remove(log_name)
-        with open(log_name, 'a') as f:        
-            for file in fileset:
-                if file.endswith((".vhd", '.vhdl')):
-                    self._vhdl(file, vhdl_opts, vhdl_defines, f)
-                elif file.endswith(('.sv', '.svh')):
-                    self._vlog(file, vlog_opts, vlog_defines, sv, f)
-                elif file.endswith(('.vhd', '.vhdl')):
-                    self._vlog(file, vlog_opts, vlog_defines, f)
+
+        f = io.FileIO(log_name, 'w')
+        writer = io.BufferedWriter(f)
+
+        for file in fileset:
+            if file.endswith((".vhd", '.vhdl')):
+                self._vhdl(file, vhdl_opts, vhdl_defines, writer)
+            elif file.endswith(('.sv', '.svh')):
+                self._vlog(file, vlog_opts, vlog_defines, sv, writer)
+            elif file.endswith(('.vhd', '.vhdl')):
+                self._vlog(file, vlog_opts, vlog_defines, writer)
+
+        writer.close()
 
     def _elaborate(self):
         evars = self._elaborate_vars
@@ -263,8 +289,11 @@ class WinDelegate(object):
         args = ' '.join(args)
         cmd = 'vopt ' + args
         log_name = self.master.elaborate_log
-        with open(log_name, 'w') as f:
-            self._win_run_tool(cmd, f)
+
+        f = io.FileIO(log_name, 'w')
+        writer = io.BufferedWriter(f)
+        self._win_run_tool(cmd, writer)
+        writer.close()
 
     def _vlog(self, file: str, opts: str, defines: str, sv: str = None, fd=None):
         if sv:
