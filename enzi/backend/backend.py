@@ -216,7 +216,7 @@ class Backend(object):
         pass
 
     def configure(self, *, non_lazy=False):
-        self.configure_main(non_lazy=False)
+        self.configure_main(non_lazy=non_lazy)
 
     def clean(self):
         pass

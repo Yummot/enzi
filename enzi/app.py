@@ -32,11 +32,11 @@ class EnziApp(object):
     Enzi Cli Application
     """
 
-    __tasks__ = { 'clean', 'update' }
-    __targets__ = { 'build', 'sim', 'run', 'program_device' }
+    __tasks__ = {'clean', 'update'}
+    __targets__ = {'build', 'sim', 'run', 'program_device'}
 
     def __init__(self):
-        self.args = EnziApp.parse_args()
+        (self.args, self.parser) = EnziApp.parse_args()
         self.enzi = None
         self.init()
 
@@ -47,7 +47,7 @@ class EnziApp(object):
         if self.args.enzi_config_help:
             self.enzi_config_help()
             return
-        
+
         # tasks
         args = self.args
         if args.enzi_config_help:
@@ -60,12 +60,15 @@ class EnziApp(object):
 
         if not args.root:
             raise RuntimeError('No root directory specified.')
-
+        
         # if update, root must be specified
         if args.config:
-            self.enzi = Enzi(args.root[0], args.config)
+            self.enzi = Enzi(
+                args.root[0], 
+                args.config,
+                non_lazy=self.args.non_lazy)
         else:
-            self.enzi = Enzi(args.root[0])
+            self.enzi = Enzi(args.root[0], non_lazy=self.args.non_lazy)
         if hasattr(args, 'task') and args.task == 'update':
             self.update_deps()
             return
@@ -87,9 +90,8 @@ class EnziApp(object):
         project_manager = ProjectFiles(enzi)
         project_manager.fetch(target)
         fileset = project_manager.get_fileset(target)
-        enzi.run_target(target, fileset, self.args.tool) 
+        enzi.run_target(target, fileset, self.args.tool)
         self.info('`{}` done'.format(target))
-
 
     def init_logger(self):
         """
@@ -250,8 +252,8 @@ class EnziApp(object):
                             action='store_true')
         parser.add_argument(
             '--config', help='Specify the Enzi.toml file to use')
-
-        # Add default as a walk around for decision
+        parser.add_argument(
+            '--non-lazy', help='Force Enzi to (re)generated corresponding backend configuration when running target', action='store_true')
         parser.add_argument('--enzi-config-help',
                             help='Output an Enzi.toml file\'s key-values hints. \
                                 If no output file is specified, Enzi will print to stdout.',
@@ -295,10 +297,10 @@ class EnziApp(object):
         args = parser.parse_args()
 
         if not args.enzi_config_help is None:
-            return args
+            return (args, parser)
 
         if hasattr(args, 'target') or hasattr(args, 'task'):
-            return args
+            return (args, parser)
         else:
             logger.error('Target or Task must be specified')
             logger.error('Supported targets: {}'.format(supported_targets))

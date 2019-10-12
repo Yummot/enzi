@@ -70,7 +70,7 @@ class Questa(Backend):
         self._gui_mode = value
 
     def configure_main(self, *, non_lazy=False):
-        self.delegate.configure_main(non_lazy=False)
+        self.delegate.configure_main(non_lazy=non_lazy)
 
     def build_main(self):
         logger.info('building')
