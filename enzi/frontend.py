@@ -30,7 +30,7 @@ class Enzi(object):
     supported_targets = ['build', 'sim', 'run', 'program_device']
     __default_config__ = 'Enzi.toml'
 
-    def __init__(self, work_dir='.', config_name='Enzi.toml'):
+    def __init__(self, work_dir='.', config_name='Enzi.toml', **kwargs):
         self.work_dir = realpath(work_dir)
         self.build_dir = os.path.join(self.work_dir, 'build')
         work_root_config = os.path.join(self.work_dir, config_name)
@@ -66,7 +66,9 @@ class Enzi(object):
         # check if we need update database
         potential_lock_file = os.path.join(self.work_dir, 'Enzi.lock')
         self.locked = None
-        if os.path.exists(potential_lock_file) and self.database_path.exists():
+        if os.path.exists(potential_lock_file) and not self.config.dependencies:
+            self.need_update = False
+        elif os.path.exists(potential_lock_file) and self.database_path.exists():
             self.need_update = False
         elif os.path.exists(potential_lock_file) and not self.database_path.exists():
             if self.config.dependencies:
@@ -78,6 +80,11 @@ class Enzi(object):
             self.need_update = None
         
         self.initialized = False
+
+        # lazy configure decision
+        # if lazy_configure, no running self.configure to backend
+        non_lazy = kwargs.get('non_lazy', False)
+        self.non_lazy_configure = non_lazy
 
     def init(self, *, update=False):
         """
@@ -91,6 +98,11 @@ class Enzi(object):
 
         # TODO: add more useful data in lock file
         msg = 'Enzi:init: this project has dependencies, launching LockLoader'
+        if update:
+            msg = 'Enzi:init: this project has dependencies, launching LockLoader'
+        else:
+            msg = 'Enzi:init: launching LockLoader'
+        
         logger.debug(msg)
         locked = LockLoader(self, self.work_dir).load(update)
 
@@ -103,6 +115,9 @@ class Enzi(object):
         cache_msg = pprint.pformat(locked.cache)
         logger.debug('Enzi:init: locked deps:\n{}'.format(dep_msg))
         logger.debug('Enzi:init: locked caches:\n{}'.format(cache_msg))
+
+        if self.config_mtime != locked.config_mtime:
+            self.non_lazy_configure = True
 
         if not self.config.dependencies:
             logger.debug('Enzi:init: this project has no dependencies')
@@ -165,7 +180,7 @@ class Enzi(object):
 
     def configure(self, target_name, backend):
         self.check_target_availability(target_name)
-        getattr(backend, 'configure')()
+        getattr(backend, 'configure')(non_lazy=self.non_lazy_configure)
 
     def excute(self, target_name, backend):
         self.check_target_availability(target_name)

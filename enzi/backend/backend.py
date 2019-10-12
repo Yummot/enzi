@@ -101,7 +101,7 @@ class Backend(object):
             'program_device': BackendCallback()
         }
 
-        self._gen_scripts_name = None
+        self._gen_scripts_name = set()
         self.current_system = platform.system()
 
     # TODO: Add a checker fn to abort running Backend without the corresponding Backend tool.
@@ -212,11 +212,11 @@ class Backend(object):
         self.program_device_main()
         program_device_cb.post()
 
-    def configure_main(self):
+    def configure_main(self, *, non_lazy=False):
         pass
 
-    def configure(self):
-        self.configure_main()
+    def configure(self, *, non_lazy=False):
+        self.configure_main(non_lazy=False)
 
     def clean(self):
         pass

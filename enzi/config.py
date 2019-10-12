@@ -271,6 +271,9 @@ class DependencyTable(object):
             self.list.append(entry)
             self.ids[entry] = dep_id
             return dep_id
+    
+    def is_empty(self):
+        return len(self.list) == 0
 
 
 class LockedSource(object):

@@ -66,7 +66,6 @@ class EnziApp(object):
             self.enzi = Enzi(args.root[0], args.config)
         else:
             self.enzi = Enzi(args.root[0])
-        
         if hasattr(args, 'task') and args.task == 'update':
             self.update_deps()
             return

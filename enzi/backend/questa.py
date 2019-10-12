@@ -4,7 +4,9 @@ import io
 import logging
 import os
 import subprocess
+
 from collections import OrderedDict
+from functools import partial
 
 from enzi.backend import Backend
 
@@ -49,8 +51,11 @@ class Questa(Backend):
 
         if self.current_system == 'Linux':
             self.delegate = UnixDelegate(self)
+            self._gen_scripts_name = {'vsim_compile.sh',
+                                      'vsim_elaborate.sh', 'vsim-gui.tcl', 'vsim_make.mk'}
         elif self.current_system == 'Windows':
             self.delegate = WinDelegate(self)
+            self._gen_scripts_name = {'vsim-gui.tcl'}
         else:
             raise ValueError('INTERNAL ERROR: unimplemented system')
 
@@ -64,8 +69,8 @@ class Questa(Backend):
             raise ValueError('gui mode type must be bool!')
         self._gui_mode = value
 
-    def configure_main(self):
-        self.delegate.configure_main()
+    def configure_main(self, *, non_lazy=False):
+        self.delegate.configure_main(non_lazy=False)
 
     def build_main(self):
         logger.info('building')
@@ -94,44 +99,50 @@ class UnixDelegate(object):
 
     def gen_scripts(self):
         self.master.render_template(
-            'compile.sh.j2', 'compile.sh', self._compile_vars)
+            'vsim_compile.sh.j2', 'vsim_compile.sh', self._compile_vars)
         self.master.render_template(
-            'elaborate.sh.j2', 'elaborate.sh', self._elaborate_vars)
+            'vsim_elaborate.sh.j2', 'vsim_elaborate.sh', self._elaborate_vars)
         self.master.render_template(
-            'sim-gui.tcl.j2', 'sim-gui.tcl', self._sim_gui_vars)
+            'vsim-gui.tcl.j2', 'vsim-gui.tcl', self._sim_gui_vars)
         self.master.render_template(
-            'makefile.j2', 'Makefile', self._makefile_vars)
-        self.master._gen_scripts_name = ['compile.sh',
-                                         'elaborate.sh', 'sim-gui.tcl', 'Makfile']
+            'vsim_makefile.j2', 'vsim_make.mk', self._makefile_vars)
 
     @property
     def gui_mode(self):
         return self.master.gui_mode
 
-    def configure_main(self):
-        self.gen_scripts()
+    def configure_main(self, *, non_lazy=False):
+        exists = os.path.exists
+        path_of = partial(os.path.join, self.master.work_root)
+        all_exist = all(map(lambda x: exists(
+            path_of(x)), self.master._gen_scripts_name))
+        if not all_exist or non_lazy:
+            logger.debug('Non lazy configuration')
+            self.gen_scripts()
+        else:
+            logger.debug('Lazy configuration')
 
     def build_main(self):
         logger.info('building')
-        self.master._run_tool('make', ['build'])
+        self.master._run_tool('make', ['-f', 'vsim_make.mk', 'build'])
 
     def run_main(self):
         logger.info('running')
         if self.gui_mode:
-            self.master._run_tool('make', ['run-gui'])
+            self.master._run_tool('make', ['-f', 'vsim_make.mk', 'run-gui'])
         else:
-            self.master._run_tool('make', ['run'])
+            self.master._run_tool('make', ['-f', 'vsim_make.mk', 'run'])
 
     def sim_main(self):
         logger.info('cleanup')
         if self.gui_mode:
-            self.master._run_tool('make', ['sim-gui'])
+            self.master._run_tool('make', ['-f', 'vsim_make.mk', 'sim-gui'])
         else:
-            self.master._run_tool('make', ['sim'])
+            self.master._run_tool('make', ['-f', 'vsim_make.mk', 'sim'])
 
     def clean(self):
         logger.info('cleanup')
-        self.master._run_tool('make', ['clean'])
+        self.master._run_tool('make', ['-f', 'vsim_make.mk', 'clean'])
 
     @property
     def _compile_vars(self):
@@ -207,10 +218,9 @@ class WinDelegate(object):
 
     def gen_scripts(self):
         self.master.render_template(
-            'sim-gui.tcl.j2', 'sim-gui.tcl', self._sim_gui_vars)
-        self.master._gen_scripts_name = ['sim-gui.tcl']
+            'vsim-gui.tcl.j2', 'vsim-gui.tcl', self._sim_gui_vars)
 
-    def configure_main(self):
+    def configure_main(self, *, non_lazy=False):
         self.gen_scripts()
 
     def build_main(self):

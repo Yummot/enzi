@@ -1,7 +1,10 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import os
+
 from collections import OrderedDict
+from functools import partial
 
 from enzi.backend import Backend
 
@@ -49,6 +52,9 @@ class IES(Backend):
         self._gui_mode = False
 
         super(IES, self).__init__(config=config, work_root=work_root)
+
+        self._gen_scripts_name = {'nc_waves.tcl', 'nc_setup.sh', 'nc_compile.sh',
+                                  'nc_elaborate.sh', 'nc_simulate.sh', 'nc_run.sh', 'nc_make.mk'}
 
     @property
     def _waves_vars(self):
@@ -103,8 +109,8 @@ class IES(Backend):
         self._gui_mode = value
 
     def gen_scripts(self):
-        self.render_template('waves.tcl.j2',
-                             'waves.tcl', self._waves_vars)
+        self.render_template('nc_waves.tcl.j2',
+                             'nc_waves.tcl', self._waves_vars)
         self.render_template(
             'nc_setup.sh.j2', 'nc_setup.sh', self._setup_vars)
         self.render_template('nc_compile.sh.j2',
@@ -114,36 +120,42 @@ class IES(Backend):
         self.render_template('nc_simulate.sh.j2',
                              'nc_simulate.sh', self._simulate_vars)
         self.render_template('nc_run.sh.j2', 'nc_run.sh', self._run_vars)
-        self.render_template('nc_makefile.j2', 'Makefile', self._makefile_vars)
+        self.render_template(
+            'nc_makefile.j2', 'nc_make.mk', self._makefile_vars)
 
-        self._gen_scripts_name = ['waves.tcl', 'nc_setup.sh', 'nc_compile.sh',
-                                  'nc_elaborate.sh', 'nc_simulate.sh', 'nc_run.sh', 'Makefile']
-
-    def configure_main(self):
-        self.gen_scripts()
+    def configure_main(self, non_lazy=False):
+        exists = os.path.exists
+        path_of = partial(os.path.join, self.work_root)
+        all_exist = all(map(lambda x: exists(
+            path_of(x)), self._gen_scripts_name))
+        if not all_exist or non_lazy:
+            logger.debug('Non lazy configuration')
+            self.gen_scripts()
+        else:
+            logger.debug('Lazy configuration')
 
     def build_main(self):
         logger.info('building')
-        self._run_tool('make', ['build'])
+        self._run_tool('make', ['-f', 'nc_make.mk', 'build'])
 
     def run_main(self):
         logger.info('running')
         if self.gui_mode:
-            self._run_tool('make', ['run-gui'])
+            self._run_tool('make', ['-f', 'nc_make.mk', 'run-gui'])
         else:
-            self._run_tool('make', ['run'])
+            self._run_tool('make', ['-f', 'nc_make.mk', 'run'])
 
     def sim_main(self):
         logger.info('cleanup')
         if self.gui_mode:
-            self._run_tool('make', ['sim-gui'])
+            self._run_tool('make', ['-f', 'nc_make.mk', 'sim-gui'])
         else:
-            self._run_tool('make', ['sim'])
+            self._run_tool('make', ['-f', 'nc_make.mk', 'sim'])
 
     def clean(self):
         logger.info('cleanup')
-        self._run_tool('make', ['clean'])
+        self._run_tool('make', ['-f', 'nc_make.mk', 'clean'])
 
     def clean_waves(self):
         if self.gen_waves:
-            self._run_tool('make', ['clean_waves'])
+            self._run_tool('make', ['-f', 'nc_make.mk', 'clean_waves'])

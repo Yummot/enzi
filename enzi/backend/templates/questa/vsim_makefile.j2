@@ -30,15 +30,15 @@ run: build
 run-gui: build
 {% if simulate_log %}
 	{% if silence_mode %}
-	@vsim -do sim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }} $(link_libs)
+	@vsim -do vsim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -do sim-gui.tcl -l {{ simulate_log }} {{ sim_opts }} $(link_libs)
+	@vsim -do vsim-gui.tcl -l {{ simulate_log }} {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	@vsim -do sim-gui.tcl -l simulate.log -quiet {{ sim_opts }} $(link_libs)
+	@vsim -do vsim-gui.tcl -l simulate.log -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -do sim-gui.tcl -l simulate.log {{ sim_opts }} $(link_libs)
+	@vsim -do vsim-gui.tcl -l simulate.log {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% endif %}
 
@@ -46,33 +46,33 @@ sim: run
 
 sim-gui: run-gui
 
-compile: compile.sh
+compile: vsim_compile.sh
 {% if compile_log %}
 	{% if silence_mode %}
-	@./compile.sh | tee {{ compile_log }} > /dev/null
+	@./vsim_compile.sh | tee {{ compile_log }} > /dev/null
 	{% else %}
-	@./compile.sh | tee {{ compile_log }}
+	@./vsim_compile.sh | tee {{ compile_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	@./compile.sh | tee compile.log > /dev/null
+	@./vsim_compile.sh | tee compile.log > /dev/null
 	{% else %}
-	@./compile.sh | tee compile.log
+	@./vsim_compile.sh | tee compile.log
 	{% endif %}
 {% endif %}
 
-elaborate: elaborate.sh
+elaborate: vsim_elaborate.sh
 {% if elaborate_log %}
 	{% if silence_mode %}
-	@./elaborate.sh | tee {{ elaborate_log }} > /dev/null
+	@./vsim_elaborate.sh | tee {{ elaborate_log }} > /dev/null
 	{% else %}
-	@./elaborate.sh | tee {{ elaborate_log }}
+	@./vsim_elaborate.sh | tee {{ elaborate_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	@./elaborate.sh | tee elaborate.log > /dev/null
+	@./vsim_elaborate.sh | tee elaborate.log > /dev/null
 	{% else %}
-	@./elaborate.sh | tee elaborate.log
+	@./vsim_elaborate.sh | tee elaborate.log
 	{% endif %}
 {% endif %}
 
