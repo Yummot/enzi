@@ -76,11 +76,16 @@ class Enzi(object):
             self.need_update = True
         else:
             self.need_update = None
+        
+        self.initialized = False
 
     def init(self, *, update=False):
         """
         Initialize the Enzi object, resolve dependencies and etc.
         """
+        if self.initialized:
+            return
+
         if not self.need_update is None:
             update |= self.need_update
 
@@ -101,6 +106,8 @@ class Enzi(object):
 
         if not self.config.dependencies:
             logger.debug('Enzi:init: this project has no dependencies')
+
+        self.initialized = True
 
     @property
     def silence_mode(self):
