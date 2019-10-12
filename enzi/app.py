@@ -7,14 +7,16 @@ import logging
 import os
 import shutil
 import sys
+import toml
 
 import colorama
 from colorama import Fore, Style
 
-from enzi.project_manager import ProjectFiles
-from enzi.utils import rmtree_onerror, OptionalAction
-from enzi.frontend import Enzi
 from enzi.config import EnziConfigValidator
+from enzi.git import Git
+from enzi.project_manager import ProjectFiles
+from enzi.utils import rmtree_onerror, OptionalAction, BASE_ESTRING
+from enzi.frontend import Enzi
 
 # **************** LOGGING CONFIGURATION **************** #
 try:
@@ -25,6 +27,54 @@ except Exception:
 LOG_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
 logging.basicConfig(format=LOG_FMT)
 logger = logging.getLogger('Enzi')
+
+
+class ProjectInitialor(object):
+    """
+    Initialize a enzi project with a given package name.
+
+    If the package name directory is already exists, its reject to create the package directory.
+    """
+
+    def __init__(self, package_name, *, cwd=None):
+        if cwd is None:
+            cwd = os.getcwd()
+        self.path = os.path.join(cwd, package_name)
+        self.name = package_name
+        self.git = Git(self.path)
+
+    def init(self):
+        self.init_package()
+        self.init_git()
+
+    def init_package(self):
+        """Initialize the package directory, generate the Enzi.toml, and also create a src sub directory."""
+        # create the package directory
+        if os.path.exists(self.path):
+            msg = 'path "{}" already existed, init aborted'.format(self.path)
+            logger.error(msg)
+            raise SystemExit(BASE_ESTRING + msg)
+        os.makedirs(self.path)
+
+        # create the src sub directory
+        os.makedirs(os.path.join(self.path, 'src'))
+
+        # get git config user.name
+        default_author = self.git.spawn_with(
+            lambda x: x.arg('config').arg('user.name')).strip()
+
+        # create the Enzi.toml
+        enzi_toml = os.path.join(self.path, 'Enzi.toml')
+        f = io.FileIO(enzi_toml, 'w')
+        writer = io.BufferedWriter(f)
+        sio = EnziConfigValidator.base_file(self.name, default_author)
+        file_content = sio.getvalue()
+        writer.write(file_content.encode('utf-8'))
+        writer.close()
+
+    def init_git(self):
+        """Initialize the git repository in the package directory"""
+        self.git.spawn_with(lambda x: x.arg('init'))
 
 
 class EnziApp(object):
@@ -54,22 +104,28 @@ class EnziApp(object):
             self.enzi_config_help()
             return
 
-        if hasattr(args, 'task') and args.task == 'clean':
+        is_task = hasattr(args, 'task')
+
+        if is_task and args.task == 'clean':
             self.clean()
+            return
+
+        if is_task and args.task == 'init':
+            self.init_package()
             return
 
         if not args.root:
             raise RuntimeError('No root directory specified.')
-        
+
         # if update, root must be specified
         if args.config:
             self.enzi = Enzi(
-                args.root[0], 
+                args.root[0],
                 args.config,
                 non_lazy=self.args.non_lazy)
         else:
             self.enzi = Enzi(args.root[0], non_lazy=self.args.non_lazy)
-        if hasattr(args, 'task') and args.task == 'update':
+        if is_task and args.task == 'update':
             self.update_deps()
             return
 
@@ -129,6 +185,17 @@ class EnziApp(object):
         self.debug = logger.debug
         self.exception = logger.exception
         self.critical = logger.critical
+
+    def init_package(self):
+        """Initialize an Enzi Package/Project"""
+        package_name = self.args.name
+        if package_name is None:
+            msg = 'an package name must provide for enzi init'
+            logging.error(msg)
+            raise SystemExit(BASE_ESTRING + msg)
+
+        initializer = ProjectInitialor(package_name)
+        initializer.init()
 
     def enzi_config_help(self):
         config_name = self.args.enzi_config_help
@@ -253,7 +320,9 @@ class EnziApp(object):
         parser.add_argument(
             '--config', help='Specify the Enzi.toml file to use')
         parser.add_argument(
-            '--non-lazy', help='Force Enzi to (re)generated corresponding backend configuration when running target', action='store_true')
+            '--non-lazy',
+            help='Force Enzi to (re)generated corresponding backend configuration when running target',
+            action='store_true')
         parser.add_argument('--enzi-config-help',
                             help='Output an Enzi.toml file\'s key-values hints. \
                                 If no output file is specified, Enzi will print to stdout.',
@@ -270,6 +339,13 @@ class EnziApp(object):
         update_parser = subparsers.add_parser(
             'update', help='Update dependencies')
         update_parser.set_defaults(task='update')
+
+        # init task
+        init_parser = subparsers.add_parser(
+            'init', help='init an Enzi package with a given package name')
+        init_parser.add_argument(
+            'name', help='the package name to initialize', action=OptionalAction)
+        init_parser.set_defaults(task='init')
 
         # build subparser
         build_parser = subparsers.add_parser(

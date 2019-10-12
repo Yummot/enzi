@@ -41,8 +41,8 @@ __all__ = [
 logger = logging.getLogger(__name__)
 
 KNOWN_BACKENDS = set(KnownBackends().known_backends.keys())
-ENZI_CONFIG_VERSION = {"0.1", "0.2"}
-
+ENZI_CONFIG_VERSIONS = {"0.1", "0.2"}
+CONFIG_CURRENT_VERSION = "0.2"
 
 def flat_git_records(item):
     name, records = item
@@ -1292,12 +1292,17 @@ class EnziConfigValidator(Validator):
     }
     BASE_ESTRING = 'Enzi exit on error: '
 
+    BASE_FILE_TARGET_COMMENT= '''
+# Optional targets section, use when you want Enzi to execute some targets.
+# Here is the key-values hint.
+'''
+
     HEADER_COMMENT = '''
 # Cheatsheet for an Enzi Configuration File, also known as `Enzi.toml`.
 '''
 
     ENZI_VERSION_COMMENT = '''
-# enzi configuration file version
+# Enzi configuration file version
 # Mandatory enzi configuration file version section, must be specified.
 '''
     PACKAGE_COMMENT = '''
@@ -1314,6 +1319,7 @@ class EnziConfigValidator(Validator):
     TARGETS_COMMENT = '''
 # Targets for this enzi project/package
 # Optional Dependencies Section, use when you want to run a target.
+# One or more targets can be specified, see Enzi supported targets for more details.
 '''
 
     DEPS_COMMENT = '''
@@ -1372,7 +1378,7 @@ class EnziConfigValidator(Validator):
 
         # check `enzi_version`
         enzi_version = self.val['enzi_version']
-        if not enzi_version in ENZI_CONFIG_VERSION:
+        if not enzi_version in ENZI_CONFIG_VERSIONS:
             _v = StringValidator(key='enzi_version',
                                  val=enzi_version, parent=self)
             msg = 'unknown enzi_version: {}'.format(enzi_version)
@@ -1397,6 +1403,44 @@ class EnziConfigValidator(Validator):
             raise ValidatorError(self.chain_keys_str(), msg)
 
     @staticmethod
+    def base_dict(package_name, authors=None):
+        """generate a minimal Enzi.toml's dict with given information"""
+        d = {}
+        d['enzi_version'] = CONFIG_CURRENT_VERSION
+        
+        package = { 'name': str(package_name), 'version': '0.1.0' }
+        if authors is None:
+            authors = []
+        elif type(authors) == str:
+            authors = [authors]
+        elif type(authors) == list:
+            authors = StringListValidator(key='authors', val=authors).validate()
+        else:
+            raise ValueError('authors must be a string or a string list')
+        package['authors'] = authors
+        d['package'] = package
+
+        d['filesets'] = { 'src': { 'files': [] } }
+
+        return d
+    
+    @staticmethod
+    def base_file(package_name, authors=None):
+        """generate a minimal Enzi.toml's content StringIO with given information"""
+        import toml
+        d = EnziConfigValidator.base_dict(package_name, authors)
+        sio = io.StringIO()
+        sio.write(toml.dumps(d))
+
+        sio.write(EnziConfigValidator.BASE_FILE_TARGET_COMMENT)
+        targets = TargetsValidator.info()
+        dtargets = { 'targets': targets }
+        targets_lines = toml.dumps(dtargets).splitlines()
+        mlines = map(lambda x: '# {}\n'.format(x), targets_lines)
+        sio.writelines(mlines)
+        return sio
+
+    @staticmethod
     def info():
         from io import StringIO
         out = StringIO()
@@ -1404,7 +1448,7 @@ class EnziConfigValidator(Validator):
         out.write(EnziConfigValidator.HEADER_COMMENT)
 
         out.write(EnziConfigValidator.ENZI_VERSION_COMMENT)
-        ev = {'enzi_version': '|'.join(ENZI_CONFIG_VERSION)}
+        ev = {'enzi_version': '|'.join(ENZI_CONFIG_VERSIONS)}
         toml.dump(ev, out)
 
         out.write(EnziConfigValidator.PACKAGE_COMMENT)

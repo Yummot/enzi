@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # use an environment variable `LAUNCHER_DEBUG` to control Launcher debug output
 LAUNCHER_DEBUG = os.environ.get('LAUNCHER_DEBUG')
-
+BASE_ESTRING = 'Enzi exit on error: '
 
 def rmtree_onerror(func, path, exc_info):
     """
@@ -258,6 +258,8 @@ class OptionalAction(argparse.Action):
 
         if not default is None:
             self.option = default
+        else:
+            self.option = None
 
         super(OptionalAction, self).__init__(
             option_strings=option_strings,
