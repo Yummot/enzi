@@ -448,7 +448,7 @@ class Validator(metaclass=ABCMeta):
     Validator: Base class for validating Config
     """
 
-    __slots__ = ('key', 'val', 'parent', 'allows')
+    __slots__ = ('allows', 'key', 'val', 'parent', 'root')
 
     def __init__(self, *, key, val=None, allows=None, parent=None):
         from typing import Optional, Mapping, Any
@@ -461,6 +461,10 @@ class Validator(metaclass=ABCMeta):
         # allow keys to contain if None, this is a leaf in config
         # if it is a dict, K = key, V = Validator
         self.allows: Optional[Mapping[str, Validator]] = allows
+        if self.parent is None:
+            self.root = self
+        else:
+            self.root = parent.root
 
     def chain_keys(self):
         """
@@ -1283,6 +1287,7 @@ class EnziConfigValidator(Validator):
         'targets': TargetsValidator,
         'tools': ToolsValidator
     }
+    BASE_ESTRING = 'Enzi exit on error: '
 
     HEADER_COMMENT = '''
 # Cheatsheet for an Enzi Configuration File, also known as `Enzi.toml`.
@@ -1370,6 +1375,14 @@ class EnziConfigValidator(Validator):
             msg = 'unknown enzi_version: {}'.format(enzi_version)
             raise ValidatorError(_v.chain_keys_str(), msg)
 
+        # check self dependency
+        if 'dependencies' in self.val:
+            package_name = self.val['package']['name']
+            if package_name in self.val['dependencies']:
+                fmt = 'Possible self dependency for package: {} at {}'
+                msg = fmt.format(package_name, self.key)
+                logger.error(msg)
+                raise SystemExit(EnziConfigValidator.BASE_ESTRING + msg)
         return self.val
 
     def expect_kvs(self, *, emsg=None):

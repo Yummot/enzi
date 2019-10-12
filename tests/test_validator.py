@@ -65,7 +65,6 @@ def expected_kvs(validator, emsg=None):
     patial_emsg = 'key-value table' if emsg is None else emsg
     assert patial_emsg in excinfo.value.msg
 
-
 def test_validator_chained():
     class BaseValidator(Validator):
         def validate(self):
@@ -84,6 +83,30 @@ def test_validator_chained():
     assert keys == ['v0', 'v1', 'v2', 'v3']
     assert v3.chain_keys_str() == 'v0.v1.v2.v3'
     assert v3.info() == ''
+
+def test_validator_root():
+    class BaseValidator(Validator):
+        def validate(self):
+            return self.val
+        @staticmethod
+        def info(this=None, *, extras=None):
+            return ''
+    
+    v0 = BaseValidator(key='v0')
+    v1 = BaseValidator(key='v1', parent=v0)
+    v2 = BaseValidator(key='v2', parent=v1)
+    v3 = BaseValidator(key='v3', parent=v2)
+    v4 = BaseValidator(key='v4', parent=v2)
+    v5 = BaseValidator(key='v5', parent=v2)
+    v6 = BaseValidator(key='v6', parent=None)
+    
+    assert v3.root == v0
+    assert v2.root == v0
+    assert v1.root == v0
+    assert v0.root == v0
+    assert v6.root == v6
+    assert v5.root == v0
+    assert v4.root == v0
 
 def test_base_type_validator():
     class V(BaseTypeValidator):
