@@ -330,15 +330,17 @@ class EnziApp(object):
             self.error(msg)
             raise SystemExit(BASE_ESTRING + msg)
 
-        self.args.message = version
         vtag = version
 
-        self.update_package_version(version[1:], validated=True)
         if git.has_changed():
             self.debug('This package has changed. Update its git repo.')
             git = self.update_git()
             if git is None:
                 raise SystemExit(1)
+        
+        self.args.message = version
+        self.update_package_version(version[1:], validated=True)
+        git = self.update_git()
         
         git.quiet_spawn_with(
             lambda x: x.arg('tag').arg(vtag)
