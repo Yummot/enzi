@@ -3,6 +3,7 @@
 import io
 import logging
 import os
+import platform
 import pprint
 import toml
 import typing
@@ -1361,10 +1362,26 @@ class EnziConfigValidator(Validator):
 # Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.
 '''
 
-    def __init__(self, val, config_path=None):
+    def __init__(self, val, config_path=None, *, git_url=None):
+        
+        if git_url and config_path:
+            cur_system = platform.system()
+            is_windows = (cur_system == 'Windows')
+            basename = os.path.basename(config_path)
+            if not is_windows:
+                raw_key = os.path.join(git_url, basename)
+            else:
+                raw_key = os.path.join(git_url, basename)
+                first_slash = git_url.find('/')
+                first_backslash = git_url.find('\\')
+                if first_slash != -1 and first_backslash != -1:
+                    raw_key = raw_key.replace('/', '\\')
+        else:
+            raw_key = config_path
+        key = '<%s>' % raw_key
 
         super(EnziConfigValidator, self).__init__(
-            key='<{}>'.format(config_path),
+            key=key,
             val=val,
             allows=EnziConfigValidator.__allow__,
         )
@@ -1707,9 +1724,9 @@ class RawConfig(object):
     After calling validate member function a Config/PartialConfig will be generated
     """
     __slots__ = ('conf', 'is_local', 'config_path',
-                 'validator', 'fileset_only', 'from_str')
+                 'validator', 'fileset_only', 'from_str', 'git_url')
 
-    def __init__(self, config_file, from_str=False, base_path=None, is_local=True, *, fileset_only=False):
+    def __init__(self, config_file, from_str=False, base_path=None, is_local=True, *, git_url=None, fileset_only=False):
         if from_str:
             conf = toml_loads(config_file)
         else:
@@ -1724,11 +1741,12 @@ class RawConfig(object):
             logger.error('Config toml file is empty.')
             raise RuntimeError('Config toml file is empty.')
 
+        self.git_url = git_url
         self.conf = conf
         self.from_str = from_str
         self.is_local = is_local
         self.fileset_only = fileset_only
-        self.validator = EnziConfigValidator(conf, self.config_path)
+        self.validator = EnziConfigValidator(conf, self.config_path, git_url=git_url)
 
     def validate(self):
         """

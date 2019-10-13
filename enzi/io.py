@@ -148,7 +148,12 @@ class EnziIO(object):
                 dep_name, git_db.path))
             # logger.debug(data)
             dep_config = RawConfig(
-                data, from_str=True, base_path=git_db.path, is_local=is_local).validate()
+                data, 
+                from_str=True, 
+                base_path=git_db.path,
+                is_local=is_local,
+                git_url=git_url
+            ).validate()
             return dep_config
         else:
             raise RuntimeError('INTERNAL ERROR: unreachable')

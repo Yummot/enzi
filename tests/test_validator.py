@@ -529,3 +529,7 @@ def test_content():
     content = out.getvalue()
     print(content)
     assert content != None
+
+def test_enzi_config_validator_key():
+    v = EnziConfigValidator({}, './Enzi.toml', git_url='https://xxx.com')
+    assert v.key == '<https://xxx.com/Enzi.toml>'
