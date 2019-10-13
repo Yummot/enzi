@@ -57,7 +57,7 @@ def flat_git_records(item):
 
 def validate_git_repo(dep_name: str, git_url: str, test=False):
     try:
-        Launcher('git', ['ls-remote', '-q', git_url]).run()
+        Launcher('git', ['ls-remote', '-q', git_url]).run(no_log=test)
         return True
     except Exception as e:
         if test:

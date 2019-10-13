@@ -15,7 +15,7 @@ import colorama
 from colorama import Fore, Style
 
 from enzi.config import EnziConfigValidator, VersionValidator 
-from enzi.config import validate_git_repo
+from enzi.config import validate_git_repo, RawConfig
 from enzi.git import Git
 from enzi.project_manager import ProjectFiles
 from enzi.utils import rmtree_onerror, OptionalAction, BASE_ESTRING
@@ -130,13 +130,17 @@ class EnziApp(object):
             self.init_package()
             return
 
+        if is_task and args.task == 'check':
+            self.check_package()
+            return
+
         if not args.root:
             raise RuntimeError('No root directory specified.')
 
         # if update, root must be specified
         if args.config:
-            if args.config != os.path.basename(args.config):
-                fmt = '{} should only be a filename, not a path of the file'
+            if os.path.dirname(args.config):
+                fmt = 'flag config {} should only be a filename, not a path of the file'
                 msg = fmt.format(args.config)
                 self.error(msg)
                 raise SystemExit(1)
@@ -223,6 +227,83 @@ class EnziApp(object):
 
         initializer = ProjectInitialor(package_name)
         initializer.init()
+    
+    def check_package(self):
+        manifest_only = self.args.manifest
+        root = self.args.root
+        config_name = self.args.config
+        config_name = config_name if config_name else 'Enzi.toml'
+        if os.path.dirname(config_name):
+            fmt = 'flag config {} should only be a filename, not a path of the file'
+            self.error(fmt.format(config_name))
+            raise SystemExit()
+        config_path = os.path.join(root, config_name)
+
+        # check the Enzi.toml
+        try:
+            config = RawConfig(config_path).validate()
+        except Exception:
+            self.error('{} is invalid'.format(config_path))
+            raise SystemExit(1)
+
+        if manifest_only:
+            return
+        
+        # check filesets
+        try:
+            config.check_filesets()
+        except Exception:
+            raise SystemExit(1)
+
+        # check unlisted(in filesets section) files in this package
+        is_git_repo = validate_git_repo('', root, True)
+        if is_git_repo:
+            git = Git(root)
+            untracked = git.list_untracked()
+            ufilter = filter(lambda x: x.endswith(HDL_SUFFIXES_TUPLE), untracked)
+            untracked_hdl = list(ufilter)
+            if untracked_hdl:
+                fmt = 'this package has some hdl files: {}, which are not listed in {}\'s filesets'
+                msg = fmt.format(untracked_hdl, config_path)
+                self.warning(msg)
+        else:
+            cwd = os.getcwd()
+            os.chdir(root)
+            fileset = config.get_flat_fileset()
+            fileset = set(fileset['files'])
+
+            flist = []
+            files_filter = lambda x: x.endswith(HDL_SUFFIXES_TUPLE)
+            for (dirpath, _, filenames) in os.walk(root):
+                dirname = os.path.relpath(dirpath, cwd)
+                if not dirname == '.' and dirname.startswith('.'):
+                    continue
+                base_dirname = os.path.basename(dirname)
+                if not base_dirname == '.' and base_dirname.startswith('.'):
+                    continue
+                if base_dirname == '.':
+                    files = map(lambda x: x, filenames)
+                    ffiles = filter(files_filter, files)
+                    ffiles = list(ffiles)
+                    print(ffiles)
+                    flist.extend(ffiles)
+                else:
+                    files = map(lambda x: os.path.join(dirname, x), filenames)
+                    ffiles = filter(files_filter, files)
+                    ffiles = list(ffiles)
+                    print(ffiles)
+                    flist.extend(ffiles)
+
+            cur_fset = set(flist)
+            print(cur_fset)
+            print(fileset)
+            unlisted = cur_fset - fileset
+            if unlisted:
+                fmt = 'this package has some hdl files: {}, which are not listed in {}\'s filesets'
+                msg = fmt.format(unlisted, config_path)
+                self.warning(msg)
+            os.chdir(cwd)
+
 
     def enzi_config_help(self):
         config_name = self.args.enzi_config_help
@@ -498,7 +579,7 @@ class EnziApp(object):
     @staticmethod
     def parse_args(input_args=None):
         supported_targets = ['build', 'sim', 'run', 'program_device']
-        available_tasks = ['clean', 'update']
+        available_tasks = ['clean', 'update', 'init', 'check']
         parser = argparse.ArgumentParser()
         subparsers = parser.add_subparsers()
 
@@ -541,7 +622,7 @@ class EnziApp(object):
         # Then Enzi will commit and tag with the given version
         update_parser.add_argument(
             '--version', '-v',
-            help='''version bump for the current Enzi project.
+            help='''Bump version for the current Enzi project.
             If it is a git repo, Enzi will auto change package version 
             in Enzi.toml and then commit and tag with the given version.
             If not, Enzi just update the package version in Enzi.toml.
@@ -555,10 +636,19 @@ class EnziApp(object):
 
         # init task
         init_parser = subparsers.add_parser(
-            'init', help='init an Enzi package with a given package name')
+            'init', help='Initialize an Enzi package with a given package name')
         init_parser.add_argument(
             'name', help='the package name to initialize', action=OptionalAction)
         init_parser.set_defaults(task='init')
+
+        # check task
+        check_parser = subparsers.add_parser(
+            'check', help='Check validation of the package in the given path'
+        )
+        check_parser.add_argument(
+            '--manifest', help='Check Enzi.toml only', action='store_true'
+        )
+        check_parser.set_defaults(task='check')
 
         # build subparser
         build_parser = subparsers.add_parser(
