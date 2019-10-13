@@ -865,6 +865,13 @@ class FilesetValidator(Validator):
             validator = V(key=key, val=val, parent=self)
             self.val[key] = validator.validate()
 
+        if 'files' in self.val:
+            files = self.val['files']
+            for f in files:
+                if not f:
+                    msg = 'contains an empty string'
+                    raise ValidatorError(self.chain_keys_str(), msg)
+
         return self.val
 
     @staticmethod
@@ -1533,6 +1540,22 @@ class PartialConfig(object):
         ret.file_stat = self.file_stat
         return ret
 
+    def get_flat_fileset(self):
+        class Files:
+            def __init__(self):
+                self.files = []
+            def add_files(self, x):
+                self.files = self.files + x['files']
+        files = Files()
+        m = map(files.add_files, self.filesets.values())
+        _ = list(m)
+        return { 'files': files.files }
+
+def check_exists(path, base_path=None):
+    """check the existence of a path"""
+    if base_path:
+        path = os.path.join(base_path, path)
+    return os.path.exists(path)
 
 class Config(object):
     """
@@ -1601,6 +1624,35 @@ class Config(object):
             str_buf.append('\t%s: %s' % (k, v))
         str_buf.append('}')
         return '\n'.join(str_buf)
+    
+    def check_filesets(self):
+        dirname = os.path.dirname(self.path)
+        fmt = 'Filesets.{}\'s files: {} not found'
+        
+        checker = lambda x: check_exists(x, dirname)
+
+        for fsname, fs in self.filesets.items():
+            files = fs['files']
+            if files:
+                exists_f = filter(checker, files)
+                fset = set(files)
+                eset = set(exists_f)
+                non_exists = fset - eset
+                if non_exists:
+                    msg = fmt.format(fsname, non_exists)
+                    logger.error(msg)
+                    raise ValueError(msg)
+
+    def get_flat_fileset(self):
+        class Files:
+            def __init__(self):
+                self.files = []
+            def add_files(self, x):
+                self.files = self.files + x['files']
+        files = Files()
+        m = map(files.add_files, self.filesets.values())
+        _ = list(m)
+        return { 'files': files.files }
 
     def into(self):
         """ Returns self for duck type compatibility"""

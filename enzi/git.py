@@ -199,6 +199,17 @@ class Git(object):
         lines = self.spawn_with(ls).splitlines()
         return list(map(TreeEntry.parse, lines))
 
+    def list_cached(self):
+        res = self.spawn_with(
+            lambda x: x.arg('ls-files')
+            .arg('-s')
+            .arg('--exclude-standard')
+        )
+        lines = res.splitlines()
+        # def split_fields(line):
+        return list(map(str.strip, lines))
+
+
     def list_untracked(self):
         res = self.spawn_with(
             lambda x: x.arg('ls-files')

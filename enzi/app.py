@@ -301,7 +301,7 @@ class EnziApp(object):
                 break
         
         # lines to write back
-        print(lines)
+        # print(lines)
         mlines = map(lambda x: x + '\n', lines)
         with open(config_path, 'w') as f:
             f.writelines(mlines)
@@ -359,6 +359,20 @@ class EnziApp(object):
         # untracked and modified files
         untracked = git.list_untracked()
         modified = git.list_modified()
+        cached = git.list_cached()
+
+        if 'Enzi.toml' not in cached:
+            git.add_files('Enzi.toml')
+
+        try:
+            self.enzi.check_filesets()
+        except Exception:
+            raise SystemExit(1) from None
+
+        fileset = self.enzi.get_flat_fileset()
+        if fileset:
+            _files = fileset['files']
+            git.add_files(_files)
 
         # DEBUG msg
         p = pprint.pformat(untracked)
@@ -387,7 +401,7 @@ class EnziApp(object):
                 raise SystemExit(BASE_ESTRING + msg)
 
         # staged modified files
-        print(modified)
+        # print(modified)
         git.add_files(modified)
         
         # log commit message

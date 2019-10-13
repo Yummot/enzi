@@ -124,6 +124,14 @@ class Enzi(object):
 
         self.initialized = True
 
+    def get_flat_fileset(self):
+        """Get all the files listed in config.filesets"""
+        return self.config.get_flat_fileset()
+
+    def check_filesets(self):
+        conf = self.config.into()
+        conf.check_filesets()
+
     @property
     def silence_mode(self):
         if hasattr(self, '_silence_mode'):
