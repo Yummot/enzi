@@ -280,8 +280,9 @@ class EnziApp(object):
 
             flist = []
             files_filter = lambda x: x.endswith(HDL_SUFFIXES_TUPLE)
+            # TODO: code review
             for (dirpath, _, filenames) in os.walk(root):
-                dirname = os.path.relpath(dirpath, cwd)
+                dirname = os.path.relpath(dirpath, root)
                 if not dirname == '.' and dirname.startswith('.'):
                     continue
                 base_dirname = os.path.basename(dirname)
