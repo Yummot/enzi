@@ -89,6 +89,12 @@ class ProjectInitialor(object):
         self.git.spawn_with(lambda x: x.arg('init'))
         self.git.add_files('Enzi.toml')
 
+        # add .gitignore
+        gitignore = os.path.join(self.path, '.gitignore')
+        with open(gitignore, 'w') as f:
+            f.write('# ignore Enzi build directory\n')
+            f.write('build/\n')
+        self.git.add_files('.gitignore')
 
 class EnziApp(object):
     """
