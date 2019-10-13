@@ -1364,6 +1364,7 @@ class EnziConfigValidator(Validator):
 
     def __init__(self, val, config_path=None, *, git_url=None):
         
+        # construct a readable EnziConfigValidator.key
         if git_url and config_path:
             cur_system = platform.system()
             is_windows = (cur_system == 'Windows')
