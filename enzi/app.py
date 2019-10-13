@@ -311,7 +311,7 @@ class EnziApp(object):
     def update_version(self):
         """enzi update --version"""
         root = self.args.root
-        self.info('updating the version of this Enzi package\'s git repository')
+        self.info('updating the version of this Enzi package')
         
         raw_version = self.args.version.strip()
         if raw_version.startswith('v'):

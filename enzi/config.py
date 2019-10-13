@@ -867,9 +867,19 @@ class FilesetValidator(Validator):
 
         if 'files' in self.val:
             files = self.val['files']
+            # no empty file name strings is allowed
             for f in files:
                 if not f:
                     msg = 'contains an empty string'
+                    raise ValidatorError(self.chain_keys_str(), msg)
+            # all files' paths must be relative
+            for f in files:
+                if os.path.isabs(f):
+                    msg = 'file: "{}" must be a relative path'.format(f)
+                    raise ValidatorError(self.chain_keys_str(), msg)
+                # files must be inside the package
+                if f.startswith('..'):
+                    msg = 'file: "{}" is oustside this package'.format(f)
                     raise ValidatorError(self.chain_keys_str(), msg)
 
         return self.val
