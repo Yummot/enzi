@@ -475,7 +475,7 @@ class Validator(metaclass=ABCMeta):
         get the full keys chain
         """
         if not self.parent:
-            return self.key
+            return [self.key]
         parent = self.parent
         keys = [self.key]
         while parent:
@@ -1101,6 +1101,8 @@ class ToolValidator(Validator):
         'name': StringValidator,
         'params': ToolParamsValidator
     }
+    __must__ = {'name'}
+    __options__ = { 'params' }
 
     def __init__(self, *, key, val, parent=None):
 
@@ -1117,7 +1119,7 @@ class ToolValidator(Validator):
 
         kset = set(self.val.keys())
         aset = set(self.__allow__.keys())
-        missing = aset - kset
+        missing = ToolValidator.__must__ - kset
         unknown = kset - aset
 
         if missing:
@@ -1138,6 +1140,9 @@ class ToolValidator(Validator):
             raise ValidatorError(self.chain_keys_str(), msg)
 
         params_validator = TPARAMS_VALIDATOR_MAP[tool_name]
+
+        if not 'params' in self.val:
+            return self.val
 
         params = self.val['params']
         self.val['params'] = params_validator(
@@ -1444,8 +1449,7 @@ class EnziConfigValidator(Validator):
 
     @staticmethod
     def info():
-        from io import StringIO
-        out = StringIO()
+        out = io.StringIO()
 
         out.write(EnziConfigValidator.HEADER_COMMENT)
 
@@ -1518,6 +1522,17 @@ class PartialConfig(object):
         # optional tools section
         self.tools = config.get('tools')
 
+    def into(self):
+        """Convert PartialConfig into Config"""
+        config = {
+            'package': self.package,
+            'filesets': self.filesets,
+            'tools': self.tools
+        }
+        ret = Config(config, self.path, self.is_local, from_str=True)
+        ret.file_stat = self.file_stat
+        return ret
+
 
 class Config(object):
     """
@@ -1568,8 +1583,10 @@ class Config(object):
 
         # tools configs
         self.tools = {}
+        self._raw_tools = None
         tools_config = config.get('tools')
         if tools_config:
+            self._raw_tools = tools_config
             for idx, tool in enumerate(tools_config):
                 if not 'name' in tool:
                     raise RuntimeError(
@@ -1585,6 +1602,42 @@ class Config(object):
         str_buf.append('}')
         return '\n'.join(str_buf)
 
+    def into(self):
+        """ Returns self for duck type compatibility"""
+        return self
+
+    def content(self):
+        """ retun a StringIO with the string content of this Config"""
+        out = io.StringIO()
+        d = {'enzi_version': CONFIG_CURRENT_VERSION }
+        d['package'] = self.package
+        d['filesets'] = self.filesets
+        
+        if self.dependencies:
+            d['dependencies'] = self.dependencies
+        if self.targets:
+            d['targets'] = self.targets
+
+        toml.dump(d, out)
+        tools = self._raw_tools
+        
+        if not tools:
+            return out
+
+        out.write('\n')
+
+        def fn(tool):
+            tool = {'tools': [tool]}
+            lines = toml.dumps(tool).splitlines()
+
+            toolinfo = list(map(tools_section_line, lines))
+            out.writelines(toolinfo)
+            out.write('\n')
+        
+        m = map(fn, tools)
+        _ = list(m)
+
+        return out
 
 class RawConfig(object):
     """

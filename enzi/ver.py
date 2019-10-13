@@ -139,6 +139,7 @@ def complete_version(s: str):
     """
     Complete the Version to meet x.y.z-*+* format requirements of semver.VersionInfo
     """
+    s = s.strip()
     count_dot = s.count('.')
     if count_dot == 0:
         return (s + '.0.0', 2)
@@ -448,6 +449,7 @@ class VersionReq(object):
         """
         take a version and return a VersionReq that contains corresponding requirements.
         """
+        ver_req = ver_req.strip()
         validator = VerReqVaildator(ver_req)
         preds = validator.validate()
         return VersionReq(preds)

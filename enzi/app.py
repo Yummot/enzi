@@ -6,6 +6,7 @@ import io
 import logging
 import os
 import pprint
+import re
 import shutil
 import sys
 import toml
@@ -13,7 +14,8 @@ import toml
 import colorama
 from colorama import Fore, Style
 
-from enzi.config import EnziConfigValidator, validate_git_repo
+from enzi.config import EnziConfigValidator, VersionValidator 
+from enzi.config import validate_git_repo
 from enzi.git import Git
 from enzi.project_manager import ProjectFiles
 from enzi.utils import rmtree_onerror, OptionalAction, BASE_ESTRING
@@ -35,6 +37,9 @@ HDL_SUFFIXES_TUPLE = tuple(HDL_SUFFIXES)
 # auto commit message for enzi update --git -m
 AUTO_COMMIT_MESSAGE = 'Auto commit by Enzi'
 
+# REGEX for matching
+PKG_SECTION_RE = re.compile(r'\[\s*package\s*\]')
+VERISON_FIELD_RE = re.compile(r'^\s*version\s*=\s*"(?P<version>(.*))"')
 
 class ProjectInitialor(object):
     """
@@ -82,6 +87,7 @@ class ProjectInitialor(object):
     def init_git(self):
         """Initialize the git repository in the package directory"""
         self.git.spawn_with(lambda x: x.arg('init'))
+        self.git.add_files('Enzi.toml')
 
 
 class EnziApp(object):
@@ -129,6 +135,11 @@ class EnziApp(object):
 
         # if update, root must be specified
         if args.config:
+            if args.config != os.path.basename(args.config):
+                fmt = '{} should only be a filename, not a path of the file'
+                msg = fmt.format(args.config)
+                self.error(msg)
+                raise SystemExit(1)
             self.enzi = Enzi(
                 args.root[0],
                 args.config,
@@ -137,7 +148,9 @@ class EnziApp(object):
             self.enzi = Enzi(args.root[0], non_lazy=self.args.non_lazy)
 
         if is_task and args.task == 'update':
-            if args.git:
+            if args.version:
+              self.update_version()  
+            elif args.git:
                 self.update_git()
             else:
                 self.update_deps()
@@ -246,6 +259,92 @@ class EnziApp(object):
             msg = 'Generated the template Enzi.toml file\'s key-values hints in ' + config_name
             self.info(msg)
 
+    def update_package_version(self, version, *, validated=False):
+        """update the package version of the Enzi.toml in the given root"""
+        if type(version) != str:
+            raise ValueError('Version must be a string')
+        if not validated:
+            raw_version = version.strip()
+            if raw_version.startswith('v'):
+                raw_version = raw_version.strip()[1:]
+            version = VersionValidator(key='version', val=raw_version).validate()
+
+        root = self.args.root
+        config = self.args.config
+        config = config if config else 'Enzi.toml'
+        config_path = os.path.join(root, config)
+
+        with open(config_path, 'r') as f:
+            data = f.read()
+        lines = data.splitlines()
+        nlines = len(lines)
+
+        # find the package section
+        idx = -1
+        for i, line in enumerate(lines):
+            if PKG_SECTION_RE.search(line):
+                idx = i
+                break
+        
+        if idx == -1:
+            self.error('No package section found')
+            raise SystemExit(1)
+        
+        for i in range(idx, nlines):
+            v_search = VERISON_FIELD_RE.search(lines[i])
+            if v_search:
+                found_version = v_search.groupdict()['version']
+                if version in found_version:
+                    return
+                new_version_line = lines[i].replace(found_version, version)
+                lines[i] = new_version_line
+                break
+        
+        # lines to write back
+        print(lines)
+        mlines = map(lambda x: x + '\n', lines)
+        with open(config_path, 'w') as f:
+            f.writelines(mlines)
+        self.debug('EnziApp: update_package_version done.')
+
+
+    def update_version(self):
+        """enzi update --version"""
+        root = self.args.root
+        self.info('updating the version of this Enzi package\'s git repository')
+        
+        raw_version = self.args.version.strip()
+        if raw_version.startswith('v'):
+            raw_version = raw_version.strip()[1:]
+
+        version = VersionValidator(key='version', val=raw_version).validate()
+        git = Git(root)
+        tags = git.list_tags()
+        exists = False
+        if tags:
+            exists = any(filter(lambda x: version in x, tags))
+
+        version = 'v' + version        
+        if exists:
+            msg = 'Version tag {} already exists'.format(version)
+            self.error(msg)
+            raise SystemExit(BASE_ESTRING + msg)
+
+        self.args.message = version
+        vtag = version
+
+        self.update_package_version(version[1:], validated=True)
+        if git.has_changed():
+            self.debug('This package has changed. Update its git repo.')
+            git = self.update_git()
+            if git is None:
+                raise SystemExit(1)
+        
+        git.quiet_spawn_with(
+            lambda x: x.arg('tag').arg(vtag)
+        )
+        self.info('update to version {} finished'.format(vtag))        
+
     def update_git(self):
         root = self.args.root
         name = self.enzi.name
@@ -270,23 +369,25 @@ class EnziApp(object):
         # filter out HDL files in untracked files
         ufilter = filter(lambda x: x.endswith(HDL_SUFFIXES_TUPLE), untracked)
         ufiltered = list(ufilter)
-        msg = 'This Package({}) contains untracked HDL files!'.format(name)
-        self.warning(msg)
-        ufiles = '\n'.join(ufiltered)
-        msg = 'Here is the untracked HDL files:\n{}'.format(ufiles)
-        self.warning(msg)
-        msg = 'Do you want to update this package\'s git repository without these HDL files?'
-        self.warning(msg)
-        confirm = self.get_confirm()
+        if ufiltered:
+            msg = 'This Package({}) contains untracked HDL files!'.format(name)
+            self.warning(msg)
+            ufiles = '\n'.join(ufiltered)
+            msg = 'Here is the untracked HDL files:\n{}'.format(ufiles)
+            self.warning(msg)
+            msg = 'Do you want to update this package\'s git repository without these HDL files?'
+            self.warning(msg)
+            confirm = self.get_confirm()
 
-        if confirm is None:
-            return
-        if not confirm:
-            msg = 'You must manually update the Enzi.toml\'s filesets section with the expected HDL files.'
-            logger.error(msg)
-            raise SystemExit(BASE_ESTRING + msg)
+            if confirm is None:
+                return None
+            if not confirm:
+                msg = 'You must manually update the Enzi.toml\'s filesets section with the expected HDL files.'
+                logger.error(msg)
+                raise SystemExit(BASE_ESTRING + msg)
 
         # staged modified files
+        print(modified)
         git.add_files(modified)
         
         # log commit message
@@ -303,8 +404,9 @@ class EnziApp(object):
             .arg('-m')
             .arg(message)
         )
-        self.info('update finished')
-        pass
+        self.info('update git finished')
+        
+        return git
 
     def update_deps(self, **kwargs):
         """
@@ -418,6 +520,17 @@ class EnziApp(object):
             '--git',
             help='Update the current Enzi package\'s git commits, if it is a git repo.',
             action='store_true')
+        # version bump for current Enzi project
+        # if it is a git repo, Enzi will auto change package version in Enzi.toml.
+        # Then Enzi will commit and tag with the given version
+        update_parser.add_argument(
+            '--version', '-v',
+            help='''version bump for the current Enzi project.
+            If it is a git repo, Enzi will auto change package version 
+            in Enzi.toml and then commit and tag with the given version.
+            If not, Enzi just update the package version in Enzi.toml.
+            '''
+        )
         update_parser.add_argument(
             '--message', '-m',
             help='Commit message for update git repository, if no message is specified, the message will be: "auto commit by Enzi"',

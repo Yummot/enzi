@@ -492,3 +492,40 @@ def test_raw_config_to_config():
     ori_tools = set(mori_tools)
     conf_tools = set(config.tools.keys())
     assert ori_tools == conf_tools
+
+def test_into():
+    try:
+        f = io.FileIO('ExampleEnzi.toml', 'r')
+        reader = io.BufferedReader(f)
+        data = reader.read()
+        reader.close()
+    except Exception:
+        return
+
+    data = data.decode('utf-8')
+    
+    rconfig = RawConfig(data, True, '.', True, fileset_only=True)
+    config = rconfig.validate()
+    assert isinstance(config, PartialConfig)
+    
+    cconfig = config.into()
+    assert isinstance(cconfig, Config)
+
+def test_content():
+    try:
+        f = io.FileIO('ExampleEnzi.toml', 'r')
+        reader = io.BufferedReader(f)
+        data = reader.read()
+        reader.close()
+    except Exception:
+        return
+
+    data = data.decode('utf-8')
+
+    rconfig = RawConfig(data, True, '.', True)
+    config = rconfig.validate()
+
+    out = config.content()
+    content = out.getvalue()
+    print(content)
+    assert content != None

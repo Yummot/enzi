@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 LAUNCHER_DEBUG = os.environ.get('LAUNCHER_DEBUG')
 BASE_ESTRING = 'Enzi exits on error: '
 
+
 def rmtree_onerror(func, path, exc_info):
     """
     Error handler for ``shutil.rmtree``.
@@ -281,10 +282,45 @@ class Launcher:
     def __init__(self, cmd, args=[], cwd=None):
         self.cmd = cmd
         self.args = args
-        self.cwd = cwd
+        self.cwd = cwd if cwd else os.getcwd()
+
+    def expected(self, exit_code, *, suppress_stderr=False, no_log=False):
+        """Expect this Launcher to exit with the given exit code"""
+        if type(exit_code) != int:
+            raise ValueError('exit code must be int')
+        try:
+            call_dict = {
+                'args': [self.cmd] + self.args,
+                'cwd': self.cwd,
+                'stdin': subprocess.PIPE,
+                'stdout': subprocess.DEVNULL,
+                'stderr': subprocess.DEVNULL
+            }
+            if suppress_stderr:
+                call_dict['stderr'] = subprocess.DEVNULL
+            subprocess.check_call(**call_dict)
+
+            fmt = 'Launcher:expected: cmd: \'{}\' with args: {} exit normally'
+            msg = fmt.format(self.cmd, self.args)
+            logger.debug('Launcher:run: cwd: {}'.format(self.cwd))
+            if no_log:
+                logger.debug(msg)
+            else:
+                logger.error(msg)
+            raise RuntimeError(msg)
+        except subprocess.CalledProcessError as e:
+            returncode = e.returncode
+            if returncode == exit_code:
+                return # match expection return normally
+            else:
+                fmt = 'Launcher:expected: cmd: \'{}\' with args: {} exit with {} not matched expect {}'
+                msg = fmt.format(self.cmd, self.args, returncode, exit_code)
+                logger.debug('Launcher:run: cwd: {}'.format(self.cwd))
+                logger.error(msg)
+                raise RuntimeError(fmt) from None
 
     # def run(self):
-    def run(self, get_output: bool=False, *, suppress_stderr=False):
+    def run(self, get_output=False, *, suppress_stderr=False, no_log=False):
         if LAUNCHER_DEBUG:
             fmt = 'Launcher:run: cmd: \'{}\' with args: {}'
             logger.debug('Launcher:run: cwd: {}'.format(self.cwd))
@@ -310,11 +346,17 @@ class Launcher:
                 return output
         except FileNotFoundError as e:
             msg = "Launcher: {}".format(e)
-            logger.error(msg)
+            if no_log:
+                logger.debug(msg)
+            else:
+                logger.error(msg)
             raise RuntimeError(msg) from e
         except subprocess.CalledProcessError as e:
             msg = "Launcher: {}".format(e)
-            logger.error(msg)
+            if no_log:
+                logger.debug(msg)
+            else:
+                logger.error(msg)
             self.errormsg = '"{}" exited with an error code. See stderr for details.'
             raise RuntimeError(self.errormsg.format(str(self))) from e
 

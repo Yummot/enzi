@@ -77,18 +77,22 @@ class Git(object):
         self.path = path
         self.enzi_io = enzi_io
 
-    def spawn(self, cmd: GitCommand, get_output=True, suppress_stderr=False):
-        return Launcher(cmd.cmd, cmd.args, self.path).run(get_output, suppress_stderr=suppress_stderr)
+    def spawn(self, cmd: GitCommand, *, get_output=True, suppress_stderr=False, no_log=False):
+        return Launcher(
+            cmd.cmd,
+            cmd.args,
+            self.path
+        ).run(get_output, suppress_stderr=suppress_stderr, no_log=no_log)
 
-    def spawn_with(self, f):
+    def spawn_with(self, f, *, get_output=True, no_log=False):
         cmd = GitCommand()
         f(cmd)
-        return self.spawn(cmd)
+        return self.spawn(cmd, get_output=get_output, no_log=no_log)
 
-    def quiet_spawn_with(self, f):
+    def quiet_spawn_with(self, f, *, no_log=False):
         cmd = GitCommand()
         f(cmd)
-        return self.spawn(cmd, False, True)
+        return self.spawn(cmd, get_output=False, suppress_stderr=True, no_log=no_log)
 
     # fetch the tags and refs of a remote git repository
     def fetch(self, remote):
@@ -99,12 +103,28 @@ class Git(object):
 
     def init_repo(self, dst_path, url_path):
         """
-        Initialize a git repository at the given path
+        Initialize a git repository at the given path with a git url
         """
         self.spawn_with(lambda x: x.arg('init').arg('--bare'))
         self.spawn_with(lambda x: x.arg('remote').arg(
             'add').arg('origin').arg(url_path))
         self.fetch('origin')
+
+    def has_changed(self):
+        """if this repository has changed"""
+        data = self.spawn_with(lambda x: x.arg('status').arg('-s')).strip()
+        if data:
+            return True
+        else:
+            return False
+        # old method
+        # l = Launcher('git', ['diff', '--quiet', 'HEAD'], self.path)
+        # try:
+        #     # if changed, git diff --quiet HEAD will exit will 1
+        #     l.expected(1, no_log=True)
+        #     return True
+        # except Exception:
+        #     return False
 
     def list_refs(self):
         refs = self.spawn_with(lambda x: x.arg('show-ref'))
@@ -116,12 +136,44 @@ class Git(object):
             rev_id = fields[0]
             ref = fields[1]
             rev_id = rev_id + '^{commit}'
-            rev_id = self.spawn_with(lambda x:
-                                     x.arg(
-                                         'rev-parse').arg('--verify').arg(rev_id)
-                                     ).strip()
+            rev_id = self.spawn_with(
+                lambda x: x.arg('rev-parse')
+                .arg('--verify')
+                .arg(rev_id)
+            ).strip()
             ret.append((rev_id, ref))
         return ret
+
+    def list_tags(self, with_rev=False):
+        try:
+            refs = self.spawn_with(
+                lambda x: x.arg('show-ref')
+                .arg('--tags')
+                .arg('-d'),
+                no_log=True
+            )
+        except Exception:
+            return []
+
+        tags = []
+        rev_ids = []
+        for line in refs.splitlines():
+            fields = line.split()  # <hash> <refs/tags/*>
+            rev_id = fields[0]
+            tag = fields[1]
+            rev_id = rev_id + '^{commit}'
+            rev_id = self.spawn_with(
+                lambda x: x.arg('rev-parse')
+                .arg('--verify')
+                .arg(rev_id)
+            ).strip()
+            tags.append(tag)
+            rev_ids.append(rev_id)
+
+        if with_rev:
+            return list(zip(rev_ids, tags))
+
+        return tags
 
     def list_revs(self):
         revs = self.spawn_with(lambda x:
@@ -177,7 +229,7 @@ class Git(object):
             lambda x: x.arg('add')
             .arg(files_str)
         )
-    
+
     def unstaged_from_head(self, file):
         """
         unstaged a file from this git's HEAD, with git reset HEAD -- <file>
@@ -192,7 +244,7 @@ class Git(object):
             .arg('HEAD')
             .arg('--')
             .arg(file)
-        )    
+        )
 
 
 class GitRepo(FileManager):
