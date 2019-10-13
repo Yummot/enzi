@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # use an environment variable `LAUNCHER_DEBUG` to control Launcher debug output
 LAUNCHER_DEBUG = os.environ.get('LAUNCHER_DEBUG')
-BASE_ESTRING = 'Enzi exit on error: '
+BASE_ESTRING = 'Enzi exits on error: '
 
 def rmtree_onerror(func, path, exc_info):
     """

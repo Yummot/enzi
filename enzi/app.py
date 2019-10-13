@@ -5,6 +5,7 @@ import datetime
 import io
 import logging
 import os
+import pprint
 import shutil
 import sys
 import toml
@@ -12,7 +13,7 @@ import toml
 import colorama
 from colorama import Fore, Style
 
-from enzi.config import EnziConfigValidator
+from enzi.config import EnziConfigValidator, validate_git_repo
 from enzi.git import Git
 from enzi.project_manager import ProjectFiles
 from enzi.utils import rmtree_onerror, OptionalAction, BASE_ESTRING
@@ -27,6 +28,12 @@ except Exception:
 LOG_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
 logging.basicConfig(format=LOG_FMT)
 logger = logging.getLogger('Enzi')
+
+# HDL source code file SUFFIXES
+HDL_SUFFIXES = {'vhd', 'vhdl', 'v', 'vh', 'sv', 'svh', 'tcl', 'xdc', 'xci'}
+HDL_SUFFIXES_TUPLE = tuple(HDL_SUFFIXES)
+# auto commit message for enzi update --git -m
+AUTO_COMMIT_MESSAGE = 'Auto commit by Enzi'
 
 
 class ProjectInitialor(object):
@@ -90,6 +97,9 @@ class EnziApp(object):
         self.enzi = None
         self.init()
 
+    def update_args(self, args):
+        self.args = self.parser.parse_args(args)
+
     def init(self):
         self.init_logger()
 
@@ -125,8 +135,12 @@ class EnziApp(object):
                 non_lazy=self.args.non_lazy)
         else:
             self.enzi = Enzi(args.root[0], non_lazy=self.args.non_lazy)
+
         if is_task and args.task == 'update':
-            self.update_deps()
+            if args.git:
+                self.update_git()
+            else:
+                self.update_deps()
             return
 
         # targets
@@ -232,6 +246,66 @@ class EnziApp(object):
             msg = 'Generated the template Enzi.toml file\'s key-values hints in ' + config_name
             self.info(msg)
 
+    def update_git(self):
+        root = self.args.root
+        name = self.enzi.name
+        self.info('updating this Enzi package\'s git repository')
+        try:
+            validate_git_repo(name, root)
+        except Exception as e:
+            msg = str(e)
+            raise SystemExit(BASE_ESTRING + msg)
+        git = Git(root)
+
+        # untracked and modified files
+        untracked = git.list_untracked()
+        modified = git.list_modified()
+
+        # DEBUG msg
+        p = pprint.pformat(untracked)
+        logger.debug('untracked files: ' + p)
+        p = pprint.pformat(modified)
+        logger.debug('modified files: ' + p)
+
+        # filter out HDL files in untracked files
+        ufilter = filter(lambda x: x.endswith(HDL_SUFFIXES_TUPLE), untracked)
+        ufiltered = list(ufilter)
+        msg = 'This Package({}) contains untracked HDL files!'.format(name)
+        self.warning(msg)
+        ufiles = '\n'.join(ufiltered)
+        msg = 'Here is the untracked HDL files:\n{}'.format(ufiles)
+        self.warning(msg)
+        msg = 'Do you want to update this package\'s git repository without these HDL files?'
+        self.warning(msg)
+        confirm = self.get_confirm()
+
+        if confirm is None:
+            return
+        if not confirm:
+            msg = 'You must manually update the Enzi.toml\'s filesets section with the expected HDL files.'
+            logger.error(msg)
+            raise SystemExit(BASE_ESTRING + msg)
+
+        # staged modified files
+        git.add_files(modified)
+        
+        # log commit message
+        message = self.args.message
+        if message is None:
+            message = AUTO_COMMIT_MESSAGE
+        
+        fmt = 'update this package\'s git repository with commit message:{} "{}"'
+        msg = fmt.format(Fore.BLUE, message)
+        logger.info(msg)
+        
+        git.quiet_spawn_with(
+            lambda x: x.arg('commit')
+            .arg('-m')
+            .arg(message)
+        )
+        self.info('update finished')
+        pass
+
     def update_deps(self, **kwargs):
         """
         the default behaviour of enzi update
@@ -304,7 +378,7 @@ class EnziApp(object):
         return confirm
 
     @staticmethod
-    def parse_args():
+    def parse_args(input_args=None):
         supported_targets = ['build', 'sim', 'run', 'program_device']
         available_tasks = ['clean', 'update']
         parser = argparse.ArgumentParser()
@@ -314,7 +388,8 @@ class EnziApp(object):
                             choices=[
                                 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'])
         # Global options
-        parser.add_argument('--root', help='Enzi project root directory')
+        parser.add_argument(
+            '--root', help='Enzi project root directory, default is current directory', default='.')
         parser.add_argument('--silence-mode', '-s', help='Only capture stderr',
                             action='store_true')
         parser.add_argument(
@@ -338,6 +413,15 @@ class EnziApp(object):
         # update dependencies
         update_parser = subparsers.add_parser(
             'update', help='Update dependencies')
+        # whether to update current Enzi's git commit
+        update_parser.add_argument(
+            '--git',
+            help='Update the current Enzi package\'s git commits, if it is a git repo.',
+            action='store_true')
+        update_parser.add_argument(
+            '--message', '-m',
+            help='Commit message for update git repository, if no message is specified, the message will be: "auto commit by Enzi"',
+            action=OptionalAction, default=AUTO_COMMIT_MESSAGE)
         update_parser.set_defaults(task='update')
 
         # init task
@@ -370,7 +454,10 @@ class EnziApp(object):
         pd_parser.add_argument('--tool', help='Override the default tool')
         pd_parser.set_defaults(target='program_device')
 
-        args = parser.parse_args()
+        if input_args:
+            args = parser.parse_args(input_args)
+        else:
+            args = parser.parse_args()
 
         if not args.enzi_config_help is None:
             return (args, parser)

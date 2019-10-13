@@ -44,6 +44,7 @@ KNOWN_BACKENDS = set(KnownBackends().known_backends.keys())
 ENZI_CONFIG_VERSIONS = {"0.1", "0.2"}
 CONFIG_CURRENT_VERSION = "0.2"
 
+
 def flat_git_records(item):
     name, records = item
     if len(records) == 1:
@@ -271,7 +272,7 @@ class DependencyTable(object):
             self.list.append(entry)
             self.ids[entry] = dep_id
             return dep_id
-    
+
     def is_empty(self):
         return len(self.list) == 0
 
@@ -1290,9 +1291,9 @@ class EnziConfigValidator(Validator):
         'targets': TargetsValidator,
         'tools': ToolsValidator
     }
-    BASE_ESTRING = 'Enzi exit on error: '
+    BASE_ESTRING = 'Enzi exits on error: '
 
-    BASE_FILE_TARGET_COMMENT= '''
+    BASE_FILE_TARGET_COMMENT = '''
 # Optional targets section, use when you want Enzi to execute some targets.
 # Here is the key-values hint.
 '''
@@ -1407,23 +1408,24 @@ class EnziConfigValidator(Validator):
         """generate a minimal Enzi.toml's dict with given information"""
         d = {}
         d['enzi_version'] = CONFIG_CURRENT_VERSION
-        
-        package = { 'name': str(package_name), 'version': '0.1.0' }
+
+        package = {'name': str(package_name), 'version': '0.1.0'}
         if authors is None:
             authors = []
         elif type(authors) == str:
             authors = [authors]
         elif type(authors) == list:
-            authors = StringListValidator(key='authors', val=authors).validate()
+            authors = StringListValidator(
+                key='authors', val=authors).validate()
         else:
             raise ValueError('authors must be a string or a string list')
         package['authors'] = authors
         d['package'] = package
 
-        d['filesets'] = { 'src': { 'files': [] } }
+        d['filesets'] = {'src': {'files': []}}
 
         return d
-    
+
     @staticmethod
     def base_file(package_name, authors=None):
         """generate a minimal Enzi.toml's content StringIO with given information"""
@@ -1434,7 +1436,7 @@ class EnziConfigValidator(Validator):
 
         sio.write(EnziConfigValidator.BASE_FILE_TARGET_COMMENT)
         targets = TargetsValidator.info()
-        dtargets = { 'targets': targets }
+        dtargets = {'targets': targets}
         targets_lines = toml.dumps(dtargets).splitlines()
         mlines = map(lambda x: '# {}\n'.format(x), targets_lines)
         sio.writelines(mlines)

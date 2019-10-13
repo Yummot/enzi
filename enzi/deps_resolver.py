@@ -500,7 +500,7 @@ class DependencyResolver(object):
         it will try to terminate Enzi with raising an SystemExit exception.
         :raises: SystemExit
         """
-        BASE_ESTRING = 'Enzi exit on error: '
+        BASE_ESTRING = 'Enzi exits on error: '
         if parent and name == parent.name:
             msg = 'Possible self dependency for package: %s' % parent.name
             logger.error(msg)

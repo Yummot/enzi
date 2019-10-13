@@ -147,6 +147,53 @@ class Git(object):
         lines = self.spawn_with(ls).splitlines()
         return list(map(TreeEntry.parse, lines))
 
+    def list_untracked(self):
+        res = self.spawn_with(
+            lambda x: x.arg('ls-files')
+            .arg('-o')
+            .arg('--exclude-standard')
+        )
+        files = res.splitlines()
+        return files
+
+    def list_modified(self):
+        res = self.spawn_with(
+            lambda x: x.arg('ls-files')
+            .arg('-m')
+            .arg('--exclude-standard')
+        )
+        files = res.splitlines()
+        return files
+
+    def add_files(self, files):
+        if not files:
+            return
+        if type(files) == str:
+            files = [files]
+
+        files_str = ' '.join(files)
+        # print('cccc', files_str)
+        self.spawn_with(
+            lambda x: x.arg('add')
+            .arg(files_str)
+        )
+    
+    def unstaged_from_head(self, file):
+        """
+        unstaged a file from this git's HEAD, with git reset HEAD -- <file>
+        """
+        if not file:
+            return
+        if type(file) != str:
+            raise ValueError('file must be a string')
+
+        self.spawn_with(
+            lambda x: x.arg('reset')
+            .arg('HEAD')
+            .arg('--')
+            .arg(file)
+        )    
+
 
 class GitRepo(FileManager):
     """
