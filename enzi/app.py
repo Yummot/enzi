@@ -676,7 +676,7 @@ class EnziApp(object):
 
         # program_device subparser
         pd_parser = subparsers.add_parser(
-            'program_device', help='Program the given project to device')
+            'program_device', help='Program the given project to device(unimplemented yet)')
         pd_parser.add_argument('--tool', help='Override the default tool')
         pd_parser.set_defaults(target='program_device')
 
