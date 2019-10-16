@@ -676,6 +676,66 @@ class StringListValidator(Validator):
         return '<array<string>>'
 
 
+class TypedMapValidator(Validator):
+    """
+    A base Validator for validating Typed Mapping<K=str, V=Any>
+    e.g. { 'name' : str, 'inttype'=str, 'data'=int }
+    """
+    def __init__(self, *, key, val, parent=None, must={}, optional={}):
+        """
+        :param key: The key of this mapping
+        :param val: The value of this mapping
+        :param parent: The parent of this key
+        :param must: the mandatory keys of this mapping and the corresponding validator
+        :param optional: the optional keys of this mapping and the corresponding validator
+        """
+        allow = {**must, **optional}
+        super(TypedMapValidator, self).__init__(
+            key=key,
+            val=val,
+            allows=allow,
+            parent=parent
+        )
+        self.must = must # <K=str,V=Validator>
+        self.optional = optional # <K=str,V=Validator>
+        self._mset = set(must.keys())
+        self._oset = set(optional.keys())
+        self.val: typing.Mapping[str, typing.Any]
+
+    def validate(self):
+        if self.val is None:
+            return self.val
+        
+        self.expect_kvs()
+        kset = set(self.val.keys())
+        aset = set(self.allows.keys())
+        missing = self._mset - kset
+        unknown = kset - aset
+        options = self._oset & aset
+
+        if missing:
+            msg = 'missing keys: {}'.format(missing)
+            raise ValidatorError(self.chain_keys_str(), msg)
+
+        if unknown:
+            msg = 'unknown keys: {}'.format(unknown)
+            raise ValidatorError(self.chain_keys_str(), msg)
+
+        for key, V in self.must.values():
+            val = self.val.get(key)
+            validator = V(key=key, val=val, parent=self)
+            self.val[key] = validator.validate()
+        
+        for option in options:
+            val = self.val.get(option)
+            V = self.optional[option]
+            validator = V(option=option, val=val, parent=self)
+            self.val[option] = validator.validate()
+
+        return self.val
+
+
+
 class PackageValidator(Validator):
     """Validator for a package section"""
 
