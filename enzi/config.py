@@ -1190,60 +1190,41 @@ TPARAMS_VALIDATOR_MAP = {
 }
 
 
-class ToolValidator(Validator):
+class ToolValidator(TypedMapValidator):
     """validator for a single tool section"""
 
-    __slots__ = ('val', )
-    __allow__ = {
-        'name': StringValidator,
-        'params': ToolParamsValidator
-    }
-    __must__ = {'name'}
-    __options__ = { 'params' }
+    __must__ = { 'name': StringValidator }
+    __optional__ = { 'params': ToolParamsValidator }
 
     def __init__(self, *, key, val, parent=None):
-
-        super(ToolValidator, self).__init__(
+        super().__init__(
             key=key,
             val=val,
-            allows=ToolValidator.__allow__,
-            parent=parent
+            parent=parent,
+            must=ToolValidator.__must__,
+            optional=ToolValidator.__optional__
         )
-        self.val: typing.Mapping[str, typing.Any]
 
-    def validate(self):
-        self.expect_kvs()
-
-        kset = set(self.val.keys())
-        aset = set(self.__allow__.keys())
-        missing = ToolValidator.__must__ - kset
-        unknown = kset - aset
-
-        if missing:
-            msg = 'missing keys: {}'.format(missing)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        val = self.val['name']
-        name = StringValidator(key='name', val=val, parent=self).validate()
-        tool_name = name.lower()
-        self.val['name'] = tool_name
-
+    def check_tool(self, tool_name=None):
+        """check if the tool is available and set the corresponding ToolParamsValidator"""
+        if tool_name is None:
+            tool_name = self.val['name'].lower()
+        
         if not (tool_name in KNOWN_BACKENDS or tool_name == 'ixs'):
             msg = 'unknown backend: `{}`'.format(tool_name)
             raise ValidatorError(self.chain_keys_str(), msg)
 
         params_validator = TPARAMS_VALIDATOR_MAP[tool_name]
+        self.optional['params'] = params_validator
 
-        if not 'params' in self.val:
-            return self.val
+    def norm_name(self):
+        self.val['name'] = self.val['name'].lower()
 
-        params = self.val['params']
-        self.val['params'] = params_validator(
-            key='params', val=params, parent=self).validate()
+    def validate(self):
+        self.validate_must_only()
+        self.norm_name()
+        self.check_tool()
+        self.validate_optional(False)
 
         return self.val
 
