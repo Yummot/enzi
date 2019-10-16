@@ -7,6 +7,7 @@ import os
 import io
 import pytest
 
+from enzi import config
 from enzi.config import ValidatorError
 from enzi.config import Validator, BoolValidator
 from enzi.config import IntValidator, FloatValidator
@@ -18,7 +19,7 @@ from enzi.config import FilesetValidator, FilesetsValidator
 from enzi.config import ToolParamsValidator, ToolValidator
 from enzi.config import IESParamsValidator, IXSParamsValidator
 from enzi.config import QuestaParamsValidator, VsimParamsValidator
-from enzi.config import ToolsValidator
+from enzi.config import ToolsValidator, TypedMapValidator
 from enzi.config import TargetValidator, TargetsValidator
 from enzi.config import EnziConfigValidator
 from enzi.config import RawConfig, PartialConfig, Config
@@ -533,3 +534,70 @@ def test_content():
 def test_enzi_config_validator_key():
     v = EnziConfigValidator({}, './Enzi.toml', git_url='https://xxx.com')
     assert v.key == '<https://xxx.com/Enzi.toml>'
+
+# tests for TypedMapValidator
+@pytest.mark.skip(reason="This is a class for testing")
+class TestTMValidator(TypedMapValidator):
+    """validator for a single tool section"""
+    __must__ = { 'name': StringValidator }
+    __optional__ = { 'params': ToolParamsValidator }
+
+    def __init__(self, *, key, val, parent=None):
+        super().__init__(
+            key=key,
+            val=val,
+            parent=parent,
+            must=TestTMValidator.__must__,
+            optional=TestTMValidator.__optional__
+        )
+
+    def check_tool(self, tool_name=None):
+        """check if the tool is available and set the corresponding ToolParamsValidator"""
+        if tool_name is None:
+            tool_name = self.val['name'].lower()
+        
+        if not (tool_name in config.KNOWN_BACKENDS or tool_name == 'ixs'):
+            msg = 'unknown backend: `{}`'.format(tool_name)
+            raise ValidatorError(self.chain_keys_str(), msg)
+
+        params_validator = config.TPARAMS_VALIDATOR_MAP[tool_name]
+        self.optional['params'] = params_validator
+
+    def norm_name(self):
+        self.val['name'] = self.val['name'].lower()
+
+    def validate(self):
+        self.validate_must_only()
+        self.norm_name()
+        self.check_tool()
+        self.validate_optional(False)
+
+        return self.val
+
+    @staticmethod
+    def info():
+        return {}
+
+def test_typed_map_validator():
+    val = {
+        'name': 'ies',
+        'params': copy.deepcopy(PARAMS)
+    }
+
+    validator = TestTMValidator(key='tool', val=val)
+    assert validator.validate() == val
+
+    val['name'] = 'questa'
+    assert validator.validate() == val
+
+    val['unknown'] = 'unknown'
+    expected(validator)
+
+    del val['unknown']
+    assert validator.validate() == val
+
+    del val['name']
+    expected(validator)
+
+    val['name'] = 'ixs'
+    validator.validate() == val

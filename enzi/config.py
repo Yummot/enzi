@@ -700,40 +700,59 @@ class TypedMapValidator(Validator):
         self.optional = optional # <K=str,V=Validator>
         self._mset = set(must.keys())
         self._oset = set(optional.keys())
+        self._aset = set(self.allows.keys())
         self.val: typing.Mapping[str, typing.Any]
 
-    def validate(self):
+    def check_missing_keys(self):
         if self.val is None:
-            return self.val
+            return
         
         self.expect_kvs()
         kset = set(self.val.keys())
-        aset = set(self.allows.keys())
         missing = self._mset - kset
-        unknown = kset - aset
-        options = self._oset & aset
 
         if missing:
             msg = 'missing keys: {}'.format(missing)
             raise ValidatorError(self.chain_keys_str(), msg)
 
+    def check_unknown_keys(self):
+        if self.val is None:
+            return
+        
+        self.expect_kvs()
+        kset = set(self.val.keys())
+        unknown = kset - self._aset
+
         if unknown:
             msg = 'unknown keys: {}'.format(unknown)
             raise ValidatorError(self.chain_keys_str(), msg)
 
-        for key, V in self.must.values():
+    def validate_must_only(self):
+        self.check_missing_keys()
+        self.check_unknown_keys()
+
+        for key, V in self.must.items():
             val = self.val.get(key)
             validator = V(key=key, val=val, parent=self)
             self.val[key] = validator.validate()
-        
+
+    def validate_optional(self, check_unknown=True):
+        if check_unknown:
+            self.check_unknown_keys()
+        kset = set(self.val.keys())
+        options = self._oset & kset
+
         for option in options:
             val = self.val.get(option)
             V = self.optional[option]
-            validator = V(option=option, val=val, parent=self)
+            validator = V(key=option, val=val, parent=self)
             self.val[option] = validator.validate()
 
-        return self.val
+    def validate(self):
+        self.validate_must_only()
+        self.validate_optional()
 
+        return self.val
 
 
 class PackageValidator(Validator):
