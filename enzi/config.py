@@ -729,6 +729,7 @@ class TypedMapValidator(Validator):
         elif type(vdict) == dict:
             if not vdict:
                 return (True, vdict)
+
             def f(x): return type(x[0]) == str and issubclass(x[1], Validator)
             ret = any(map(f, vdict.items()))
             return (ret, vdict)
@@ -921,7 +922,7 @@ class DepsValidator(Validator):
         }
 
 
-class FilesetValidator(Validator):
+class FilesetValidator(TypedMapValidator):
     """Validator for a single fileset section"""
 
     __slots__ = ('val', )
@@ -933,31 +934,15 @@ class FilesetValidator(Validator):
         # this specified each dependency Validator
 
         super(FilesetValidator, self).__init__(
-            key=key, val=val, allows=FilesetValidator.__allow__, parent=parent)
+            key=key,
+            val=val,
+            parent=parent,
+            must=FilesetValidator.__allow__
+        )
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
-        self.expect_kvs()
-
-        kset = set(self.val.keys())
-        aset = set(self.__allow__.keys())
-        missing = aset - kset
-        unknown = kset - aset
-
-        if missing:
-            msg = 'missing keys: {}'.format(missing)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        for key, V in self.__allow__.items():
-            if not key in kset:
-                continue
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
+        super().validate()
 
         if 'files' in self.val:
             files = self.val['files']
@@ -1014,51 +999,34 @@ class FilesetsValidator(Validator):
         }
 
 
-class ToolParamsValidator(Validator):
+class ToolParamsValidator(TypedMapValidator):
     """Validator for A tool's params section"""
 
     __slots__ = ('val', 'params')
     __allow__ = {}
 
     def __init__(self, *, key, val, parent=None, extras=None):
-        if extras:
-            if type(extras) == dict:
-                logger.debug('ToolParamsValidator: filtered extras')
-                f = filter(lambda x: issubclass(
-                    x[1], Validator), extras.items())
-                z = chain(ToolParamsValidator.__allow__.items(), f)
-                self.params = dict(z)
-            else:
-                logger.warning(
-                    'ToolParamsValidator: Ingore non-dict type extras')
+        (check, extras) = TypedMapValidator.check_validator_dict(extras)
+        if check:
+            logger.debug('ToolParamsValidator: filtered extras')
+            self.params = {**ToolParamsValidator.__allow__, **extras}
         else:
-            self.params = ToolParamsValidator.__allow__
-            logger.debug('ToolParamsValidator: No extras')
+            msg = 'ToolParamsValidator: Ingore non-dict type extras'
+            logger.warning(msg)
+
         super(ToolParamsValidator, self).__init__(
-            key=key, val=val, allows=self.params, parent=parent)
+            key=key, 
+            val=val,
+            parent=parent, 
+            must=self.__allow__,
+            optional=extras
+        )
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
         if self.val is None:
             return self.val
-
-        self.expect_kvs()
-
-        kset = set(self.val.keys())
-        aset = set(self.params.keys())
-        unknown = kset - aset
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        for key, V in self.params.items():
-            if not key in kset:
-                continue
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
-
+        super().validate()
         return self.val
 
     @staticmethod
