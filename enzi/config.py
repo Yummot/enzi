@@ -1258,7 +1258,7 @@ class ToolsValidator(Validator):
         return [tool0, tool1]
 
 
-class TargetValidator(Validator):
+class TargetValidator(TypedMapValidator):
     """validator for a single target section"""
 
     __slots__ = ('val', )
@@ -1272,33 +1272,10 @@ class TargetValidator(Validator):
         super(TargetValidator, self).__init__(
             key=key,
             val=val,
-            allows=TargetValidator.__allow__,
-            parent=parent
+            parent=parent,
+            must=TargetValidator.__allow__
         )
         self.val: typing.Mapping[str, typing.Any]
-
-    def validate(self):
-        self.expect_kvs()
-
-        kset = set(self.val.keys())
-        aset = set(self.__allow__.keys())
-        missing = aset - kset
-        unknown = kset - aset
-
-        if missing:
-            msg = 'missing keys: {}'.format(missing)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        for key, V in self.__allow__.items():
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
-
-        return self.val
 
     @staticmethod
     def info():
