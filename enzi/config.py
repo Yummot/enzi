@@ -681,6 +681,7 @@ class TypedMapValidator(Validator):
     A base Validator for validating Typed Mapping<K=str, V=Any>
     e.g. { 'name' : str, 'inttype'=str, 'data'=int }
     """
+
     def __init__(self, *, key, val, parent=None, must={}, optional={}):
         """
         :param key: The key of this mapping
@@ -689,6 +690,17 @@ class TypedMapValidator(Validator):
         :param must: the mandatory keys of this mapping and the corresponding validator
         :param optional: the optional keys of this mapping and the corresponding validator
         """
+        (check, must) = TypedMapValidator.check_validator_dict(must)
+        if not check:
+            msg = 'param:must: must be a dict<k=str, V=subclass<Validator>>'
+            raise ValidatorError(
+                TypedMapValidator.__construct_keys(parent, key), msg)
+        (check, optional) = TypedMapValidator.check_validator_dict(optional)
+        if not check:
+            msg = 'param:optional: must be a dict<k=str, V=subclass<Validator>>'
+            raise ValidatorError(
+                TypedMapValidator.__construct_keys(parent, key), msg)
+
         allow = {**must, **optional}
         super(TypedMapValidator, self).__init__(
             key=key,
@@ -696,17 +708,37 @@ class TypedMapValidator(Validator):
             allows=allow,
             parent=parent
         )
-        self.must = must # <K=str,V=Validator>
-        self.optional = optional # <K=str,V=Validator>
+        self.must = must  # <K=str,V=Validator>
+        self.optional = optional  # <K=str,V=Validator>
         self._mset = set(must.keys())
         self._oset = set(optional.keys())
         self._aset = set(self.allows.keys())
         self.val: typing.Mapping[str, typing.Any]
 
+    @staticmethod
+    def __construct_keys(parent, this_key):
+        if parent:
+            return str(this_key)
+        else:
+            parent.chain_keys_str() + '.' + str(this_key)
+
+    @staticmethod
+    def check_validator_dict(vdict):
+        if vdict is None:
+            return (True, {})
+        elif type(vdict) == dict:
+            if not vdict:
+                return (True, vdict)
+            def f(x): return type(x[0]) == str and issubclass(x[1], Validator)
+            ret = any(map(f, vdict.items()))
+            return (ret, vdict)
+        else:
+            return (False, vdict)
+
     def check_missing_keys(self):
         if self.val is None:
             return
-        
+
         self.expect_kvs()
         kset = set(self.val.keys())
         missing = self._mset - kset
@@ -718,7 +750,7 @@ class TypedMapValidator(Validator):
     def check_unknown_keys(self):
         if self.val is None:
             return
-        
+
         self.expect_kvs()
         kset = set(self.val.keys())
         unknown = kset - self._aset
@@ -727,7 +759,7 @@ class TypedMapValidator(Validator):
             msg = 'unknown keys: {}'.format(unknown)
             raise ValidatorError(self.chain_keys_str(), msg)
 
-    def validate_must_only(self):
+    def check_must_only(self):
         self.check_missing_keys()
         self.check_unknown_keys()
 
@@ -736,26 +768,27 @@ class TypedMapValidator(Validator):
             validator = V(key=key, val=val, parent=self)
             self.val[key] = validator.validate()
 
-    def validate_optional(self, check_unknown=True):
+    def check_optional(self, check_unknown=True):
         if check_unknown:
             self.check_unknown_keys()
         kset = set(self.val.keys())
         options = self._oset & kset
 
-        for option in options:
-            val = self.val.get(option)
-            V = self.optional[option]
-            validator = V(key=option, val=val, parent=self)
-            self.val[option] = validator.validate()
+        if options:
+            for option in options:
+                val = self.val.get(option)
+                V = self.optional[option]
+                validator = V(key=option, val=val, parent=self)
+                self.val[option] = validator.validate()
 
     def validate(self):
-        self.validate_must_only()
-        self.validate_optional()
+        self.check_must_only()
+        self.check_optional()
 
         return self.val
 
 
-class PackageValidator(Validator):
+class PackageValidator(TypedMapValidator):
     """Validator for a package section"""
 
     __slots__ = ('val', )
@@ -768,31 +801,12 @@ class PackageValidator(Validator):
     def __init__(self, *, key, val, parent=None):
         from typing import Any, Mapping
         super(PackageValidator, self).__init__(
-            key=key, val=val, allows=PackageValidator.__allow__, parent=parent)
+            key=key,
+            val=val,
+            parent=parent,
+            must=PackageValidator.__allow__
+        )
         self.val: typing.Mapping[str, typing.Any]
-
-    def validate(self):
-        self.expect_kvs()
-
-        aset = set(self.__allow__.keys())
-        kset = set(self.val.keys())
-        missing = aset - kset
-        unknown = kset - aset
-
-        if missing:
-            msg = 'missing keys: {}'.format(missing)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        for key, V in self.__allow__.items():
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
-
-        return self.val
 
     @staticmethod
     def info():
@@ -1193,8 +1207,8 @@ TPARAMS_VALIDATOR_MAP = {
 class ToolValidator(TypedMapValidator):
     """validator for a single tool section"""
 
-    __must__ = { 'name': StringValidator }
-    __optional__ = { 'params': ToolParamsValidator }
+    __must__ = {'name': StringValidator}
+    __optional__ = {'params': ToolParamsValidator}
 
     def __init__(self, *, key, val, parent=None):
         super().__init__(
@@ -1209,7 +1223,7 @@ class ToolValidator(TypedMapValidator):
         """check if the tool is available and set the corresponding ToolParamsValidator"""
         if tool_name is None:
             tool_name = self.val['name'].lower()
-        
+
         if not (tool_name in KNOWN_BACKENDS or tool_name == 'ixs'):
             msg = 'unknown backend: `{}`'.format(tool_name)
             raise ValidatorError(self.chain_keys_str(), msg)
@@ -1221,10 +1235,10 @@ class ToolValidator(TypedMapValidator):
         self.val['name'] = self.val['name'].lower()
 
     def validate(self):
-        self.validate_must_only()
+        self.check_must_only()
         self.norm_name()
         self.check_tool()
-        self.validate_optional(False)
+        self.check_optional(False)
 
         return self.val
 
@@ -1423,7 +1437,7 @@ class EnziConfigValidator(Validator):
 '''
 
     def __init__(self, val, config_path=None, *, git_url=None):
-        
+
         # construct a readable EnziConfigValidator.key
         if git_url and config_path:
             cur_system = platform.system()
@@ -1632,18 +1646,21 @@ class PartialConfig(object):
         class Files:
             def __init__(self):
                 self.files = []
+
             def add_files(self, x):
                 self.files = self.files + x['files']
         files = Files()
         m = map(files.add_files, self.filesets.values())
         _ = list(m)
-        return { 'files': files.files }
+        return {'files': files.files}
+
 
 def check_exists(path, base_path=None):
     """check the existence of a path"""
     if base_path:
         path = os.path.join(base_path, path)
     return os.path.exists(path)
+
 
 class Config(object):
     """
@@ -1712,12 +1729,12 @@ class Config(object):
             str_buf.append('\t%s: %s' % (k, v))
         str_buf.append('}')
         return '\n'.join(str_buf)
-    
+
     def check_filesets(self):
         dirname = os.path.dirname(self.path)
         fmt = 'Filesets.{}\'s files: {} not found'
-        
-        checker = lambda x: check_exists(x, dirname)
+
+        def checker(x): return check_exists(x, dirname)
 
         for fsname, fs in self.filesets.items():
             files = fs['files']
@@ -1735,12 +1752,13 @@ class Config(object):
         class Files:
             def __init__(self):
                 self.files = []
+
             def add_files(self, x):
                 self.files = self.files + x['files']
         files = Files()
         m = map(files.add_files, self.filesets.values())
         _ = list(m)
-        return { 'files': files.files }
+        return {'files': files.files}
 
     def into(self):
         """ Returns self for duck type compatibility"""
@@ -1749,10 +1767,10 @@ class Config(object):
     def content(self):
         """ retun a StringIO with the string content of this Config"""
         out = io.StringIO()
-        d = {'enzi_version': CONFIG_CURRENT_VERSION }
+        d = {'enzi_version': CONFIG_CURRENT_VERSION}
         d['package'] = self.package
         d['filesets'] = self.filesets
-        
+
         if self.dependencies:
             d['dependencies'] = self.dependencies
         if self.targets:
@@ -1760,7 +1778,7 @@ class Config(object):
 
         toml.dump(d, out)
         tools = self._raw_tools
-        
+
         if not tools:
             return out
 
@@ -1773,11 +1791,12 @@ class Config(object):
             toolinfo = list(map(tools_section_line, lines))
             out.writelines(toolinfo)
             out.write('\n')
-        
+
         m = map(fn, tools)
         _ = list(m)
 
         return out
+
 
 class RawConfig(object):
     """
@@ -1807,7 +1826,8 @@ class RawConfig(object):
         self.from_str = from_str
         self.is_local = is_local
         self.fileset_only = fileset_only
-        self.validator = EnziConfigValidator(conf, self.config_path, git_url=git_url)
+        self.validator = EnziConfigValidator(
+            conf, self.config_path, git_url=git_url)
 
     def validate(self):
         """

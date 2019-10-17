@@ -567,10 +567,10 @@ class TestTMValidator(TypedMapValidator):
         self.val['name'] = self.val['name'].lower()
 
     def validate(self):
-        self.validate_must_only()
+        self.check_must_only()
         self.norm_name()
         self.check_tool()
-        self.validate_optional(False)
+        self.check_optional(False)
 
         return self.val
 
