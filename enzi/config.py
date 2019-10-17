@@ -717,7 +717,7 @@ class TypedMapValidator(Validator):
 
     @staticmethod
     def __construct_keys(parent, this_key):
-        if parent:
+        if parent is None:
             return str(this_key)
         else:
             parent.chain_keys_str() + '.' + str(this_key)
@@ -1317,19 +1317,19 @@ class TargetsValidator(Validator):
         }
 
 
-class EnziConfigValidator(Validator):
+class EnziConfigValidator(TypedMapValidator):
     """
     Validator for "Enzi.toml"
     """
 
     __slots__ = ('config_path', 'val')
-    __must__ = {'enzi_version', 'package', 'filesets'}
-    __options__ = {'dependencies', 'target', 'tools'}
-    __allow__ = {
+    __must__ = {
         'enzi_version': StringValidator,
         'package': PackageValidator,
-        'dependencies': DepsValidator,
         'filesets': FilesetsValidator,
+    }
+    __optional__ = {
+        'dependencies': DepsValidator,
         'targets': TargetsValidator,
         'tools': ToolsValidator
     }
@@ -1403,38 +1403,13 @@ class EnziConfigValidator(Validator):
         super(EnziConfigValidator, self).__init__(
             key=key,
             val=val,
-            allows=EnziConfigValidator.__allow__,
+            must=EnziConfigValidator.__must__,
+            optional=EnziConfigValidator.__optional__
         )
         self.val: typing.Mapping[str, typing.Any]
 
     def validate(self):
-        self.expect_kvs()
-
-        aset = set(self.__allow__.keys())
-        kset = set(self.val.keys())
-        missing = self.__must__ - kset
-        unknown = kset - aset
-        options = kset & self.__options__
-
-        if missing:
-            msg = 'missing keys: {}'.format(missing)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        if unknown:
-            msg = 'unknown keys: {}'.format(unknown)
-            raise ValidatorError(self.chain_keys_str(), msg)
-
-        for key in self.__must__:
-            V = self.__allow__[key]
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
-
-        for key in options:
-            V = self.__allow__[key]
-            val = self.val[key]
-            validator = V(key=key, val=val, parent=self)
-            self.val[key] = validator.validate()
+        super(EnziConfigValidator, self).validate()
 
         # check `enzi_version`
         enzi_version = self.val['enzi_version']
