@@ -28,18 +28,9 @@ class Questa(Backend):
         self.vlog_defines = config.get('vlog_defines', None)
         self.vhdl_defines = config.get('vhdl_defines', None)
 
-        _fileset = config.get('fileset', []) + config.get('files', [])
-        self.fileset = list(OrderedDict.fromkeys(_fileset))
-        self.vlog_fileset = config.get('vlog_fileset', [])
-        self.vhdl_fileset = config.get('vhdl_fileset', [])
-
-        if self.fileset and self.vlog_fileset:
-            self.fileset = [
-                x for x in self.fileset if not x in self.vlog_fileset]
-
-        if self.fileset and self.vhdl_fileset:
-            self.fileset = [
-                x for x in self.fileset if not x in self.vhdl_fileset]
+        _fileset = config.get('fileset', {})
+        self.fileset = _fileset.get('files', [])
+        self.inc_dirs = _fileset.get('inc_dirs', [])
 
         self.elab_opts = config.get('elab_opts', None)
         self.elaborate_log = config.get('elaborate_log', 'elaborate.log')
@@ -152,6 +143,7 @@ class UnixDelegate(object):
             "vlog_defines": self.master.vlog_defines,
             "vhdl_defines": self.master.vhdl_defines,
             "fileset": self.master.fileset,
+            "inc_dirs": self.master.inc_dirs
         }
 
     @property
@@ -271,6 +263,7 @@ class WinDelegate(object):
         cvars = self._compile_vars
         fileset = cvars['fileset']
         vlog_opts = cvars['vlog_opts']
+        inc_dirs = cvars['inc_dirs']
         vhdl_opts = cvars['vhdl_opts']
         vlog_defines = cvars['vlog_defines']
         vhdl_defines = cvars['vhdl_defines']
@@ -296,8 +289,10 @@ class WinDelegate(object):
         if len(vhdl):
             self._vhdl_f(vhdl, vhdl_opts, vhdl_defines, '', writer)
         if len(sv):
+            sv.append(inc_dirs)
             self._vlog_f(sv, vlog_opts, vlog_defines, sv_iport, writer)
         if len(verilog):
+            verilog.append(inc_dirs)
             self._vlog_f(verilog, vlog_opts, vlog_defines, '', writer)
 
         writer.close()
@@ -392,6 +387,7 @@ class WinDelegate(object):
         vhdl_opts = "+cover=bcefsx "
         vlog_defines = ""
         vhdl_defines = ""
+        inc_dirs = "\n"
         sv_input_port = "-svinputport=var "
         if self.master.vlog_opts:
             vlog_opts = vlog_opts + self.master.vlog_opts
@@ -401,6 +397,9 @@ class WinDelegate(object):
             vlog_defines = vlog_defines + self.master.vlog_defines
         if self.master.vhdl_defines:
             vhdl_defines = vhdl_defines + self.master.vhdl_defines
+        if self.master.inc_dirs:
+            from enzi.backend.backend import inc_dirs_filter
+            inc_dirs = inc_dirs + inc_dirs_filter(self.master.inc_dirs)
         return {
             "vlog_opts": vlog_opts,
             "vhdl_opts": vhdl_opts,
@@ -408,6 +407,7 @@ class WinDelegate(object):
             "vhdl_defines": vhdl_defines,
             "fileset": self.fileset,
             "sv_input_port": sv_input_port,
+            "inc_dirs": inc_dirs,
         }
 
     @property

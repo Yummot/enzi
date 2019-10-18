@@ -29,16 +29,6 @@ class IES(Backend):
 
         _fileset = config.get('fileset', []) + config.get('files', [])
         self.fileset = list(OrderedDict.fromkeys(_fileset))
-        self.vlog_fileset = config.get('vlog_fileset', [])
-        self.vhdl_fileset = config.get('vhdl_fileset', [])
-
-        if self.fileset and self.vlog_fileset:
-            self.fileset = [
-                x for x in self.fileset if not x in self.vlog_fileset]
-
-        if self.fileset and self.vhdl_fileset:
-            self.fileset = [
-                x for x in self.fileset if not x in self.vhdl_fileset]
 
         # IES elaborate step config
         self.elab_opts = config.get('elab_opts', None)

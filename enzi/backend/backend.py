@@ -39,6 +39,11 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
     else:
         return str(value)
 
+INC_DIR_PREFIX = '+incdir+'
+
+def inc_dirs_filter(files):
+    add_prefix = map(lambda f: INC_DIR_PREFIX + f, files)
+    return '\n'.join(add_prefix)
 
 class BackendCallback(object):
     def pre(self):
@@ -92,6 +97,7 @@ class Backend(object):
         )
 
         self.j2_env.filters['value_str'] = value_str_filter
+        self.j2_env.filters['inc_dirs_filter'] = inc_dirs_filter
 
         # TODO: currently, each Backend op only support one callback, multi-callbacks for one op may be added.
         self.cbs = {

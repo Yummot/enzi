@@ -318,7 +318,7 @@ class BackendConfigGen(object):
         config = {}
 
         config['toplevel'] = toplevel
-        config['fileset'] = fileset.get('files', [])
+        config['fileset'] = fileset
 
         if not questa_config:
             return config
