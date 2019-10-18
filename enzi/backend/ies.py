@@ -70,8 +70,6 @@ class IES(Backend):
             'compile_log': self.compile_log,
             "vlog_defines": self.vlog_defines,
             "vhdl_defines": self.vhdl_defines,
-            "vlog_fileset": self.vlog_fileset,
-            "vhdl_fileset": self.vhdl_fileset,
             "fileset": self.fileset,
         }
 
