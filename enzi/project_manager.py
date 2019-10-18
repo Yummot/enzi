@@ -103,14 +103,14 @@ class ProjectFiles(FileManager):
         self.deps_fileset = _files
 
         if file_manager.FM_DEBUG:
-            if _ccfiles:
+            if not _ccfiles.is_empty():
                 self.cache_files['deps'] = _ccfiles
                 fmt = 'ProjectFiles:fetch deps cache files:\n{}'
                 data = pprint.pformat(self.cache_files['deps'].dump_dict())
                 msg = fmt.format(data)
                 logger.info(msg)
 
-            if self.deps_fileset.files or self.deps_fileset.inc_dirs or self.deps_fileset.inc_files:
+            if not self.deps_fileset.is_empty():
                 msg = pprint.pformat(self.deps_fileset.dump_dict())
                 logger.info('ProjectFiles:fetch deps fileset:\n{}'.format(msg))
 

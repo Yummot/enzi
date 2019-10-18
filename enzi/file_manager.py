@@ -49,6 +49,12 @@ class Fileset(object):
         self.inc_dirs = set()
         self.inc_files = set()
 
+    def is_empty(self):
+        if not (self.files or self.inc_dirs or self.inc_files):
+            return True
+        else:
+            return False
+
     def update(self, other):
         if not isinstance(other, Fileset):
             raise ValueError('cannot use a not Fileset object to update')
@@ -59,6 +65,7 @@ class Fileset(object):
     def dedup(self):
         """dedup files which are include files"""
         self.files -= self.inc_files
+        self.inc_files = set()
 
     def merge_into(self, other):
         """merge into a new Fileset"""
@@ -97,6 +104,7 @@ class Fileset(object):
 class IncDirsResolver:
     def __init__(self, files_root, files = None):
         self.files_root = files_root
+        self.dfiles_cache = dict()
         if files:
             files = map(lambda x: os.path.join(files_root, x), files)
             self.fileset = Fileset(files)
@@ -118,12 +126,17 @@ class IncDirsResolver:
         if FM_DEBUG:
             pfmt = pprint.pformat(self.fileset.dump_dict())
             logger.info("resolved: \n{}".format(pfmt))
+        self.dfiles_cache = dict()
         return self.fileset
 
     def extract_include_dirs(self, file):
         fs = self.fileset
         dirname = os.path.dirname(file)
-        dir_files = set(os.listdir(dirname))
+        if not dirname in self.dfiles_cache:
+            dir_files = set(os.listdir(dirname))
+            self.dfiles_cache[dirname] = dir_files
+        else:
+            dir_files = self.dfiles_cache[dirname]
         fs.add_inc_dir(dirname)
         with open(file, 'r') as f:
             lines = f.readlines()
