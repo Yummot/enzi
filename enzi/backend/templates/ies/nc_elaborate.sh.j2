@@ -8,8 +8,10 @@ ncelab_opts+=" {{ elab_opts }}"
 {% endif %}
 
 {%- if elaborate_log %}
+rm -rf {{elaborate_log}}
 ncelab_opts+=" -logfile {{ elaborate_log }} -append_log -update"
 {% else %}
+rm -rf nc_elaborate.log
 ncelab_opts+=" -logfile nc_elaborate.log -append_log -update"
 {% endif %}
 

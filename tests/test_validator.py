@@ -325,6 +325,16 @@ def test_file_sets_validator():
     validator.val = list(validator.val.items())
     expected_kvs(validator, 'At least one')
 
+    validator.val = dict(validator.val)
+
+    test = '.' + val['tb']['files'][0]
+    validator.val['tb']['files'][0] = test
+    expected(validator)
+
+    test = '/' + test[2:]
+    validator.val['tb']['files'][0] = test
+    expected(validator)
+
 
 def test_tool_params_validator():
     val = {

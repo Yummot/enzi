@@ -8,8 +8,10 @@ ncvlog_opts+=" {{ vlog_opts }}"
 {% endif %}
 
 {% if compile_log %}
+rm -rf {{compile_log}}
 ncvlog_opts+=" -logfile {{compile_log}} -append_log -update"
 {% else %}
+rm -rf {{nc_compile.log}}
 ncvlog_opts+=" -logfile nc_compile.log -append_log -update"
 {% endif %}
 

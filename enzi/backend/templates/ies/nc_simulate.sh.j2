@@ -23,8 +23,10 @@ ncsim_opts+=" {{ sim_opts }}"
 {% endif %}
 
 {% if simulate_log %}
+rm -rf {{simulate_log}}
 ncsim_opts+=" -logfile {{ simulate_log }}"
 {% else %}
+rm -rf nc_simulate.log
 ncsim_opts+=" -logfile nc_simulate.log"
 {% endif %}
 

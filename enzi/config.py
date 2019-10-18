@@ -957,7 +957,7 @@ class FilesetValidator(TypedMapValidator):
                     msg = 'file: "{}" must be a relative path'.format(f)
                     raise ValidatorError(self.chain_keys_str(), msg)
                 # files must be inside the package
-                if f.startswith('..'):
+                if f.find('..') != -1:
                     msg = 'file: "{}" is oustside this package'.format(f)
                     raise ValidatorError(self.chain_keys_str(), msg)
 
