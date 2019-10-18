@@ -284,6 +284,10 @@ def test_file_set_validator():
     einfo = expected(validator)
     assert "missing" in einfo.value.msg
 
+    val['include_files'] = ['xxx.sv']
+    validator.val = copy.deepcopy(val)
+    assert validator.validate() == val
+
 
 def test_file_sets_validator():
     val = {

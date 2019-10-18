@@ -926,8 +926,13 @@ class FilesetValidator(TypedMapValidator):
     """Validator for a single fileset section"""
 
     __slots__ = ('val', )
-    __allow__ = {
+    __must__ = {
         "files": StringListValidator
+    }
+
+    __optional__ = {
+        # "include_files": StringListValidator,
+        # "include_dirs": StringListValidator
     }
 
     def __init__(self, *, key, val, parent=None):
@@ -937,7 +942,8 @@ class FilesetValidator(TypedMapValidator):
             key=key,
             val=val,
             parent=parent,
-            must=FilesetValidator.__allow__
+            must=FilesetValidator.__must__,
+            optional=FilesetValidator.__optional__
         )
         self.val: typing.Mapping[str, typing.Any]
 
@@ -945,23 +951,25 @@ class FilesetValidator(TypedMapValidator):
         super().validate()
 
         if 'files' in self.val:
-            files = self.val['files']
-            # no empty file name strings is allowed
-            for f in files:
-                if not f:
-                    msg = 'contains an empty string'
-                    raise ValidatorError(self.chain_keys_str(), msg)
-            # all files' paths must be relative
-            for f in files:
-                if os.path.isabs(f):
-                    msg = 'file: "{}" must be a relative path'.format(f)
-                    raise ValidatorError(self.chain_keys_str(), msg)
-                # files must be inside the package
-                if f.find('..') != -1:
-                    msg = 'file: "{}" is oustside this package'.format(f)
-                    raise ValidatorError(self.chain_keys_str(), msg)
+            self.check_files(self.val['files'])
 
         return self.val
+
+    def check_files(self, files):
+        # no empty file name strings is allowed
+        for f in files:
+            if not f:
+                msg = 'contains an empty string'
+                raise ValidatorError(self.chain_keys_str(), msg)
+        # all files' paths must be relative
+        for f in files:
+            if os.path.isabs(f):
+                msg = 'file: "{}" must be a relative path'.format(f)
+                raise ValidatorError(self.chain_keys_str(), msg)
+            # files must be inside the package
+            if f.find('..') != -1:
+                msg = 'file: "{}" is oustside this package'.format(f)
+                raise ValidatorError(self.chain_keys_str(), msg)
 
     @staticmethod
     def info():

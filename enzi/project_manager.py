@@ -8,7 +8,7 @@ import typing
 
 from enzi import file_manager
 from enzi.file_manager import LocalFiles, FileManager
-from enzi.file_manager import FileManagerStatus
+from enzi.file_manager import FileManagerStatus, Fileset
 from enzi.git import GitRepo
 from enzi.io import EnziIO
 from enzi.utils import relpath, rmtree_onerror
@@ -16,11 +16,12 @@ from enzi.utils import relpath, rmtree_onerror
 logger = logging.getLogger(__name__)
 # enzi_logger = logging.getLogger('Enzi')
 
+
 class ProjectFiles(FileManager):
     def __init__(self, enzi_project):
         proj_root = enzi_project.work_dir
         build_src_dir = os.path.join(enzi_project.build_dir, enzi_project.name)
-        
+
         self.lf_managers = {}
         self.cache_files = {}
         for target in enzi_project.targets:
@@ -29,8 +30,8 @@ class ProjectFiles(FileManager):
             config = {'fileset': fileset}
             # TODO: code review, whether we need that much of LocalFiles or not
             self.lf_managers[target] = LocalFiles(name,
-                                                  config, 
-                                                  enzi_project.work_dir, 
+                                                  config,
+                                                  enzi_project.work_dir,
                                                   build_src_dir)
             self.cache_files[target] = {'files': []}
 
@@ -59,7 +60,7 @@ class ProjectFiles(FileManager):
                         name, path, revision, proj_root=proj_root)
                     self.git_repos[name] = git_repo
 
-        self.deps_fileset = {'files': []}
+        self.deps_fileset = Fileset()
 
         self.default_target = next(iter(enzi_project.targets.keys()))
 
@@ -74,45 +75,47 @@ class ProjectFiles(FileManager):
             raise RuntimeError('Unknown target {}.'.format(target_name))
 
         # TODO: generate fileset with deps order, maybe use DFS?
-        _files = []
-        _ccfiles = []
-        
+        _files = Fileset()
+        _ccfiles = Fileset()
+
         # fetch all git repos
-        m = map(lambda x: x.status != FileManagerStatus.EXIST, self.git_repos.values())
+        m = map(lambda x: x.status != FileManagerStatus.EXIST,
+                self.git_repos.values())
         any_no_exist = any(m)
         if any_no_exist:
             print('')
 
         for dep_name, dep in self.git_repos.items():
             logger.debug('ProjectFiles:fetch GitRepo({})'.format(dep_name))
-            cache = dep.fetch()
-            # extract deps fileset from git repo
-            cache_files = cache['files']
+            dep.fetch()
+            cache = dep.cached_fileset()
             # convert absolute path into relative path
-            converter = lambda path: relpath(self.files_root, path)
-            files_filter = filter(lambda path: path, map(converter, cache_files))
-            files = list(files_filter)
-            _files = _files + files
-            _ccfiles = _ccfiles + cache_files
-        
+            def converter(path): return relpath(self.files_root, path)
+            files_filter = filter(
+                lambda path: path, map(converter, cache.files))
+            files = set(files_filter)
+            _files.files |= files
+            _ccfiles.merge(cache)
+
         if any_no_exist:
             print('')
 
-        self.deps_fileset['files'] = _files
+        self.deps_fileset = _files
 
         if file_manager.FM_DEBUG:
             if _ccfiles:
-                self.cache_files['deps'] = { 'files': _ccfiles }
+                self.cache_files['deps'] = _ccfiles
                 fmt = 'ProjectFiles:fetch deps cache files:\n{}'
-                data = pprint.pformat(self.cache_files['deps'])
+                data = pprint.pformat(self.cache_files['deps'].dump_dict())
                 msg = fmt.format(data)
                 logger.info(msg)
 
-            if self.deps_fileset['files']:
-                msg = pprint.pformat(self.deps_fileset)
+            if self.deps_fileset.files or self.deps_fileset.inc_dirs or self.deps_fileset.inc_files:
+                msg = pprint.pformat(self.deps_fileset.dump_dict())
                 logger.info('ProjectFiles:fetch deps fileset:\n{}'.format(msg))
 
-        ccfiles = self.lf_managers[target_name].fetch()
+        self.lf_managers[target_name].fetch()
+        ccfiles = self.lf_managers[target_name].cached_fileset()
 
         self.cache_files[target_name] = ccfiles
         self.status = FileManagerStatus.FETCHED
@@ -131,12 +134,12 @@ class ProjectFiles(FileManager):
             target_name = self.default_target
         elif not target_name in self.lf_managers.keys():
             raise RuntimeError('target {} is not fetched.'.format(target_name))
-        
+
         # merge deps fileset
-        local_fileset = self.lf_managers[target_name].cache_files['files']
-        deps_fileset = self.deps_fileset['files']
-        files = deps_fileset + local_fileset
-        fileset = { 'files': files }
+        local_fileset = self.lf_managers[target_name].cached_fileset()
+        deps_fileset = self.deps_fileset
+        files = deps_fileset.merge_into(local_fileset)
+        fileset = files.dump_dict()
 
         if file_manager.FM_DEBUG:
             fmt = 'ProjectFiles:get_fileset: result:\n{}'

@@ -2,8 +2,13 @@
 
 import logging
 import os
+import platform
+import pprint
+import re
 import shutil
 import copy as py_copy
+
+from collections.abc import Iterable
 from enum import Enum, unique
 
 from enzi.utils import rmtree_onerror
@@ -23,6 +28,130 @@ class FileManagerStatus(Enum):
     # a status for git repository to indicate it has been clone in the working directory
     EXIST = 4
 
+
+RE = re.compile(r'`include\s*"(.*)"')
+
+
+class Fileset(object):
+    """
+    A include files resolver for Verilog/SystemVerilog
+    """
+    def __init__(self, files=None):
+        if files is None:
+            files = set()
+        elif isinstance(files, set):
+            pass
+        elif isinstance(files, Iterable):
+            files = set(files)
+        else:
+            raise ValueError('files must be iterable')
+        self.files = files
+        self.inc_dirs = set()
+        self.inc_files = set()
+
+    def update(self, other):
+        if not isinstance(other, Fileset):
+            raise ValueError('cannot use a not Fileset object to update')
+        self.files = other.files
+        self.inc_dirs = other.inc_dirs
+        self.inc_files = other.inc_files            
+    
+    def dedup(self):
+        """dedup files which are include files"""
+        self.files -= self.inc_files
+
+    def merge_into(self, other):
+        """merge into a new Fileset"""
+        if not isinstance(other, Fileset):
+            raise ValueError('cannot merge a not Fileset object')
+        ret = Fileset()
+        ret.files = self.files | other.files
+        ret.inc_dirs = self.inc_dirs | other.inc_dirs
+        ret.inc_files = self.inc_files | other.inc_files
+        return ret
+
+    def merge(self, other):
+        if not isinstance(other, Fileset):
+            raise ValueError('cannot merge a not Fileset object')
+        self.files |= other.files
+        self.inc_dirs |= other.inc_dirs
+        self.inc_files |= other.inc_files
+    
+    def add_file(self, file):
+        self.files.add(file)
+    
+    def add_inc_dir(self, inc_dir):
+        self.inc_dirs.add(inc_dir)
+    
+    def add_inc_file(self, inc_file):
+        self.inc_files.add(inc_file)
+
+    def dump_dict(self):
+        ret = {}
+        ret['files'] = list(self.files)
+        ret['inc_dirs'] = list(self.inc_dirs)
+        ret['inc_files'] = list(self.inc_files)
+        return ret
+
+
+class IncDirsResolver:
+    def __init__(self, files_root, files = None):
+        self.files_root = files_root
+        if files:
+            files = map(lambda x: os.path.join(files_root, x), files)
+            self.fileset = Fileset(files)
+        else:
+            self.fileset = Fileset()
+
+    def update_files(self, files, files_root=None):
+        if files_root:
+            self.files_root = files_root
+        if not isinstance(files, Fileset):
+            files = map(lambda x: os.path.join(self.files_root, x), files)
+            self.fileset = Fileset(files)
+        else:
+            self.fileset.merge(files)
+
+    def resolve(self):
+        _ = list(map(self.extract_include_dirs, self.fileset.files))
+        self.fileset.dedup()
+        if FM_DEBUG:
+            pfmt = pprint.pformat(self.fileset.dump_dict())
+            logger.info("resolved: \n{}".format(pfmt))
+        return self.fileset
+
+    def extract_include_dirs(self, file):
+        fs = self.fileset
+        dirname = os.path.dirname(file)
+        dir_files = set(os.listdir(dirname))
+        fs.add_inc_dir(dirname)
+        with open(file, 'r') as f:
+            lines = f.readlines()
+            m = map(str.strip, lines)
+            ft = filter(lambda x: x.startswith('`include'), m)
+            ex = map(lambda x: RE.search(x).group(1), ft)
+            include_files = list(ex)
+
+            if not include_files:
+                return
+
+        for include_file in include_files:
+            dname = os.path.dirname(include_file)
+            if dname and platform.system() == 'Windows':
+                dname = dname.replace('/', '\\')
+            if dname:
+                incdir = os.path.join(dirname, dname)
+                if os.path.exists(incdir):
+                    fs.add_inc_dir(incdir)
+                    fs.add_inc_file(include_file)
+                else:
+                    msg = '{} is not exists'.format(incdir)
+                    logger.debug(msg)
+            else:
+                if include_file in dir_files:
+                    include_file = os.path.join(dirname, include_file)
+                    fs.add_inc_dir(dirname)
+                    fs.add_inc_file(include_file)
 
 class FileManager(object):
     """
@@ -44,7 +173,7 @@ class FileManager(object):
         self.is_local = config.get('local', False)
         self.status = FileManagerStatus.INIT
         # before fetch we have no cache files
-        self.cache_files = {'files': []}
+        # self.cache_files = Fileset()
         # self.cachable = config.get('cachable', False)
 
     def checkout(self):
@@ -78,11 +207,14 @@ class LocalFiles(FileManager):
 
         files = config['fileset'].get('files', [])
         files_map = map(lambda p: os.path.normpath(p), files)
-        self.fileset = {'files': list(files_map)}
+        self.fileset = Fileset()
+        self.fileset.files = set(files_map)
         self.build_root = build_root
+        self.resolver = IncDirsResolver(files_root, [])
+        self.cache_files = Fileset()
 
     def fetch(self):
-        for file in self.fileset['files']:
+        for file in self.fileset.files:
             src_file = join_path(self.proj_root, file)
             dst_file = join_path(self.files_root, file)
             
@@ -91,10 +223,20 @@ class LocalFiles(FileManager):
                 if not os.path.exists(dst_dir):
                     os.makedirs(dst_dir)
                 shutil.copyfile(src_file, dst_file)
-                self.cache_files['files'].append(dst_file)
+                self.cache_files.files.add(dst_file)
             else:
                 msg = 'File {} not found.'.format(src_file)
                 logger.error(msg)
                 raise FileNotFoundError(msg)
         self.status = FileManagerStatus.FETCHED
-        return self.cache_files
+        self.resolver.update_files(self.cache_files)
+    
+    def cached_fileset(self):
+        """return a Fileset object containing the cached fileset"""
+        if self.status != FileManagerStatus.FETCHED:
+            self.fetch()
+        ret = self.resolver.resolve()
+        if FM_DEBUG:
+            pfmt = pprint.pformat(ret.dump_dict())
+            logger.info('cached fileset: \n{}'.format(pfmt))
+        return ret

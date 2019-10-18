@@ -2,6 +2,7 @@
 
 import logging
 import os
+import pprint
 import shutil
 import subprocess
 import semver
@@ -9,7 +10,8 @@ import typing
 import copy as py_copy
 
 from enzi.config import RawConfig, validate_git_repo, Config
-from enzi.file_manager import FileManager, FileManagerStatus, join_path
+from enzi.file_manager import Fileset, join_path, FM_DEBUG
+from enzi.file_manager import FileManager, FileManagerStatus, IncDirsResolver
 from enzi.utils import Launcher, realpath, rmtree_onerror
 
 logger = logging.getLogger(__name__)
@@ -272,9 +274,10 @@ class GitRepo(FileManager):
         self.git: Git = git
         self.enzi_io = enzi_io
         self.enzi_config: typing.Optional[Config] = None
+        self.cache_files = Fileset()
+        self.resolver = IncDirsResolver(self.path)
         # before fetch we don't have any known files
-        self.fileset: typing.MutableMapping[str,
-                                            typing.List[str]] = {'files': []}
+        self.fileset = Fileset()
         super(GitRepo, self).__init__(name, {}, proj_root, files_root)
 
         if os.path.exists(self.git.path) and validate_git_repo(self.name, self.git.path, test=True):
@@ -288,6 +291,7 @@ class GitRepo(FileManager):
             logger.debug(msg)
             # get the repo enzi config file
             self.detect_file()
+            self.status = FileManagerStatus.FETCHED
             return
         else:
             logging.getLogger('Enzi').info('fetch {}'.format(self.name))
@@ -334,16 +338,17 @@ class GitRepo(FileManager):
                                 fileset_only=True).validate()
 
         # extract repo's fileset
-        _files = []
+        _files = set()
+        def fn(p): return os.path.normpath(os.path.join(self.path, p))
         for fileset in enzi_config.filesets.values():
             _new_files = fileset.get('files', [])
-            def fn(p): return os.path.normpath(os.path.join(self.path, p))
             _new_files = map(fn, _new_files)
-            _files = _files + list(_new_files)
-        self.fileset['files'] = _files
+            _files |= set(_new_files)
+        self.fileset.files = _files
 
         # for git repo, cache_files is the same as it's files listed on fileset
-        self.cache_files['files'] = _files
+        self.cache_files.files = _files
+        self.resolver.update_files(_files)
 
     def check_outdated(self):
         head_rev = self.git.current_checkout()
@@ -385,5 +390,14 @@ class GitRepo(FileManager):
         if self.check_outdated():
             self.checkout(self.revision)
             self.status = FileManagerStatus.FETCHED
+        self.resolver.update_files(self.cache_files)
 
-        return self.fileset
+    def cached_fileset(self):
+        """return a Fileset object containing the cached fileset"""
+        if self.status != FileManagerStatus.FETCHED:
+            self.fetch()
+        ret = self.resolver.resolve()
+        if FM_DEBUG:
+            pfmt = pprint.pformat(ret.dump_dict())
+            logger.info('cached fileset: \n{}'.format(pfmt))
+        return ret
