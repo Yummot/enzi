@@ -278,6 +278,9 @@ class WinDelegate(object):
         vhdl = []
         sv = []
         verilog = []
+        if inc_dirs:
+            sv.extend(inc_dirs)
+            verilog.extend(inc_dirs)
         for file in fileset:
             if file.endswith((".vhd", '.vhdl')):
                 vhdl.append(file)
@@ -289,11 +292,11 @@ class WinDelegate(object):
         if len(vhdl):
             self._vhdl_f(vhdl, vhdl_opts, vhdl_defines, '', writer)
         if len(sv):
-            sv.append(inc_dirs)
-            self._vlog_f(sv, vlog_opts, vlog_defines, sv_iport, writer)
+            self._vlog_f(sv, vlog_opts, vlog_defines,
+                         sv_iport, writer, inc_dirs=inc_dirs)
         if len(verilog):
-            verilog.append(inc_dirs)
-            self._vlog_f(verilog, vlog_opts, vlog_defines, '', writer)
+            self._vlog_f(verilog, vlog_opts, vlog_defines,
+                         '', writer, inc_dirs=inc_dirs)
 
         writer.close()
 
@@ -317,13 +320,17 @@ class WinDelegate(object):
         line = '"{}"\n'.format(line)
         return line.encode('utf-8')
 
-    def _vlog_f(self, files: list, opts: str, defines: str, sv: str = None, fd=None):
+    def _vlog_f(self, files: list, opts: str, defines: str, sv: str = None, fd=None, *, inc_dirs=None):
         if sv:
             f_path = os.path.join(self.master.work_root, 'sv.f')
         else:
             f_path = os.path.join(self.master.work_root, 'verilog.f')
         f = io.FileIO(f_path, 'w')
         writer = io.BufferedWriter(f)
+        if inc_dirs:
+            f = lambda x: (x + '\n').encode('utf-8')
+            m = map(f, inc_dirs)
+            writer.writelines(m)
         lines = map(self._f_line, files)
         writer.writelines(lines)
         writer.close()
@@ -387,7 +394,7 @@ class WinDelegate(object):
         vhdl_opts = "+cover=bcefsx "
         vlog_defines = ""
         vhdl_defines = ""
-        inc_dirs = "\n"
+        inc_dirs = []
         sv_input_port = "-svinputport=var "
         if self.master.vlog_opts:
             vlog_opts = vlog_opts + self.master.vlog_opts
@@ -398,8 +405,8 @@ class WinDelegate(object):
         if self.master.vhdl_defines:
             vhdl_defines = vhdl_defines + self.master.vhdl_defines
         if self.master.inc_dirs:
-            from enzi.backend.backend import inc_dirs_filter
-            inc_dirs = inc_dirs + inc_dirs_filter(self.master.inc_dirs)
+            idirs = list(map(lambda x: '+incdir+' + x, self.master.inc_dirs))
+            inc_dirs = inc_dirs + idirs
         return {
             "vlog_opts": vlog_opts,
             "vhdl_opts": vhdl_opts,

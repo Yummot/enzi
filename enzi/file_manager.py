@@ -138,8 +138,9 @@ class IncDirsResolver:
         else:
             dir_files = self.dfiles_cache[dirname]
         fs.add_inc_dir(dirname)
-        with open(file, 'r') as f:
-            lines = f.readlines()
+        with open(file, 'rb') as f:
+            data = f.read().decode('utf-8')
+            lines = data.splitlines()
             m = map(str.strip, lines)
             ft = filter(lambda x: x.startswith('`include'), m)
             ex = map(lambda x: RE.search(x).group(1), ft)
