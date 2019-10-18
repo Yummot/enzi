@@ -318,23 +318,13 @@ class WinDelegate(object):
         return line.encode('utf-8')
 
     def _vlog_f(self, files: list, opts: str, defines: str, sv: str = None, fd=None, *, inc_dirs=None):
-        if sv:
-            f_path = os.path.join(self.master.work_root, 'sv.f')
-        else:
-            f_path = os.path.join(self.master.work_root, 'verilog.f')
-        f = io.FileIO(f_path, 'w')
-        writer = io.BufferedWriter(f)
-        if inc_dirs:
-            f = lambda x: (x + '\n').encode('utf-8')
-            m = map(f, inc_dirs)
-            writer.writelines(m)
-        lines = map(self._f_line, files)
-        writer.writelines(lines)
-        writer.close()
-        fake = os.path.relpath(f_path, self.master.work_root)
-        fake = fake.replace('\\', '/')
-        fake_file = '-f ' + fake
-        self._vlog(fake_file, opts, defines, sv, fd)
+        if inc_dirs is None:
+            inc_dirs = []
+        inc_dirs = ' '.join(inc_dirs)
+
+        opts = opts + inc_dirs
+        for file in files:
+            self._vlog(file, opts, defines, sv, fd)
 
     def _vhdl_f(self, files: list, opts: str, defines: str, dummy='', fd=None):
         f_path = os.path.join(self.master.work_root, 'vhdl.f')
