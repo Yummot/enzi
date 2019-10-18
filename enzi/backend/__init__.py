@@ -27,7 +27,8 @@ class KnownBackends(object):
         known_backends = Backend.__subclasses__()
         def f(x): return (x.__name__.lower(), x)
         def g(x): return cur_system in x[1].supported_system
-        self.known_backends = dict(filter(g, map(f, known_backends)))
+        self.allow_backends = dict(map(f, known_backends))
+        self.known_backends = dict(filter(g, self.allow_backends))
         # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
 

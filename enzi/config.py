@@ -41,7 +41,7 @@ __all__ = [
 
 logger = logging.getLogger(__name__)
 
-KNOWN_BACKENDS = set(KnownBackends().known_backends.keys())
+ALLOW_BACKENDS = set(KnownBackends().allow_backends.keys())
 ENZI_CONFIG_VERSIONS = {"0.1", "0.2"}
 CONFIG_CURRENT_VERSION = "0.2"
 
@@ -1200,7 +1200,7 @@ class ToolValidator(TypedMapValidator):
         if tool_name is None:
             tool_name = self.val['name'].lower()
 
-        if not (tool_name in KNOWN_BACKENDS or tool_name == 'ixs'):
+        if not (tool_name in ALLOW_BACKENDS or tool_name == 'ixs'):
             msg = 'unknown backend: `{}`'.format(tool_name)
             raise ValidatorError(self.chain_keys_str(), msg)
 

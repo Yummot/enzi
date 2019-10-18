@@ -570,7 +570,7 @@ class TestTMValidator(TypedMapValidator):
         if tool_name is None:
             tool_name = self.val['name'].lower()
         
-        if not (tool_name in config.KNOWN_BACKENDS or tool_name == 'ixs'):
+        if not (tool_name in config.ALLOW_BACKENDS or tool_name == 'ixs'):
             msg = 'unknown backend: `{}`'.format(tool_name)
             raise ValidatorError(self.chain_keys_str(), msg)
 
