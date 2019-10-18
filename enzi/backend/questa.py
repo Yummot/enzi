@@ -278,9 +278,6 @@ class WinDelegate(object):
         vhdl = []
         sv = []
         verilog = []
-        if inc_dirs:
-            sv.extend(inc_dirs)
-            verilog.extend(inc_dirs)
         for file in fileset:
             if file.endswith((".vhd", '.vhdl')):
                 vhdl.append(file)
