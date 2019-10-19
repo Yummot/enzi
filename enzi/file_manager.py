@@ -101,6 +101,8 @@ class Fileset(object):
 
 
 class IncDirsResolver:
+    """An Include Directories Resolver for SystemVerilog/Verilog files"""
+    VEXT = ('.vh', 'svh', 'v', 'sv')
     def __init__(self, files_root, files = None):
         self.files_root = files_root
         self.dfiles_cache = dict()
@@ -129,6 +131,8 @@ class IncDirsResolver:
         return self.fileset
 
     def extract_include_dirs(self, file):
+        if not file.endswith(self.VEXT):
+            return
         fs = self.fileset
         dirname = os.path.dirname(file)
         if not dirname in self.dfiles_cache:
