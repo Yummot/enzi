@@ -83,11 +83,11 @@ ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file }}
+ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|src_inc_filter }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file }}
+ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|src_inc_filter }}
 {% endif %}
 {#- -#}
 {% endfor %}

@@ -42,8 +42,30 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
 INC_DIR_PREFIX = '+incdir+'
 
 def inc_dirs_filter(files):
+    if not files:
+        return ''
     add_prefix = map(lambda f: INC_DIR_PREFIX + f, files)
     return '\n'.join(add_prefix)
+
+def src_inc_filter(file):
+    """
+    filter a src file path str/dict/object to a src path string.
+    If the file dict/object contain a inc_dirs key, construct a src
+    path will +incdir+<inc_dir>*. 
+    """
+    if type(file) == str:
+        return file
+    if isinstance(file, dict):
+        if 'inc_dirs' in file:
+            idirs = inc_dirs_filter(file['inc_dir'])
+            return idirs + file['src']
+        else:
+            return file['src']
+    if hasattr(file, 'inc_dirs'):
+        idirs = inc_dirs_filter(file.inc_dirs)
+        return idirs + file.src
+    return file.src
+
 
 class BackendCallback(object):
     def pre(self):
@@ -98,6 +120,7 @@ class Backend(object):
 
         self.j2_env.filters['value_str'] = value_str_filter
         self.j2_env.filters['inc_dirs_filter'] = inc_dirs_filter
+        self.j2_env.filters['src_inc_filter'] = src_inc_filter
 
         # TODO: currently, each Backend op only support one callback, multi-callbacks for one op may be added.
         self.cbs = {

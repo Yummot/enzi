@@ -39,11 +39,11 @@ vcom $vhdl_opts $vhdl_defines {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-vlog $vlog_opts $vlog_defines -sv {{ file }} $sv_input_port
+vlog $vlog_opts $vlog_defines -sv {{ file|src_inc_filter }} $sv_input_port
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-vlog $vlog_opts $vlog_defines {{ file }}
+vlog $vlog_opts $vlog_defines {{ file|src_inc_filter }}
 {% endif %}
 {#- -#}
 {% endfor %}
