@@ -215,7 +215,11 @@ class Backend(object):
         pass
 
     def program_device_main(self):
-        pass
+        cls_name = self.__class__.__name__
+        fmt = '{} does not have the ability to sythensis HDL.'
+        msg = fmt.format(cls_name)
+        logger.warning(msg)
+        logger.warning('Nothing to do.')
 
     def run(self):
         run_cb = self.cbs['run']
