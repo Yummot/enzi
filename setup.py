@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name="enzi",
-    version="0.7.0",
+    version="0.8.0",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
     url="https://github.com/Yummot/enzi",
