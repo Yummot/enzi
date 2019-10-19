@@ -37,6 +37,7 @@ class Fileset(object):
     """
     A include files resolver for Verilog/SystemVerilog
     """
+
     def __init__(self, files=None):
         if files is None:
             files = OrderedSet()
@@ -59,8 +60,8 @@ class Fileset(object):
             raise ValueError('cannot use a not Fileset object to update')
         self.files = other.files
         self.inc_dirs = other.inc_dirs
-        self.inc_files = other.inc_files            
-    
+        self.inc_files = other.inc_files
+
     def dedup(self):
         """dedup files which are include files"""
         self.files -= self.inc_files
@@ -82,13 +83,13 @@ class Fileset(object):
         self.files |= other.files
         self.inc_dirs |= other.inc_dirs
         self.inc_files |= other.inc_files
-    
+
     def add_file(self, file):
         self.files.add(file)
-    
+
     def add_inc_dir(self, inc_dir):
         self.inc_dirs.add(inc_dir)
-    
+
     def add_inc_file(self, inc_file):
         self.inc_files.add(inc_file)
 
@@ -103,11 +104,16 @@ class Fileset(object):
 class IncDirsResolver:
     """An Include Directories Resolver for SystemVerilog/Verilog files"""
     VEXT = ('.vh', 'svh', 'v', 'sv')
-    def __init__(self, files_root, files = None):
+
+    def __init__(self, files_root, files=None):
         self.files_root = files_root
         self.dfiles_cache = dict()
         if files:
-            files = map(lambda x: os.path.join(files_root, x), files)
+            if files_root:
+                f = lambda x: os.path.normpath(os.path.join(files_root, x))
+                files = map(f, files)
+            else:
+                files = map(lambda x: os.path.normpath(x), files)
             self.fileset = Fileset(files)
         else:
             self.fileset = Fileset()
@@ -130,6 +136,46 @@ class IncDirsResolver:
         self.dfiles_cache = dict()
         return self.fileset
 
+    def check_include_files(self, files_root, *, clogger=None):
+        """check all include files will full paths. Internal use only."""
+        if clogger is None:
+            clogger = logger
+        for file in self.fileset.files:
+            dirname = os.path.dirname(file)
+            include_files = list(self.get_include_files(file))
+            if not include_files:
+                continue
+            for include_file in include_files:
+                dname = os.path.dirname(include_file)
+                ifname = os.path.basename(include_file)
+                if dname and platform.system() == 'Windows':
+                    dname = dname.replace('/', '\\')
+                if dname:
+                    incdir = os.path.join(dirname, dname)
+                    incdir = os.path.join(files_root, incdir)
+                    incdir = os.path.normpath(incdir)
+                    ifile_path = os.path.join(incdir, ifname)
+                    if not os.path.exists(ifile_path):
+                        fmt = 'include file "{}" in file "{}" is not exists'
+                        msg = fmt.format(include_file, file)
+                        clogger.warning(msg)
+                        continue
+                    rel_root = os.path.relpath(incdir, files_root)
+                    if rel_root.startswith('..'):
+                        fmt = 'include file "{}" in file "{}" is outside the package directory'
+                        msg = fmt.format(include_file, file)
+                        clogger.warning(msg)
+
+    def get_include_files(self, file):
+        """return a iterator of include files of the given file"""
+        with open(file, 'rb') as f:
+            data = f.read().decode('utf-8')
+            lines = data.splitlines()
+            m = map(str.strip, lines)
+            ft = filter(lambda x: x.startswith('`include'), m)
+            ex = map(lambda x: RE.search(x).group(1), ft)
+            return ex
+
     def extract_include_dirs(self, file):
         if not file.endswith(self.VEXT):
             return
@@ -141,16 +187,10 @@ class IncDirsResolver:
         else:
             dir_files = self.dfiles_cache[dirname]
         fs.add_inc_dir(dirname)
-        with open(file, 'rb') as f:
-            data = f.read().decode('utf-8')
-            lines = data.splitlines()
-            m = map(str.strip, lines)
-            ft = filter(lambda x: x.startswith('`include'), m)
-            ex = map(lambda x: RE.search(x).group(1), ft)
-            include_files = list(ex)
 
-            if not include_files:
-                return
+        include_files = list(self.get_include_files(file))
+        if not include_files:
+            return
 
         for include_file in include_files:
             dname = os.path.dirname(include_file)
@@ -159,6 +199,8 @@ class IncDirsResolver:
             if dname:
                 incdir = os.path.join(dirname, dname)
                 if os.path.exists(incdir):
+                    fname = os.path.basename(include_file)
+                    include_file = os.path.join(incdir, fname)
                     fs.add_inc_dir(incdir)
                     fs.add_inc_file(include_file)
                 else:
@@ -169,6 +211,7 @@ class IncDirsResolver:
                     include_file = os.path.join(dirname, include_file)
                     fs.add_inc_dir(dirname)
                     fs.add_inc_file(include_file)
+
 
 class FileManager(object):
     """
@@ -234,7 +277,7 @@ class LocalFiles(FileManager):
         for file in self.fileset.files:
             src_file = join_path(self.proj_root, file)
             dst_file = join_path(self.files_root, file)
-            
+
             if os.path.exists(src_file):
                 dst_dir = os.path.dirname(dst_file)
                 if not os.path.exists(dst_dir):
@@ -247,7 +290,7 @@ class LocalFiles(FileManager):
                 raise FileNotFoundError(msg)
         self.status = FileManagerStatus.FETCHED
         self.resolver.update_files(self.cache_files)
-    
+
     def cached_fileset(self):
         """return a Fileset object containing the cached fileset"""
         if self.status != FileManagerStatus.FETCHED:

@@ -17,6 +17,7 @@ from colorama import Fore, Style
 from enzi.config import EnziConfigValidator, VersionValidator 
 from enzi.config import validate_git_repo, RawConfig
 from enzi.git import Git
+from enzi.file_manager import IncDirsResolver
 from enzi.project_manager import ProjectFiles
 from enzi.utils import rmtree_onerror, OptionalAction, BASE_ESTRING
 from enzi.frontend import Enzi
@@ -310,7 +311,14 @@ class EnziApp(object):
                 msg = fmt.format(unlisted, config_path)
                 self.warning(msg)
             os.chdir(cwd)
+        
+        # check include files directories
+        if not self.args.include:
+            return
 
+        files = config.get_flat_fileset()['files']
+        resolver = IncDirsResolver(root, files)
+        resolver.check_include_files(root, clogger=self)
 
     def enzi_config_help(self):
         config_name = self.args.enzi_config_help
@@ -654,6 +662,13 @@ class EnziApp(object):
         )
         check_parser.add_argument(
             '--manifest', help='Check Enzi.toml only', action='store_true'
+        )
+        check_parser.add_argument(
+            '--include',
+            help='''Check Verilog the correctness and existence for all include files 
+            of the Verilog/SystemVerilog files delcared at Enzi.toml filesets sections.
+            ''', 
+            action='store_true'
         )
         check_parser.set_defaults(task='check')
 
