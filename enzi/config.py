@@ -1348,6 +1348,9 @@ class EnziConfigValidator(TypedMapValidator):
     BASE_FILE_TARGET_COMMENT = '''
 # Optional targets section, use when you want Enzi to execute some targets.
 # Here is the key-values hint.
+# IMPORTANT: If you use tool ies and uvm, make sure you set ies tool params.use_uvm to true.
+# To see the detail tool params hint, use `enzi --enzi-config-help`
+# IMPORTANT: Filesets field in targets.* is order matter, due some limitations in backend.
 '''
 
     HEADER_COMMENT = '''
@@ -1389,6 +1392,7 @@ class EnziConfigValidator(TypedMapValidator):
 # All parameters in a single tool param section are optional. You don\'t have to provide all parameters.
 # This section is just a reminder of all the available tools and their available optional parameters.
 # Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.
+# IMPORTANT: If you use tool ies and uvm, make sure you set ies tool params' use_uvm parameter to true. 
 '''
 
     def __init__(self, val, config_path=None, *, git_url=None):
