@@ -15,6 +15,21 @@ rm -rf nc_compile.log
 ncvlog_opts+=" -logfile nc_compile.log -append_log -update"
 {% endif %}
 
+{% if use_uvm %}
+UVM_PATH="$CDSHOME/tools/methodology/UVM/CDNS-1.2"
+ncvlog_opts+="
+-define
+UVM_PLI
+$UVM_PATH/sv/src/uvm_pkg.sv 
+$UVM_PATH/additions/sv/cdns_uvm_pkg.sv
++incdir+$UVM_PATH/sv/src+$UVM_PATH/sv/src+$UVM_PATH/additions/sv 
+"
+{% endif %}
+
+{% if inc_dirs %}
+ncvlog_opts+=" {{ inc_dirs|inc_dirs_filter }}"
+{% endif %}
+
 {% if vlog_defines %}
 ncvlog_defines="{{ vlog_defines }}"
 {% else %}

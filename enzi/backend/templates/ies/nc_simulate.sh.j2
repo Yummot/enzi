@@ -30,6 +30,18 @@ rm -rf nc_simulate.log
 ncsim_opts+=" -logfile nc_simulate.log"
 {% endif %}
 
+{% if use_uvm %}
+UVM_PATH="$CDSHOME/tools/methodology/UVM/CDNS-1.2"
+ncsim_opts+="
+-uvmhome
+$UVM_PATH
+-sv_lib
+$UVM_PATH/additions/sv/lib/64bit/libuvmpli.so
+-SV_LIB
+$UVM_PATH/additions/sv/lib/64bit/libuvmdpi.so
+"
+{% endif %}
+
 {% if toplevel %}
 if [[ ($# == 1 ) && ($1 == "--gui") ]]; then
   ncsim {{ toplevel }} $ncsim_opts -gui
@@ -47,6 +59,7 @@ else
       printf '%s\n' "$nc_out"
       echo 'enzi exit normally'
     else
+      printf '%s\n' "$nc_out"
       exit $nc_ecode
     fi
   else

@@ -11,6 +11,7 @@ import copy as py_copy
 from collections.abc import Iterable
 from enum import Enum, unique
 
+from ordered_set import OrderedSet
 from enzi.utils import rmtree_onerror
 
 logger = logging.getLogger(__name__)
@@ -38,16 +39,14 @@ class Fileset(object):
     """
     def __init__(self, files=None):
         if files is None:
-            files = set()
-        elif isinstance(files, set):
-            pass
+            files = OrderedSet()
         elif isinstance(files, Iterable):
-            files = set(files)
+            files = OrderedSet(files)
         else:
             raise ValueError('files must be iterable')
         self.files = files
-        self.inc_dirs = set()
-        self.inc_files = set()
+        self.inc_dirs = OrderedSet()
+        self.inc_files = OrderedSet()
 
     def is_empty(self):
         if not (self.files or self.inc_dirs or self.inc_files):
@@ -222,7 +221,7 @@ class LocalFiles(FileManager):
         files = config['fileset'].get('files', [])
         files_map = map(lambda p: os.path.normpath(p), files)
         self.fileset = Fileset()
-        self.fileset.files = set(files_map)
+        self.fileset.files = OrderedSet(files_map)
         self.build_root = build_root
         self.resolver = IncDirsResolver(files_root, [])
         self.cache_files = Fileset()

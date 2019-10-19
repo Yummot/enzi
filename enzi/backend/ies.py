@@ -27,8 +27,16 @@ class IES(Backend):
         self.vlog_defines = config.get('vlog_defines', None)
         self.vhdl_defines = config.get('vhdl_defines', None)
 
-        _fileset = config.get('fileset', []) + config.get('files', [])
-        self.fileset = list(OrderedDict.fromkeys(_fileset))
+        _fileset = config.get('fileset', {})
+        self.fileset = _fileset.get('files', [])
+        self.inc_dirs = _fileset.get('inc_dirs', [])
+
+        self.use_uvm = config.get('use_uvm', False)
+        CDSHOME = os.environ.get('CDSHOME', None)
+        if not CDSHOME:
+            msg = 'CDSHOME environment variable is not set, you must set it as the path to IES install folder'
+            logger.error(msg)
+            raise SystemExit(1)
 
         # IES elaborate step config
         self.elab_opts = config.get('elab_opts', None)
@@ -60,7 +68,13 @@ class IES(Backend):
 
     @property
     def _simulate_vars(self):
-        return {'sim_opts': self.sim_opts, 'toplevel': self.toplevel, 'gen_waves': self.gen_waves, "simulate_log": self.simulate_log}
+        return {
+            'sim_opts': self.sim_opts, 
+            'toplevel': self.toplevel, 
+            'gen_waves': self.gen_waves, 
+            "simulate_log": self.simulate_log,
+            "use_uvm": self.use_uvm,
+        }
 
     @property
     def _compile_vars(self):
@@ -71,6 +85,8 @@ class IES(Backend):
             "vlog_defines": self.vlog_defines,
             "vhdl_defines": self.vhdl_defines,
             "fileset": self.fileset,
+            "inc_dirs": self.inc_dirs,
+            "use_uvm": self.use_uvm,
         }
 
     @property
@@ -80,6 +96,7 @@ class IES(Backend):
             "elaborate_log": self.elaborate_log,
             "link_libs": self.link_libs,
             "toplevel": self.toplevel,
+            "use_uvm": self.use_uvm,
         }
 
     @property

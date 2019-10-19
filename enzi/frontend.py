@@ -280,7 +280,7 @@ class BackendConfigGen(object):
 
         config['toplevel'] = toplevel
         config['proj_dir'] = work_root
-        config['fileset'] = fileset.get('files', [])
+        config['fileset'] = fileset
 
         if not ies_config:
             return config
@@ -292,7 +292,7 @@ class BackendConfigGen(object):
         ies_config = ies_config.get('params', {})
 
         config['gen_waves'] = ies_config.get('gen_waves', True)
-
+        config['use_uvm'] = ies_config.get('use_uvm', False)
         config['compile_log'] = ies_config.get('compile_log', 'compile.log')
         config['vlog_opts'] = opts2str(ies_config.get('vlog_opts', []))
         config['vhdl_opts'] = opts2str(ies_config.get('vhdl_opts', []))

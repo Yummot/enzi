@@ -1060,7 +1060,8 @@ class IESParamsValidator(ToolParamsValidator):
         'sim_opts': StringListValidator,
         'compile_log': StringValidator,
         'elaborate_log': StringValidator,
-        'simulate_log': StringValidator
+        'simulate_log': StringValidator,
+        'use_uvm': BoolValidator,
     }
 
     def __init__(self, *, key, val, parent=None):
@@ -1087,7 +1088,8 @@ class IESParamsValidator(ToolParamsValidator):
             'sim_opts': StringListValidator.info(),
             'compile_log': StringValidator.info(),
             'elaborate_log': StringValidator.info(),
-            'simulate_log': StringValidator.info()
+            'simulate_log': StringValidator.info(),
+            'use_uvm': BoolValidator.info(),
         }
         return {**base, **extras}
 

@@ -15,6 +15,14 @@ rm -rf nc_elaborate.log
 ncelab_opts+=" -logfile nc_elaborate.log -append_log -update"
 {% endif %}
 
+{% if use_uvm %}
+UVM_PATH="$CDSHOME/tools/methodology/UVM/CDNS-1.2"
+ncelab_opts+="
+-loadpli
+$UVM_PATH/additions/sv/lib/64bit/libuvmpli.so:uvm_pli_boot
+"
+{% endif %}
+
 # set design libraries
 design_libs_elab=""
 {% if link_libs %}

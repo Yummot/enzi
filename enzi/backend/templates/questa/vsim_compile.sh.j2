@@ -12,7 +12,7 @@ sv_input_port="-svinputport=var"
 
 # include dirs
 {% if inc_dirs %}
-vlog_opts+="{{ inc_dirs|inc_dirs_filter }}"
+vlog_opts+=" {{ inc_dirs|inc_dirs_filter }}"
 {% endif %}
 
 {% if vlog_opts %}

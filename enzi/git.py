@@ -8,6 +8,7 @@ import subprocess
 import semver
 import typing
 import copy as py_copy
+from ordered_set import OrderedSet
 
 from enzi.config import RawConfig, validate_git_repo, Config
 from enzi.file_manager import Fileset, join_path, FM_DEBUG
@@ -338,12 +339,12 @@ class GitRepo(FileManager):
                                 fileset_only=True).validate()
 
         # extract repo's fileset
-        _files = set()
+        _files = OrderedSet()
         def fn(p): return os.path.normpath(os.path.join(self.path, p))
         for fileset in enzi_config.filesets.values():
             _new_files = fileset.get('files', [])
             _new_files = map(fn, _new_files)
-            _files |= set(_new_files)
+            _files |= OrderedSet(_new_files)
         self.fileset.files = _files
 
         # for git repo, cache_files is the same as it's files listed on fileset
