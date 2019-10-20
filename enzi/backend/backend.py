@@ -107,6 +107,11 @@ class Backend(object):
 
         self._gui_mode = config.get('gui_mode', False)
         self.toplevel = config.get('toplevel')
+        if not self.toplevel:
+            fmt = 'no toplevel was provided to backend{}'
+            msg = fmt.format(self.__class__.__name__)
+            logger.error(msg)
+            raise SystemExit(128)
         self.work_root = work_root if work_root is not None else ''
         self.env = os.environ.copy()
         self.env['WORK_ROOT'] = self.work_root
