@@ -56,12 +56,15 @@ class Vivado(Backend):
         self.vlog_defines = config.get('vlog_defines', {})
         self.src_files = config.get('src_files', [])
         self.inc_dirs = config.get('inc_dirs', [])
+        self.synth_only = config.get('synth_only', False)
+        self.build_project_only = config.get('build_project_only', False)
 
         has_xci = any(filter(lambda x: 'xci' in x, self.src_files))
         self.has_xci = has_xci
 
         # for vivado gen scripts' name only available after rendering the scripts
         self._gen_scripts_name = None
+        self.configured = False
 
     @property
     def _makefile_vars(self):
@@ -117,3 +120,35 @@ class Vivado(Backend):
             self.gen_scripts()
         else:
             logger.debug('Lazy configuration')
+        self.configured = True
+
+    def build_main(self):
+        logger.debug('building')
+        if not self.configured:
+            self.configure()
+        
+        if self.build_project_only:
+            self._run_tool('make', [self._gen_scripts_name[1], ])
+            return
+        if self.synth_only:
+            self._run_tool('make', ['synth'])
+            return
+        self._run_tool('make', ['all'])
+    
+    def program_device_main(self):
+        logger.debug('programming device')
+        if not self.configured:
+            self.configure()
+        
+        if self.build_project_only:
+            self._run_tool('make', [self._gen_scripts_name[1], ])
+            return
+        if self.synth_only:
+            self._run_tool('make', ['synth'])
+            return
+
+        self._run_tool('make', ['program_device'])
+    
+    def run_main(self):
+        logger.debug('running')
+        self.program_device()
