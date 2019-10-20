@@ -44,6 +44,7 @@ class KnownBackends(object):
             logger.error(msg)
             raise ValueError(msg)
         self.known_backends[name] = backend
+        self.allow_backends[name] = backend
 
     def get(self, backend_name, config, work_root):
         if not backend_name:
