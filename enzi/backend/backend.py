@@ -18,7 +18,7 @@ logger.setLevel(logging.WARNING)
 __all__ = ['value_str_filter', 'BackendCallback', 'Backend']
 
 
-def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is_str=False):
+def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
     """
     Convert a value to string that is suitable to be passed to an Backend
 
@@ -29,11 +29,14 @@ def value_str_filter(value, str_quote="", bool_type={False: 0, True: 1}, bool_is
     @return: filter result
     """
 
-    if not (0 in bool_type and 1 in bool_type):
-        bool_type = {False: 'false', True: 'true'}
+    if not bool_type:
+        if bool_is_str:
+            bool_type = ('false', 'true')
+        else:
+            bool_type = (0, 1)
 
     if type(value) == bool:
-        return str_quote + str(bool_type[value]) + str_quote if bool_is_str else str(bool_type[value])
+        return str(bool_type[1]) if value else str(bool_type[0])
     elif type(value) == str:
         return str_quote + str(value) + str_quote
     else:
