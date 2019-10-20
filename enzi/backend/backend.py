@@ -228,7 +228,7 @@ class Backend(object):
         self._backend_warn(fmt)
 
     def program_device_main(self):
-        fmt = '{} does not have the ability to sythensis HDL.'
+        fmt = '{} does not have the ability to synthesize HDL.'
         self._backend_warn(fmt)
 
     def run(self):
