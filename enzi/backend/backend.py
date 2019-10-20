@@ -204,22 +204,29 @@ class Backend(object):
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 "Error: '{}' exited {}".format(cmd, e.returncode)) from e
-
-    def run_main(self):
-        pass
-
-    def sim_main(self):
-        pass
-
-    def build_main(self):
-        pass
-
-    def program_device_main(self):
+    
+    def _backend_warn(self, fmt):
+        """backend warning for an unimplemented target"""
         cls_name = self.__class__.__name__
-        fmt = '{} does not have the ability to sythensis HDL.'
         msg = fmt.format(cls_name)
         logger.warning(msg)
         logger.warning('Nothing to do.')
+
+    def run_main(self):
+        fmt = '{} does not have the ability to "run" HDL'
+        self._backend_warn(fmt)
+
+    def sim_main(self):
+        fmt = '{} does not have the ability to simulate HDL.'
+        self._backend_warn(fmt)
+
+    def build_main(self):
+        fmt = '{} does not have the ability to build HDL.'
+        self._backend_warn(fmt)
+
+    def program_device_main(self):
+        fmt = '{} does not have the ability to sythensis HDL.'
+        self._backend_warn(fmt)
 
     def run(self):
         run_cb = self.cbs['run']
