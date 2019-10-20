@@ -32,6 +32,13 @@ class Vivado(Backend):
         except Exception as e:
             logger.error(e)
             raise SystemExit(1)
+    
+    @staticmethod
+    def get_relpath(files, root):
+        if not root or not files:
+            return files
+        m = map(lambda x: os.path.relpath(x, root), files)
+        return list(m)
 
     def __init__(self, config={}, work_root=None):
         self.version = Vivado.get_version()
@@ -54,8 +61,13 @@ class Vivado(Backend):
         self.vlog_params = config.get('vlog_params', {})
         self.generics = config.get('generics', {})
         self.vlog_defines = config.get('vlog_defines', {})
-        self.src_files = config.get('src_files', [])
-        self.inc_dirs = config.get('inc_dirs', [])
+        
+        _fileset = config.get('fileset', {})
+        src_files = _fileset.get('files', [])
+        inc_dirs = _fileset.get('inc_dirs', [])
+        self.src_files = Vivado.get_relpath(src_files, work_root)
+        self.inc_dirs = Vivado.get_relpath(inc_dirs, work_root)
+
         self.synth_only = config.get('synth_only', False)
         self.build_project_only = config.get('build_project_only', False)
 
