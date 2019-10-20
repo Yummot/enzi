@@ -1160,6 +1160,9 @@ class QuestaParamsValidator(ToolParamsValidator):
         return {**base, **extras}
 
 
+class VivadoParamsValidator(ToolParamsValidator):
+    """Validator for A Vivado tool's params section"""
+
 class VsimParamsValidator(QuestaParamsValidator):
     """Validator for A Vsim(Modelsim/Questasim) tool's params section"""
 
@@ -1178,7 +1181,8 @@ TPARAMS_VALIDATOR_MAP = {
     'ies': IESParamsValidator,
     'ixs': IXSParamsValidator,
     'questa': QuestaParamsValidator,
-    'vsim': VsimParamsValidator
+    'vivado': VivadoParamsValidator,
+    'vsim': VsimParamsValidator,
 }
 
 

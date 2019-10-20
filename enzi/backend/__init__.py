@@ -33,7 +33,6 @@ class KnownBackends(object):
         # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
         self.allow_backends['vsim'] = self.allow_backends['questa']
-        print(self.allow_backends)
 
     def register_backend(self, backend):
         """
