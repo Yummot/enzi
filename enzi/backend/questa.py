@@ -24,7 +24,7 @@ class Questa(Backend):
         self.vlog_opts = config.get('vlog_opts', None)
         self.vhdl_opts = config.get('vhdl_opts', None)
         self.vlog_defines = config.get('vlog_defines', None)
-        self.vhdl_defines = config.get('vhdl_defines', None)
+        self.vhdl_generics = config.get('vhdl_generics', None)
 
         _fileset = config.get('fileset', {})
         self.fileset = _fileset.get('files', [])
@@ -129,7 +129,7 @@ class UnixDelegate(object):
             "vlog_opts": self.master.vlog_opts,
             "vhdl_opts": self.master.vhdl_opts,
             "vlog_defines": self.master.vlog_defines,
-            "vhdl_defines": self.master.vhdl_defines,
+            "vhdl_generics": self.master.vhdl_generics,
             "fileset": self.master.fileset,
             "inc_dirs": self.master.inc_dirs
         }
@@ -254,7 +254,7 @@ class WinDelegate(object):
         inc_dirs = cvars['inc_dirs']
         vhdl_opts = cvars['vhdl_opts']
         vlog_defines = cvars['vlog_defines']
-        vhdl_defines = cvars['vhdl_defines']
+        vhdl_generics = cvars['vhdl_generics']
         sv_iport = cvars['sv_input_port']
         log_name = self.master.compile_log
         log_name = os.path.join(self.master.work_root, log_name)
@@ -275,7 +275,7 @@ class WinDelegate(object):
                 verilog.append(file)
 
         if len(vhdl):
-            self._vhdl_f(vhdl, vhdl_opts, vhdl_defines, '', writer)
+            self._vhdl_f(vhdl, vhdl_opts, vhdl_generics, '', writer)
         if len(sv):
             self._vlog_f(sv, vlog_opts, vlog_defines,
                          sv_iport, writer, inc_dirs=inc_dirs)
@@ -368,7 +368,7 @@ class WinDelegate(object):
         vlog_opts = "+cover=bcefsx -incr "
         vhdl_opts = "+cover=bcefsx "
         vlog_defines = ""
-        vhdl_defines = ""
+        vhdl_generics = ""
         inc_dirs = []
         sv_input_port = "-svinputport=var "
         if self.master.vlog_opts:
@@ -377,8 +377,8 @@ class WinDelegate(object):
             vhdl_opts = vhdl_opts + self.master.vhdl_opts
         if self.master.vlog_defines:
             vlog_defines = vlog_defines + self.master.vlog_defines
-        if self.master.vhdl_defines:
-            vhdl_defines = vhdl_defines + self.master.vhdl_defines
+        if self.master.vhdl_generics:
+            vhdl_generics = vhdl_generics + self.master.vhdl_generics
         if self.master.inc_dirs:
             idirs = list(map(lambda x: '+incdir+' + x, self.master.inc_dirs))
             inc_dirs = inc_dirs + idirs
@@ -386,7 +386,7 @@ class WinDelegate(object):
             "vlog_opts": vlog_opts,
             "vhdl_opts": vhdl_opts,
             "vlog_defines": vlog_defines,
-            "vhdl_defines": vhdl_defines,
+            "vhdl_generics": vhdl_generics,
             "fileset": self.fileset,
             "sv_input_port": sv_input_port,
             "inc_dirs": inc_dirs,

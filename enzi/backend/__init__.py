@@ -31,6 +31,7 @@ class KnownBackends(object):
         self.known_backends = dict(filter(g, self.allow_backends.items()))
         # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
+        self.allow_backends['vsim'] = self.allow_backends['questa']
 
     def register_backend(self, backend):
         """

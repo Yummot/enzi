@@ -298,8 +298,8 @@ class BackendConfigGen(object):
         config['vhdl_opts'] = opts2str(ies_config.get('vhdl_opts', []))
         config['vlog_defines'] = opts2str(
             ies_config.get('vlog_defines', []))
-        config['vhdl_defines'] = opts2str(
-            ies_config.get('vhdl_defines', []))
+        config['vhdl_generics'] = opts2str(
+            ies_config.get('vhdl_generics', []))
 
         config['elab_opts'] = opts2str(ies_config.get('elab_opts', []))
         config['link_libs'] = opts2str(ies_config.get('link_libs', []))
@@ -334,8 +334,8 @@ class BackendConfigGen(object):
         config['vhdl_opts'] = opts2str(questa_config.get('vhdl_opts', []))
         config['vlog_defines'] = opts2str(
             questa_config.get('vlog_defines', []))
-        config['vhdl_defines'] = opts2str(
-            questa_config.get('vhdl_defines', []))
+        config['vhdl_generics'] = opts2str(
+            questa_config.get('vhdl_generics', []))
 
         config['elab_opts'] = opts2str(questa_config.get('elab_opts', []))
         config['link_libs'] = opts2str(questa_config.get('link_libs', []))

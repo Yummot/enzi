@@ -6,7 +6,7 @@ vlib work
 vlog_opts="+cover=bcefsx -incr"
 vhdl_opts="+cover=bcefsx "
 vlog_defines=""
-vhdl_defines=""
+vhdl_generics=""
 
 sv_input_port="-svinputport=var"
 
@@ -27,15 +27,15 @@ vhdl_opts+=" {{ vhdl_opts }} "
 vlog_defines+=" {{ vlog_defines }} "
 {%- endif %}
 
-{% if vhdl_defines -%}
-vhdl_defines+=" {{ vlog_defines }} "
+{% if vhdl_generics -%}
+vhdl_generics+=" {{ vlog_defines }} "
 {%- endif %}
 
 {%- if fileset -%}
 {% for file in fileset %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
-vcom $vhdl_opts $vhdl_defines {{ file }}
+vcom $vhdl_opts $vhdl_generics {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}

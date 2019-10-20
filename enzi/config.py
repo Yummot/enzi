@@ -931,8 +931,8 @@ class FilesetValidator(TypedMapValidator):
     }
 
     __optional__ = {
-        # "include_files": StringListValidator,
-        # "include_dirs": StringListValidator
+        "include_files": StringListValidator,
+        "include_dirs": StringListValidator
     }
 
     def __init__(self, *, key, val, parent=None):
@@ -1055,7 +1055,7 @@ class IESParamsValidator(ToolParamsValidator):
         'vlog_opts': StringListValidator,
         'vhdl_opts': StringListValidator,
         'vlog_defines': StringListValidator,
-        'vhdl_defines': StringListValidator,
+        'vhdl_generics': StringListValidator,
         'elab_opts': StringListValidator,
         'sim_opts': StringListValidator,
         'compile_log': StringValidator,
@@ -1083,7 +1083,7 @@ class IESParamsValidator(ToolParamsValidator):
             'vlog_opts': StringListValidator.info(),
             'vhdl_opts': StringListValidator.info(),
             'vlog_defines': StringListValidator.info(),
-            'vhdl_defines': StringListValidator.info(),
+            'vhdl_generics': StringListValidator.info(),
             'elab_opts': StringListValidator.info(),
             'sim_opts': StringListValidator.info(),
             'compile_log': StringValidator.info(),
@@ -1123,7 +1123,7 @@ class QuestaParamsValidator(ToolParamsValidator):
         'vlog_opts': StringListValidator,
         'vhdl_opts': StringListValidator,
         'vlog_defines': StringListValidator,
-        'vhdl_defines': StringListValidator,
+        'vhdl_generics': StringListValidator,
         'elab_opts': StringListValidator,
         'sim_opts': StringListValidator,
         'compile_log': StringValidator,
@@ -1150,7 +1150,7 @@ class QuestaParamsValidator(ToolParamsValidator):
             'vlog_opts': StringListValidator.info(),
             'vhdl_opts': StringListValidator.info(),
             'vlog_defines': StringListValidator.info(),
-            'vhdl_defines': StringListValidator.info(),
+            'vhdl_generics': StringListValidator.info(),
             'elab_opts': StringListValidator.info(),
             'sim_opts': StringListValidator.info(),
             'compile_log': StringValidator.info(),

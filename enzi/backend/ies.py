@@ -30,7 +30,7 @@ class IES(Backend):
         self.vlog_opts = config.get('vlog_opts', None)
         self.vhdl_opts = config.get('vhdl_opts', None)
         self.vlog_defines = config.get('vlog_defines', None)
-        self.vhdl_defines = config.get('vhdl_defines', None)
+        self.vhdl_generics = config.get('vhdl_generics', None)
 
         _fileset = config.get('fileset', {})
         self.fileset = _fileset.get('files', [])
@@ -83,7 +83,7 @@ class IES(Backend):
             "vhdl_opts": self.vhdl_opts,
             'compile_log': self.compile_log,
             "vlog_defines": self.vlog_defines,
-            "vhdl_defines": self.vhdl_defines,
+            "vhdl_generics": self.vhdl_generics,
             "fileset": self.fileset,
             "inc_dirs": self.inc_dirs,
             "use_uvm": self.use_uvm,

@@ -48,10 +48,10 @@ ncvhdl_opts+=" -logfile {{compile_log}} -append_log -update"
 ncvhdl_opts+=" -logfile nc_compile.log -append_log -update"
 {% endif %}
 
-{% if vhdl_defines %}
-ncvhdl_defines="{{ vlog_defines }}"
+{% if vhdl_generics %}
+ncvhdl_generics="{{ vlog_defines }}"
 {% else %}
-ncvhdl_defines=""
+ncvhdl_generics=""
 {% endif %}
 
 {% if vlog_fileset %}
@@ -70,7 +70,7 @@ ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ vlog_file }}
 {% if vhdl_fileset %}
 {% for vhdl_file in vhdl_fileset %}
 {% if vhdl_file.endswith((".vhd", '.vhdl')) %}
-ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ vhdl_file }}
+ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ vhdl_file }}
 {% endif %}
 {% endfor %}
 {% endif %}
@@ -79,7 +79,7 @@ ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ vhdl_file }}
 {% for file in fileset %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
-ncvhdl $ncvhdl_opts $ncvhdl_defines -work worklib {{ file }}
+ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}

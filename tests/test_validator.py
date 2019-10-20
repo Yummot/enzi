@@ -31,7 +31,7 @@ PARAMS = {
     'vlog_opts': [],
     'vhdl_opts': [],
     'vlog_defines': [],
-    'vhdl_defines': [],
+    'vhdl_generics': [],
     'elab_opts': [],
     'sim_opts': ["-message"],
     'compile_log': 'x.log',
