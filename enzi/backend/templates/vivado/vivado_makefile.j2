@@ -17,7 +17,7 @@ $(NAME).runs/synth_1: $(NAME)_synth.tcl $(NAME).xpr
 synth: $(NAME).runs/synth_1
 
 program_device: $(NAME)_pgm.tcl $(NAME).bit
-	vivado -mode batch -source $<
+	vivado -mode batch -source $< $(NAME).xpr
 
 clean:
 	### project synth
