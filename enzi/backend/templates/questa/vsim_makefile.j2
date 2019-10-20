@@ -15,15 +15,15 @@ build: compile elaborate
 run: build
 {% if simulate_log %}
 	{% if silence_mode %}
-	@vsim -c -do "run -a" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
+	@vsim -c -do "run -a; exit" -l {{ simulate_log }} -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -c -do "run -a" -l {{ simulate_log }} {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
+	@vsim -c -do "run -a; exit" -l {{ simulate_log }} {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	@vsim -c -do "run -a" -l simulate.log -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
+	@vsim -c -do "run -a; exit" -l simulate.log -quiet {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -c -do "run -a" -l simulate.log {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
+	@vsim -c -do "run -a; exit" -l simulate.log {{ toplevel }}_opt {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% endif %}
 

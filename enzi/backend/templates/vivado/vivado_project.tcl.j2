@@ -1,4 +1,4 @@
-create_project {{ name }}
+create_project {{ name }} -force
 
 {% if device_part -%}
 set_property part {{ device_part }} [current_project]
