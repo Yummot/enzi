@@ -6,8 +6,9 @@ import platform
 from enzi.backend.backend import *
 from enzi.backend.ies import IES
 from enzi.backend.questa import Questa
+from enzi.backend.vivado import Vivado
 
-__all__ = ['KnownBackends', 'Questa', 'IES',
+__all__ = ['KnownBackends', 'Questa', 'IES', 'Vivado',
            'Backend', 'BackendCallback', 'value_str_filter']
 
 logger = logging.getLogger(__name__)
@@ -32,6 +33,7 @@ class KnownBackends(object):
         # hard code 'vsim' to 'questa'
         self.known_backends['vsim'] = self.known_backends['questa']
         self.allow_backends['vsim'] = self.allow_backends['questa']
+        print(self.allow_backends)
 
     def register_backend(self, backend):
         """
