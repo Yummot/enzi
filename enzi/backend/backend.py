@@ -90,6 +90,7 @@ class Backend(object):
     supported_ops = ['build', 'sim', 'run', 'program_device']
     # backend are assumed to support at least Linux('s distribution)
     supported_system = ('Linux', )
+    
 
     def __init__(self, config={}, work_root=None):
         if config is None:
@@ -104,6 +105,7 @@ class Backend(object):
             raise RuntimeError(
                 "Missing required parameter \"name\" in config.") from e
 
+        self._gui_mode = config.get('gui_mode', False)
         self.toplevel = config.get('toplevel')
         self.work_root = work_root if work_root is not None else ''
         self.env = os.environ.copy()
@@ -135,6 +137,16 @@ class Backend(object):
 
         self._gen_scripts_name = set()
         self.current_system = platform.system()
+
+    @property
+    def gui_mode(self):
+        return self._gui_mode
+
+    @gui_mode.setter
+    def gui_mode(self, value):
+        if not isinstance(value, bool):
+            raise ValueError('gui mode type must be bool!')
+        self._gui_mode = value
 
     # TODO: Add a checker fn to abort running Backend without the corresponding Backend tool.
 

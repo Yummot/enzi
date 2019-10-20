@@ -19,7 +19,6 @@ class Questa(Backend):
     supported_system = ('Linux', 'Windows',)
 
     def __init__(self, config={}, work_root=None):
-        self._gui_mode = False
 
         self.compile_log = config.get('compile_log', 'compile.log')
         self.vlog_opts = config.get('vlog_opts', None)
@@ -48,16 +47,6 @@ class Questa(Backend):
             self._gen_scripts_name = {'vsim-gui.tcl'}
         else:
             raise ValueError('INTERNAL ERROR: unimplemented system')
-
-    @property
-    def gui_mode(self):
-        return self._gui_mode
-
-    @gui_mode.setter
-    def gui_mode(self, value):
-        if not isinstance(value, bool):
-            raise ValueError('gui mode type must be bool!')
-        self._gui_mode = value
 
     def configure_main(self, *, non_lazy=False):
         self.delegate.configure_main(non_lazy=non_lazy)
