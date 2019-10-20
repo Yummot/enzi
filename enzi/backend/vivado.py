@@ -16,6 +16,29 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 
+def src_file_filter(f):
+    file_types = {
+        'vh': 'read_verilog',
+        'v': 'read_verilog',
+        'svh': 'read_verilog -sv',
+        'sv': 'read_verilog -sv',
+        'vhd': 'read_vhdl',
+        'vhdl': 'read_vhdl',
+        'xci': 'read_ip',
+        'xdc': 'read_xdc',
+        'tcl': 'source',
+        'sdc': 'read_xdc -unmanaged',
+    }
+    _, ext = os.path.splitext(f)
+    if ext:
+        ext = ext[1:].lower()
+        print(ext)
+    if ext in file_types:
+        return file_types[ext] + ' ' + f
+    else:
+        return ''
+
+
 class Vivado(Backend):
     """Vivado backend"""
     # TODO: add Windows support
@@ -32,7 +55,7 @@ class Vivado(Backend):
         except Exception as e:
             logger.error(e)
             raise SystemExit(1)
-    
+
     @staticmethod
     def get_relpath(files, root):
         if not root or not files:
@@ -61,7 +84,7 @@ class Vivado(Backend):
         self.vlog_params = config.get('vlog_params', {})
         self.generics = config.get('generics', {})
         self.vlog_defines = config.get('vlog_defines', {})
-        
+
         _fileset = config.get('fileset', {})
         src_files = _fileset.get('files', [])
         inc_dirs = _fileset.get('inc_dirs', [])
@@ -73,6 +96,8 @@ class Vivado(Backend):
 
         has_xci = any(filter(lambda x: 'xci' in x, self.src_files))
         self.has_xci = has_xci
+
+        self.j2_env.filters['src_file_filter'] = src_file_filter
 
         # for vivado gen scripts' name only available after rendering the scripts
         self._gen_scripts_name = None
@@ -101,7 +126,6 @@ class Vivado(Backend):
             'toplevel': self.toplevel,
             'has_xci': self.has_xci
         }
-    
 
     def gen_scripts(self):
         name = self.name
@@ -112,8 +136,10 @@ class Vivado(Backend):
         synth_tcl = name + '_synth.tcl'
 
         self.render_template('vivado_makefile.j2', mk, self._makefile_vars)
-        self.render_template('vivado_project.tcl.j2', proj_tcl, self._project_vars)
-        self.render_template('vivado_program.tcl.j2', prog_tcl, self._program_vars)
+        self.render_template('vivado_project.tcl.j2',
+                             proj_tcl, self._project_vars)
+        self.render_template('vivado_program.tcl.j2',
+                             prog_tcl, self._program_vars)
         self.render_template('vivado_run.tcl.j2', run_tcl)
         self.render_template('vivado_synth.tcl.j2', synth_tcl)
 
@@ -138,7 +164,7 @@ class Vivado(Backend):
         logger.debug('building')
         if not self.configured:
             self.configure()
-        
+
         if self.build_project_only:
             self._run_tool('make', [self._gen_scripts_name[1], ])
             return
@@ -146,12 +172,12 @@ class Vivado(Backend):
             self._run_tool('make', ['synth'])
             return
         self._run_tool('make', ['all'])
-    
+
     def program_device_main(self):
         logger.debug('programming device')
         if not self.configured:
             self.configure()
-        
+
         if self.build_project_only:
             self._run_tool('make', [self._gen_scripts_name[1], ])
             return
@@ -160,7 +186,7 @@ class Vivado(Backend):
             return
 
         self._run_tool('make', ['program_device'])
-    
+
     def run_main(self):
         logger.debug('running')
         self.program_device()
