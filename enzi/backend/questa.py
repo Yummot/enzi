@@ -5,7 +5,6 @@ import logging
 import os
 import subprocess
 
-from collections import OrderedDict
 from functools import partial
 
 from enzi.backend import Backend
