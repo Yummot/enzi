@@ -138,7 +138,7 @@ class Backend(object):
     def render_template(self, template_file, target_file, template_vars={}):
         template_dir = str(self.__class__.__name__).lower()
         template = self.j2_env.get_template(
-            '/'.join([template_dir, template_file]))
+            os.path.join(template_dir, template_file))
         file_path = os.path.join(self.work_root, target_file)
 
         f = io.FileIO(file_path, 'w')

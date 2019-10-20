@@ -11,27 +11,27 @@ vhdl_defines=""
 sv_input_port="-svinputport=var"
 
 # include dirs
-{% if inc_dirs %}
+{% if inc_dirs -%}
 vlog_opts+=" {{ inc_dirs|inc_dirs_filter }}"
-{% endif %}
+{%- endif %}
 
-{% if vlog_opts %}
+{% if vlog_opts -%}
 vlog_opts+=" {{ vlog_opts }} "
-{% endif %}
+{%- endif %}
 
-{% if vhdl_opts %}
+{% if vhdl_opts -%}
 vhdl_opts+=" {{ vhdl_opts }} "
-{% endif %}
+{%- endif %}
 
-{% if vlog_defines %}
+{% if vlog_defines -%}
 vlog_defines+=" {{ vlog_defines }} "
-{% endif %}
+{%- endif %}
 
-{% if vhdl_defines %}
+{% if vhdl_defines -%}
 vhdl_defines+=" {{ vlog_defines }} "
-{% endif %}
+{%- endif %}
 
-{%- if fileset %}
+{%- if fileset -%}
 {% for file in fileset %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
