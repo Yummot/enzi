@@ -11,7 +11,7 @@ from enzi.ver import VersionReq
 
 ALLOW_BACKENDS = set(KnownBackends().allow_backends.keys())
 ENZI_CONFIG_VERSIONS = {"0.1", "0.2", "0.3"}
-CONFIG_CURRENT_VERSION = "0.3"
+CONFIG_CURRENT_VERSION = "0.2"
 
 logger = logging.getLogger('xvalidator')
 
