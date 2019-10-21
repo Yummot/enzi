@@ -14,7 +14,7 @@ import toml
 import colorama
 from colorama import Fore, Style
 
-from enzi.config import EnziConfigValidator, VersionValidator 
+from enzi.validator import EnziConfigValidator, VersionValidator 
 from enzi.config import validate_git_repo, RawConfig
 from enzi.git import Git
 from enzi.file_manager import IncDirsResolver
