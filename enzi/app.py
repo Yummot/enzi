@@ -293,18 +293,14 @@ class EnziApp(object):
                     files = map(lambda x: x, filenames)
                     ffiles = filter(files_filter, files)
                     ffiles = list(ffiles)
-                    print(ffiles)
                     flist.extend(ffiles)
                 else:
                     files = map(lambda x: os.path.join(dirname, x), filenames)
                     ffiles = filter(files_filter, files)
                     ffiles = list(ffiles)
-                    print(ffiles)
                     flist.extend(ffiles)
 
             cur_fset = set(flist)
-            print(cur_fset)
-            print(fileset)
             unlisted = cur_fset - fileset
             if unlisted:
                 fmt = 'this package has some hdl files: {}, which are not listed in {}\'s filesets'
@@ -540,15 +536,15 @@ class EnziApp(object):
         config_name = kwargs.get('config', self.args.config)
 
         if yes:
-            root = root
+            confirm = yes
+        else:
             if root:
                 fmt = 'clean will clean up the build directory in \'{}\''
                 msg = fmt.format(root)
                 self.warning(msg)
             else:
                 self.warning('clean will clean up the build directory')
-
-        confirm = self.get_confirm()
+            confirm = self.get_confirm()
 
         if confirm != True:
             return

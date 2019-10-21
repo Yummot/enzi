@@ -440,6 +440,8 @@ class PartialConfig(object):
 
         # optional tools section
         self.tools = config.get('tools')
+        if self.version == '0.2' or self.version == '0.1':
+            self._raw_tools = self.tools
 
     def into(self):
         """Convert PartialConfig into Config"""
@@ -484,7 +486,7 @@ class Config(object):
         self.name = self.package.get('name')
         self.is_local = is_local
 
-        # preparation for provider section
+        # TODO: preparation for provider section
         if 'provider' in config:
             self.is_local = False  # make sure remote is not marked as local
 
@@ -522,9 +524,12 @@ class Config(object):
 
         # tools configs
         self.tools = {}
+        if 'tools' in config:
+            tools_config = config.get('tools')
+        else:
+            return
         if self.version == '0.2' or self.version == '0.1':
             self._raw_tools = None
-            tools_config = config.get('tools')
             if tools_config:
                 self._raw_tools = tools_config
                 for idx, tool in enumerate(tools_config):
@@ -532,9 +537,10 @@ class Config(object):
                         raise RuntimeError(
                             'tool must be set for tools<{}>'.format(idx))
                     self.tools[tool['name']] = {}
-                    self.tools[tool['name']]['params'] = tool.get('params', {})
+                    self.tools[tool['name']] = tool.get('params', {})
         else:
-            self.tools = config.get('tools')
+            self.tools = tools_config
+
     def debug_str(self):
         str_buf = ['Config: {']
         m = vars(self)
@@ -654,6 +660,13 @@ class RawConfig(object):
         validate this raw config, return PartialConfig/Config
         """
         validated = self.validator.validate()
+
+        # copy when specified targets.program_device but not specified targets.build
+        copy2build = 'targets' in validated and 'program_device' in validated['targets']
+        copy2build = copy2build and not 'build' in validated['targets']
+        if copy2build:
+            tpgm = validated['targets']['program_device']
+            validated['targets']['build'] = py_copy.deepcopy(tpgm)
         if self.fileset_only:
             # TODO: In future version, make use of include_tools
             return PartialConfig(validated, self.config_path, self.is_local, from_str=self.from_str, include_tools=False)

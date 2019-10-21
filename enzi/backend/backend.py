@@ -128,7 +128,7 @@ class Backend(object):
             keep_trailing_newline=True,
         )
 
-        self.j2_env.filters['value_str'] = value_str_filter
+        self.j2_env.filters['value_str_filter'] = value_str_filter
         self.j2_env.filters['inc_dirs_filter'] = inc_dirs_filter
         self.j2_env.filters['src_inc_filter'] = src_inc_filter
 

@@ -192,7 +192,6 @@ class Enzi(object):
 
     def excute(self, target_name, backend):
         self.check_target_availability(target_name)
-
         getattr(backend, target_name)()
 
     def get_backend(self, target_name, **kwargs):
@@ -288,9 +287,6 @@ class BackendConfigGen(object):
         config['name'] = ies_config.get('name', '')
         config['silence_mode'] = ies_config.get('silence_mode', False)
 
-        _ies_config = ies_config
-        ies_config = ies_config.get('params', {})
-
         config['gen_waves'] = ies_config.get('gen_waves', True)
         config['use_uvm'] = ies_config.get('use_uvm', False)
         config['compile_log'] = ies_config.get('compile_log', 'compile.log')
@@ -326,9 +322,6 @@ class BackendConfigGen(object):
         config['name'] = questa_config.get('name', '')
         config['silence_mode'] = questa_config.get('silence_mode', False)
 
-        _questa_config = questa_config
-        questa_config = questa_config.get('params', {})
-
         config['compile_log'] = questa_config.get('compile_log', 'compile.log')
         config['vlog_opts'] = opts2str(questa_config.get('vlog_opts', []))
         config['vhdl_opts'] = opts2str(questa_config.get('vhdl_opts', []))
@@ -345,5 +338,26 @@ class BackendConfigGen(object):
         config['sim_opts'] = opts2str(questa_config.get('sim_opts', []))
         config['simulate_log'] = questa_config.get(
             'simulate_log', 'simulate.log')
+
+        return config
+
+    def vivado(self, vivado_config, work_name, work_root, toplevel, fileset):
+        config = {}
+
+        config['toplevel'] = toplevel
+        config['fileset'] = fileset
+
+        if not vivado_config:
+            return config
+        
+        config['name'] = vivado_config.get('name', '')
+        config['silence_mode'] = vivado_config.get('silence_mode', False)
+        config['bitstream_name'] = vivado_config.get('bitstream_name', config['name'])
+        config['device_part'] = vivado_config.get('device_part')
+        config['vlog_params'] = config.get('vlog_params', {})
+        config['generics'] = config.get('generics', {})
+        config['vlog_defines'] = config.get('vlog_defines', {})
+        config['synth_only'] =config.get('synth_only', False)
+        config['build_project_only'] = config.get('build_project_only', False)
 
         return config

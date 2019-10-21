@@ -32,7 +32,6 @@ def src_file_filter(f):
     _, ext = os.path.splitext(f)
     if ext:
         ext = ext[1:].lower()
-        print(ext)
     if ext in file_types:
         return file_types[ext] + ' ' + f
     else:
@@ -52,8 +51,8 @@ class Vivado(Backend):
             output = subprocess.check_output(['vivado', '-version'],  # pylint: disable=E1123
                                              stdin=subprocess.PIPE)
             return output.decode('utf-8').splitlines()[0]
-        except Exception as e:
-            logger.error(e)
+        except Exception:
+            logger.error('Cannot call vivado, make sure it is in path.')
             raise SystemExit(1)
 
     @staticmethod
@@ -71,6 +70,7 @@ class Vivado(Backend):
             work_root = Vivado.__work_dir__
         else:
             work_root = os.path.join(work_root, Vivado.__work_dir__)
+            os.makedirs(work_root, exist_ok=True)
 
         super(Vivado, self).__init__(config=config, work_root=work_root)
 
@@ -110,7 +110,7 @@ class Vivado(Backend):
     @property
     def _program_vars(self):
         return {
-            'name': self.name,
+            'bitstream_name': self.name,
             'device_part': self.device_part
         }
 
@@ -118,6 +118,7 @@ class Vivado(Backend):
     def _project_vars(self):
         return {
             'name': self.name,
+            'device_part': self.device_part,
             'vlog_params': self.vlog_params,
             'generics': self.generics,
             'vlog_defines': self.vlog_defines,
@@ -178,12 +179,12 @@ class Vivado(Backend):
         if not self.configured:
             self.configure()
 
-        if self.build_project_only:
-            self._run_tool('make', [self._gen_scripts_name[1], ])
-            return
-        if self.synth_only:
-            self._run_tool('make', ['synth'])
-            return
+        # check bitstream existence
+        bitstream_name = self.bitstream_name + '.bit'
+        bitstream_path = os.path.join(self.work_root, bitstream_name)
+        if not os.path.exists(bitstream_path):
+            logger.error('Bitstream not exists.Call enzi build to build bitstream.')
+            raise SystemExit(1)
 
         self._run_tool('make', ['program_device'])
 
