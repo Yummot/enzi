@@ -57,8 +57,8 @@ class EnziConfigValidator(Validator):
     @staticmethod
     def base_file(package_name, author=None):
         """Return a latest version of the Enzi.toml base file"""
-        return EnziConfigV02Validator.base_file(package_name, author)
+        return EnziConfigV03Validator.base_file(package_name, author)
 
     @staticmethod
     def info():
-        return EnziConfigV02Validator.info()
+        return EnziConfigV03Validator.info()
