@@ -331,8 +331,8 @@ class ToolsValidator(TypedMapValidator):
             'ies': IESValidator.info(),
             'ixs': IXSValidator.info(),
             'questa': QuestaValidator.info(),
+            'vsim': VsimValidator.info(),
             'vivado': VivadoValidator.info(),
-            'vsim': VsimValidator.info()
         }
 
 class EnziConfigValidator(TypedMapValidator):
