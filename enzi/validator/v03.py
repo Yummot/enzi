@@ -506,7 +506,7 @@ class EnziConfigValidator(TypedMapValidator):
         out.write(EnziConfigValidator.HEADER_COMMENT)
 
         out.write(EnziConfigValidator.ENZI_VERSION_COMMENT)
-        ev = {'enzi_version': '|'.join(ENZI_CONFIG_VERSIONS)}
+        ev = {'enzi_version': '0.3'}
         toml.dump(ev, out)
 
         out.write(EnziConfigValidator.PACKAGE_COMMENT)
