@@ -181,11 +181,11 @@ class QuestaValidator(ToolValidator):
 
     def __init__(self, *, key, val, parent=None):
 
-        super(QuestValidator, self).__init__(
+        super(QuestaValidator, self).__init__(
             key=key,
             val=val,
             parent=parent,
-            extras=QuestValidator.__extras__
+            extras=QuestaValidator.__extras__
         )
         self.val: typing.Mapping[str, typing.Any]
 
