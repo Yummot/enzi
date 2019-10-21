@@ -229,3 +229,25 @@ class VsimValidator(QuestaValidator):
             val=val,
             parent=parent
         )
+
+
+class VivadoValidator(ToolBaseValidator):
+    """Validator for A Vivado tool section"""
+
+    __extras__ = {
+        'bitstream_name': StringValidator,
+        'device_part': StringValidator,
+        'vlog_params': AnyBaseValidator,
+        'generics': AnyBaseValidator,
+        'vlog_defines': AnyBaseValidator,
+        'synth_only': BoolValidator,
+        'build_project_only': BoolValidator,
+    }
+
+    def __init__(self, *, key, val, parent=None):
+        super(VivadoValidator, self).__init__(
+            key=key,
+            val=val,
+            parent=parent,
+            extras=QuestaValidator.__extras__
+        )
