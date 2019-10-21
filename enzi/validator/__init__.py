@@ -1,14 +1,19 @@
+# -*- coding: utf-8 -*-
+
 from enzi.validator.base import *
 from enzi.validator import base
 from enzi.validator import v02
+from enzi.validator import v03
 
-__all__ = base.__all__ + ['EnziConfigValidator', 'EnziConfigV02Validator']
+__all__ = base.__all__ + ['EnziConfigValidator', 'EnziConfigV02Validator', 'EnziConfigV03Validator']
 
 EnziConfigV02Validator = v02.EnziConfigValidator
+EnziConfigV03Validator = v03.EnziConfigValidator
 
 VEC_DICT = {
     '0.1': EnziConfigV02Validator,
     '0.2': EnziConfigV02Validator,
+    '0.3': EnziConfigV03Validator,
 }
 
 class EnziConfigValidator(Validator):

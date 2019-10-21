@@ -418,7 +418,7 @@ def test_tools_validator():
     ]
 
     validator = ToolsValidator(key='tools', val=copy.deepcopy(val))
-    assert validator.val == val
+    assert validator.validate() == val
 
     validator.val[1]['params'] = []
     expected_kvs(validator)

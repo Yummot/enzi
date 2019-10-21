@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import io
 import logging
 import os
@@ -365,8 +367,8 @@ class ToolsValidator(Validator):
     @staticmethod
     def info():
         tool0 = ToolValidator.info()
-        tool1 = ToolValidator.info()
-        tool1['name'] += ' '
+        tool1 = ToolValidator.info(tool_name='ies')
+        tool1['name']
         return [tool0, tool1]
 
 
@@ -489,15 +491,15 @@ class EnziConfigValidator(TypedMapValidator):
 
     TOOLS_COMMENT = '''
 # Tools configuration for this enzi project/package:
-# Optional Dependencies Section, use when you want to provide extra parameters for a tool.
+# Optional Tools Section, use when you want to provide extra parameters for a tool.
 # All parameters in a single tool param section are optional. You don\'t have to provide all parameters.
 # This section is just a reminder of all the available tools and their available optional parameters.
 # Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.
-# IMPORTANT: If you use tool ies and uvm, make sure you set ies tool params' use_uvm parameter to true. 
+# IMPORTANT: If you use uvm with tool ies, make sure you set ies tool params' use_uvm parameter to true. 
 '''
 
-    def __init__(self, val, config_path=None, *, git_url=None):
-
+    @staticmethod
+    def construct_key(git_url, config_path):
         # construct a readable EnziConfigValidator.key
         if git_url and config_path:
             cur_system = platform.system()
@@ -514,7 +516,10 @@ class EnziConfigValidator(TypedMapValidator):
         else:
             raw_key = config_path
         key = '<%s>' % raw_key
+        return key
 
+    def __init__(self, val, config_path=None, *, git_url=None):
+        key = EnziConfigValidator.construct_key(git_url, config_path)
         super(EnziConfigValidator, self).__init__(
             key=key,
             val=val,

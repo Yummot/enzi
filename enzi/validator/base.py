@@ -1,5 +1,8 @@
+# -*- coding: utf-8 -*-
+
 import logging
 import os
+import toml
 import typing
 
 from abc import ABCMeta, abstractmethod
@@ -58,6 +61,8 @@ class Validator(metaclass=ABCMeta):
     def __init__(self, *, key, val=None, allows=None, parent=None):
         from typing import Optional, Mapping, Any
         self.key: str = key
+        if isinstance(val, toml.decoder.InlineTableDict):
+            val = dict(val)
         self.val: typing.Any = val
         if parent and isinstance(parent, Validator):
             self.parent: Optional[Validator] = parent
@@ -383,8 +388,10 @@ class TypedMapValidator(Validator):
                 self.val[option] = validator.validate()
 
     def validate(self):
-        self.check_must_only()
-        self.check_optional()
+        if self.must:
+            self.check_must_only()
+        if self.optional:
+            self.check_optional()
 
         return self.val
 
