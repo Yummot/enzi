@@ -434,7 +434,6 @@ class EnziConfigValidator(TypedMapValidator):
     Validator for "Enzi.toml"
     """
 
-    __slots__ = ('config_path', 'val')
     __must__ = {
         'enzi_version': StringValidator,
         'package': PackageValidator,

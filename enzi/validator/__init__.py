@@ -18,6 +18,34 @@ class EnziConfigValidator(Validator):
         ECValidator = VEC_DICT[enzi_version]
         self.validator = ECValidator(val, config_path, git_url=git_url)
     
+    @property
+    def key(self):
+        return self.validator.key
+
+    @property
+    def val(self):
+        return self.validator.val
+
+    @property
+    def parent(self):
+        return self.validator.parent
+    
+    @property
+    def allows(self):
+        return self.validator.allows
+
+    @property
+    def root(self):
+        return self.validator.root
+
+    @property
+    def __must__(self):
+        return self.validator.__must__
+    
+    @property
+    def __optional__(self):
+        return self.validator.__optional__
+
     def validate(self):
         return self.validator.validate()
     

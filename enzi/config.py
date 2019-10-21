@@ -522,17 +522,19 @@ class Config(object):
 
         # tools configs
         self.tools = {}
-        self._raw_tools = None
-        tools_config = config.get('tools')
-        if tools_config:
-            self._raw_tools = tools_config
-            for idx, tool in enumerate(tools_config):
-                if not 'name' in tool:
-                    raise RuntimeError(
-                        'tool must be set for tools<{}>'.format(idx))
-                self.tools[tool['name']] = {}
-                self.tools[tool['name']]['params'] = tool.get('params', {})
-
+        if self.version == '0.2' or self.version == '0.1':
+            self._raw_tools = None
+            tools_config = config.get('tools')
+            if tools_config:
+                self._raw_tools = tools_config
+                for idx, tool in enumerate(tools_config):
+                    if not 'name' in tool:
+                        raise RuntimeError(
+                            'tool must be set for tools<{}>'.format(idx))
+                    self.tools[tool['name']] = {}
+                    self.tools[tool['name']]['params'] = tool.get('params', {})
+        else:
+            self.tools = config.get('tools')
     def debug_str(self):
         str_buf = ['Config: {']
         m = vars(self)
@@ -588,23 +590,30 @@ class Config(object):
             d['targets'] = self.targets
 
         toml.dump(d, out)
-        tools = self._raw_tools
 
-        if not tools:
-            return out
+        if self.version == '0.2' or self.version == '0.1':
+            tools = self._raw_tools
+            if not tools:
+                return out
 
-        out.write('\n')
-
-        def fn(tool):
-            tool = {'tools': [tool]}
-            lines = toml.dumps(tool).splitlines()
-
-            toolinfo = list(map(tools_section_line, lines))
-            out.writelines(toolinfo)
             out.write('\n')
 
-        m = map(fn, tools)
-        _ = list(m)
+            def fn(tool):
+                tool = {'tools': [tool]}
+                lines = toml.dumps(tool).splitlines()
+
+                toolinfo = list(map(tools_section_line, lines))
+                out.writelines(toolinfo)
+                out.write('\n')
+
+            m = map(fn, tools)
+            _ = list(m)
+        else:
+            tools = self.tools
+            if not tools:
+                return out
+            out.write('\n')
+            toml.dump(tools, out)
 
         return out
 

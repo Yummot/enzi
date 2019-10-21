@@ -16,8 +16,10 @@ from enzi.validator.base import ALLOW_BACKENDS, ENZI_CONFIG_VERSIONS
 
 logger = logging.getLogger('validator')
 
+
 class AnyBaseValidator(Validator):
     """Internal use Validator, the validator allow base type as str/bool/int/float"""
+
     def __init__(self, *, key, val, parent=None, emsg=None):
         super(AnyBaseValidator, self).__init__(
             key=key, val=val, parent=parent)
@@ -29,16 +31,19 @@ class AnyBaseValidator(Validator):
         if not type(self.val) in self.T:
             raise ValidatorError(self.chain_keys_str(), self.emsg)
         return self.val
-    
+
     @staticmethod
     def info():
         return '<str|bool|int|float>'
 
+
 class ParamsDictValidator(Validator):
     """Params Dict Base Validator"""
+
     def __init__(self, *, key, val, parent=None):
-        super(ParamsDictValidator, self).__init__(key=key, val=val, parent=parent)
-    
+        super(ParamsDictValidator, self).__init__(
+            key=key, val=val, parent=parent)
+
     def validate(self):
         if not self.val:
             return self.val
@@ -47,7 +52,8 @@ class ParamsDictValidator(Validator):
             if type(k) != str:
                 msg = 'key {} is not str'.format(k)
                 raise ValidatorError(self.chain_keys_str(), msg)
-            self.val[k] = AnyBaseValidator(key=k, val=v, parent=self).validate()
+            self.val[k] = AnyBaseValidator(
+                key=k, val=v, parent=self).validate()
 
         return self.val
 
@@ -60,8 +66,9 @@ class ParamsDictValidator(Validator):
             'floatParam': FloatValidator.info(),
         }
 
-class ToolValidator(TypedMapValidator):
-    """Validator for a tool section"""
+
+class ToolBaseValidator(TypedMapValidator):
+    """Base Validator for a tool section"""
 
     __allow__ = {}
 
@@ -69,13 +76,13 @@ class ToolValidator(TypedMapValidator):
         (check, extras) = TypedMapValidator.check_validator_dict(extras)
         if check:
             logger.debug('ToolValidator: filtered extras')
-            self.params = {**ToolValidator.__allow__, **extras}
+            self.params = {**ToolBaseValidator.__allow__, **extras}
         else:
             msg = 'ToolValidator: Ingore non-dict type extras'
             logger.warning(msg)
             extras = None
 
-        super(ToolValidator, self).__init__(
+        super(ToolBaseValidator, self).__init__(
             key=key,
             val=val,
             parent=parent,
@@ -93,11 +100,12 @@ class ToolValidator(TypedMapValidator):
     @staticmethod
     def info():
         """
-        ToolValidator is just a base class, so not details info
+        ToolBaseValidator is just a base class, so not details info
         """
         return {}
 
-class IESValidator(ToolValidator):
+
+class IESValidator(ToolBaseValidator):
     """Validator for a IES tool section"""
     __extras__ = {
         'link_libs': StringListValidator,
@@ -126,7 +134,7 @@ class IESValidator(ToolValidator):
 
     @staticmethod
     def info():
-        base = ToolValidator.info()
+        base = ToolBaseValidator.info()
         extras = {
             'link_libs': StringListValidator.info(),
             'gen_waves': BoolValidator.info(),
@@ -142,6 +150,7 @@ class IESValidator(ToolValidator):
             'use_uvm': BoolValidator.info(),
         }
         return {**base, **extras}
+
 
 class IXSValidator(IESValidator):
     """
@@ -161,7 +170,8 @@ class IXSValidator(IESValidator):
         logging.getLogger('IXSValidator').warning(msg)
         # logger.warning(msg)
 
-class QuestaValidator(ToolValidator):
+
+class QuestaValidator(ToolBaseValidator):
     """Validator for A Questa tool's section"""
 
     __slots__ = ('val', )
@@ -191,7 +201,7 @@ class QuestaValidator(ToolValidator):
 
     @staticmethod
     def info():
-        base = ToolValidator.info()
+        base = ToolBaseValidator.info()
         extras = {
             'link_libs': StringListValidator.info(),
             'gen_waves': BoolValidator.info(),

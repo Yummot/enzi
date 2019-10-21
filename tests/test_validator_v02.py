@@ -1,5 +1,5 @@
 """
-enzi.config *Validator module test
+enzi.validator v02 and base module test
 """
 
 import copy
@@ -7,21 +7,21 @@ import os
 import io
 import pytest
 
-from enzi import config
-from enzi.config import ValidatorError
-from enzi.config import Validator, BoolValidator
-from enzi.config import IntValidator, FloatValidator
-from enzi.config import StringValidator, StringListValidator
-from enzi.config import VersionValidator, VersionReqValidator
-from enzi.config import PackageValidator, BaseTypeValidator
-from enzi.config import DepsValidator, DependencyValidator
-from enzi.config import FilesetValidator, FilesetsValidator
-from enzi.config import ToolParamsValidator, ToolValidator
-from enzi.config import IESParamsValidator, IXSParamsValidator
-from enzi.config import QuestaParamsValidator, VsimParamsValidator
-from enzi.config import ToolsValidator, TypedMapValidator
-from enzi.config import TargetValidator, TargetsValidator
-from enzi.config import EnziConfigValidator
+from enzi import validator
+from enzi.validator import ValidatorError
+from enzi.validator import Validator, BoolValidator
+from enzi.validator import IntValidator, FloatValidator
+from enzi.validator import StringValidator, StringListValidator
+from enzi.validator import VersionValidator, VersionReqValidator
+from enzi.validator import PackageValidator, BaseTypeValidator
+from enzi.validator import DepsValidator, DependencyValidator
+from enzi.validator.v02 import FilesetValidator, FilesetsValidator
+from enzi.validator.v02 import ToolParamsValidator, ToolValidator
+from enzi.validator.v02 import IESParamsValidator, IXSParamsValidator
+from enzi.validator.v02 import QuestaParamsValidator, VsimParamsValidator
+from enzi.validator.v02 import ToolsValidator, TypedMapValidator
+from enzi.validator.v02 import TargetValidator, TargetsValidator
+from enzi.validator.v02 import EnziConfigValidator
 from enzi.config import RawConfig, PartialConfig, Config
 from enzi.utils import toml_loads
 
@@ -418,7 +418,7 @@ def test_tools_validator():
     ]
 
     validator = ToolsValidator(key='tools', val=copy.deepcopy(val))
-    assert validator.validate() == val
+    assert validator.val == val
 
     validator.val[1]['params'] = []
     expected_kvs(validator)
@@ -448,7 +448,8 @@ def test_enzi_config_validator():
     conf = toml_loads(data)
     validator = EnziConfigValidator(copy.deepcopy(conf), '.')
 
-    assert validator.validate() == conf
+    assert validator.validate()
+    assert validator.val == conf
     assert validator.info() != None
     
 def test_raw_config_to_partial_config():
@@ -570,11 +571,11 @@ class TestTMValidator(TypedMapValidator):
         if tool_name is None:
             tool_name = self.val['name'].lower()
         
-        if not (tool_name in config.ALLOW_BACKENDS or tool_name == 'ixs'):
+        if not (tool_name in validator.ALLOW_BACKENDS or tool_name == 'ixs'):
             msg = 'unknown backend: `{}`'.format(tool_name)
             raise ValidatorError(self.chain_keys_str(), msg)
 
-        params_validator = config.TPARAMS_VALIDATOR_MAP[tool_name]
+        params_validator = validator.v02.TPARAMS_VALIDATOR_MAP[tool_name]
         self.optional['params'] = params_validator
 
     def norm_name(self):
