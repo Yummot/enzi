@@ -28,6 +28,7 @@ setup(
         'colorama>=0.4.0',
         'coloredlogs>=9.3'
         'pytest>=5.0.1',
-        'ordered-set>=3.1.1'
+        'ordered-set>=3.1.1',
+        'networkx>=2.0',
     ],
 )

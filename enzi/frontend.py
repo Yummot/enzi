@@ -5,6 +5,7 @@ import os
 import pprint
 import typing
 import copy as py_copy
+import networkx as nx
 
 import enzi.project_manager
 from enzi import config
@@ -79,6 +80,7 @@ class Enzi(object):
         else:
             self.need_update = None
         
+        self.deps_graph = nx.DiGraph()
         self.initialized = False
 
         # lazy configure decision
@@ -122,7 +124,30 @@ class Enzi(object):
         if not self.config.dependencies:
             logger.debug('Enzi:init: this project has no dependencies')
 
+        self.init_deps_graph()
         self.initialized = True
+
+    def init_deps_graph(self):
+        if not self.locked:
+            raise RuntimeError('Enzi Frontend is not initialized')
+        
+        # root node
+        root = self.name
+        deps_graph = self.deps_graph
+        deps_graph.add_node(root)
+
+        for dep in self.config.dependencies:
+            deps_graph.add_edge(root, dep)
+        
+        for dep_name, dep in self.locked.dependencies.items():
+            this_deps = dep.dependencies
+            m = map(lambda d: deps_graph.add_edge(dep_name, d), this_deps)
+            _ = list(m)
+
+        if logger.getEffectiveLevel() <= logging.DEBUG:
+            pfmt = pprint.pformat(nx.dfs_successors(self.deps_graph))
+            msg = 'the initialized deps graph is: \n{}'.format(pfmt)
+            logger.debug(msg)
 
     def get_flat_fileset(self):
         """Get all the files listed in config.filesets"""
