@@ -6,6 +6,8 @@ import pprint
 import shutil
 import typing
 
+import networkx as nx
+
 from enzi import file_manager
 from enzi.file_manager import LocalFiles, FileManager
 from enzi.file_manager import FileManagerStatus, Fileset
@@ -61,6 +63,7 @@ class ProjectFiles(FileManager):
                     self.git_repos[name] = git_repo
 
         self.deps_fileset = Fileset()
+        self.deps_graph = enzi_project.deps_graph
 
         self.default_target = next(iter(enzi_project.targets.keys()))
 
@@ -83,22 +86,35 @@ class ProjectFiles(FileManager):
                 self.git_repos.values())
         any_no_exist = any(m)
         if any_no_exist:
-            print('')
+            logger.warning('Some dependencies\' do not exist.')
 
-        for dep_name, dep in self.git_repos.items():
-            logger.debug('ProjectFiles:fetch GitRepo({})'.format(dep_name))
+        postorder_deps = nx.dfs_postorder_nodes(self.deps_graph)
+        postorder_deps = list(postorder_deps)[:-1]
+        converter = lambda path: relpath(self.files_root, path)
+        for dep_name in postorder_deps:
+            dep = self.git_repos.get(dep_name)
             dep.fetch()
             cache = dep.cached_fileset()
-            # convert absolute path into relative path
-            def converter(path): return relpath(self.files_root, path)
             files_filter = filter(
                 lambda path: path, map(converter, cache.files))
             files = set(files_filter)
-            _files.files |= files
-            _ccfiles.merge(cache)
+            _files.inc_dirs.update(cache.inc_dirs)
+            _files.files.update(files)
+            _ccfiles.merge(cache)  
 
-        if any_no_exist:
-            print('')
+        # # TODO: code refactor
+        # for dep_name, dep in self.git_repos.items():
+        #     logger.debug('ProjectFiles:fetch GitRepo({})'.format(dep_name))
+        #     dep.fetch()
+        #     cache = dep.cached_fileset()
+        #     # convert absolute path into relative path
+        #     def converter(path): return relpath(self.files_root, path)
+        #     files_filter = filter(
+        #         lambda path: path, map(converter, cache.files))
+        #     files = set(files_filter)
+        #     _files.inc_dirs.update(cache.inc_dirs)
+        #     _files.files |= files
+        #     _ccfiles.merge(cache)
 
         self.deps_fileset = _files
 
@@ -142,8 +158,16 @@ class ProjectFiles(FileManager):
         fileset = files.dump_dict()
 
         if file_manager.FM_DEBUG:
+            inc_dirs = {}
+            for k, v in fileset['inc_dirs'].items():
+                inc_dirs[k] = list(v)
+            pfmt = pprint.pformat(inc_dirs)
+            fmt = 'ProjectFiles: include directories for each file:\n{}'
+            msg = fmt.format(pfmt)
+            logger.info(msg)
             fmt = 'ProjectFiles:get_fileset: result:\n{}'
-            data = pprint.pformat(fileset)
-            logger.info(fmt.format(data))
+            pfiles = { 'files': fileset['files'] }
+            pfmt = pprint.pformat(pfiles)
+            logger.info(fmt.format(pfmt))
 
         return fileset

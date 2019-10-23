@@ -9,6 +9,7 @@ import shutil
 import copy as py_copy
 
 from collections.abc import Iterable
+from collections import OrderedDict
 from enum import Enum, unique
 
 from ordered_set import OrderedSet
@@ -46,7 +47,7 @@ class Fileset(object):
         else:
             raise ValueError('files must be iterable')
         self.files = files
-        self.inc_dirs = OrderedSet()
+        self.inc_dirs = OrderedDict()
         self.inc_files = OrderedSet()
 
     def is_empty(self):
@@ -73,7 +74,8 @@ class Fileset(object):
             raise ValueError('cannot merge a not Fileset object')
         ret = Fileset()
         ret.files = self.files | other.files
-        ret.inc_dirs = self.inc_dirs | other.inc_dirs
+        ret.inc_dirs.update(self.inc_dirs)
+        ret.inc_dirs.update(other.inc_dirs)
         ret.inc_files = self.inc_files | other.inc_files
         return ret
 
@@ -81,14 +83,17 @@ class Fileset(object):
         if not isinstance(other, Fileset):
             raise ValueError('cannot merge a not Fileset object')
         self.files |= other.files
-        self.inc_dirs |= other.inc_dirs
+        self.inc_dirs.update(other.inc_dirs)
         self.inc_files |= other.inc_files
 
     def add_file(self, file):
         self.files.add(file)
 
-    def add_inc_dir(self, inc_dir):
-        self.inc_dirs.add(inc_dir)
+    def add_inc_dir(self, file, inc_dir):
+        # self.inc_dirs.add(inc_dir)
+        if file not in self.inc_dirs:
+            self.inc_dirs[file] = OrderedSet()
+        self.inc_dirs[file].add(inc_dir)
 
     def add_inc_file(self, inc_file):
         self.inc_files.add(inc_file)
@@ -96,7 +101,7 @@ class Fileset(object):
     def dump_dict(self):
         ret = {}
         ret['files'] = list(self.files)
-        ret['inc_dirs'] = list(self.inc_dirs)
+        ret['inc_dirs'] = self.inc_dirs
         ret['inc_files'] = list(self.inc_files)
         return ret
 
@@ -132,7 +137,7 @@ class IncDirsResolver:
         self.fileset.dedup()
         if FM_DEBUG:
             pfmt = pprint.pformat(self.fileset.dump_dict())
-            logger.info("resolved: \n{}".format(pfmt))
+            logger.debug("resolved: \n{}".format(pfmt))
         self.dfiles_cache = dict()
         return self.fileset
 
@@ -186,7 +191,7 @@ class IncDirsResolver:
             self.dfiles_cache[dirname] = dir_files
         else:
             dir_files = self.dfiles_cache[dirname]
-        fs.add_inc_dir(dirname)
+        fs.add_inc_dir(file, dirname)
 
         include_files = list(self.get_include_files(file))
         if not include_files:
@@ -201,7 +206,7 @@ class IncDirsResolver:
                 if os.path.exists(incdir):
                     fname = os.path.basename(include_file)
                     include_file = os.path.join(incdir, fname)
-                    fs.add_inc_dir(incdir)
+                    fs.add_inc_dir(file, incdir)
                     fs.add_inc_file(include_file)
                 else:
                     msg = '{} is not exists'.format(incdir)
@@ -209,7 +214,7 @@ class IncDirsResolver:
             else:
                 if include_file in dir_files:
                     include_file = os.path.join(dirname, include_file)
-                    fs.add_inc_dir(dirname)
+                    fs.add_inc_dir(file, dirname)
                     fs.add_inc_file(include_file)
 
 

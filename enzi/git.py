@@ -400,5 +400,5 @@ class GitRepo(FileManager):
         ret = self.resolver.resolve()
         if FM_DEBUG:
             pfmt = pprint.pformat(ret.dump_dict())
-            logger.info('cached fileset: \n{}'.format(pfmt))
+            logger.debug('cached fileset: \n{}'.format(pfmt))
         return ret
