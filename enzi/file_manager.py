@@ -97,6 +97,12 @@ class Fileset(object):
 
     def add_inc_file(self, inc_file):
         self.inc_files.add(inc_file)
+    
+    def __getitem__(self, key):
+        return getattr(self, key)
+    
+    def get(self, key, default=None):
+        return getattr(self, key, None)
 
     def dump_dict(self):
         ret = {}
