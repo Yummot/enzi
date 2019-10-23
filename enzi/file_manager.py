@@ -106,9 +106,9 @@ class Fileset(object):
 
     def dump_dict(self):
         ret = {}
-        ret['files'] = list(self.files)
+        ret['files'] = self.files
         ret['inc_dirs'] = self.inc_dirs
-        ret['inc_files'] = list(self.inc_files)
+        ret['inc_files'] = self.inc_files
         return ret
 
 

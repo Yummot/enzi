@@ -154,8 +154,8 @@ class ProjectFiles(FileManager):
         # merge deps fileset
         local_fileset = self.lf_managers[target_name].cached_fileset()
         deps_fileset = self.deps_fileset
-        files = deps_fileset.merge_into(local_fileset)
-        fileset = files.dump_dict()
+        fileset = deps_fileset.merge_into(local_fileset)
+        # fileset = fileset.dump_dict()
 
         if file_manager.FM_DEBUG:
             inc_dirs = {}
