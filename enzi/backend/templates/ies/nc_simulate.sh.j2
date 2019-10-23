@@ -1,6 +1,22 @@
 #! /bin/bash -f
 set -Euo pipefail
 
+print_by_line() {
+  if [[ $# < 1 ]]; then
+    return 0;
+  fi
+  data=$1
+  oldIFS="$IFS"
+  IFS='\n'
+  IFS=${IFS:0:1}
+  lines=( $data )
+  IFS="$oldIFS"
+  for line in "${lines[@]}"
+  do
+      echo "$line"
+  done
+}
+
 if [ -z ${build_dir+x} ]; then
   mkdir -p ./waves
 else
@@ -56,14 +72,14 @@ else
 
   if [[ ($nc_ecode != 0) ]]; then
     if [[ ($nc_out == *"ncsim> exit"*) ]]; then
-      printf '%s\n' "$nc_out"
+      print_by_line "$nc_out"
       echo 'enzi exit normally'
     else
       printf '%s\n' "$nc_out"
       exit $nc_ecode
     fi
   else
-    printf '%s\n' "$nc_out"
+    print_by_line "$nc_out"
   fi
 fi
 {%- endif %}
