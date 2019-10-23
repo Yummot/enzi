@@ -463,7 +463,7 @@ class PartialConfig(object):
                 self.files = self.files + x['files']
         files = Files()
         m = map(files.add_files, self.filesets.values())
-        _ = list(m)
+        _ = set(m)
         return {'files': files.files}
 
 
@@ -576,7 +576,7 @@ class Config(object):
                 self.files = self.files + x['files']
         files = Files()
         m = map(files.add_files, self.filesets.values())
-        _ = list(m)
+        _ = set(m)
         return {'files': files.files}
 
     def into(self):
@@ -613,7 +613,7 @@ class Config(object):
                 out.write('\n')
 
             m = map(fn, tools)
-            _ = list(m)
+            _ = set(m)
         else:
             tools = self.tools
             if not tools:

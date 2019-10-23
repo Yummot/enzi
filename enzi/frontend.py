@@ -142,7 +142,7 @@ class Enzi(object):
         for dep_name, dep in self.locked.dependencies.items():
             this_deps = dep.dependencies
             m = map(lambda d: deps_graph.add_edge(dep_name, d), this_deps)
-            _ = list(m)
+            _ = set(m)
 
         if logger.getEffectiveLevel() <= logging.DEBUG:
             pfmt = pprint.pformat(nx.dfs_successors(self.deps_graph))

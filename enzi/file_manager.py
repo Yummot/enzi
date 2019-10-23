@@ -144,7 +144,7 @@ class IncDirsResolver:
             self.fileset.merge(files)
 
     def resolve(self):
-        _ = list(map(self.extract_include_dirs, self.fileset.files))
+        _ = set(map(self.extract_include_dirs, self.fileset.files))
         self.fileset.dedup()
         if FM_DEBUG:
             pfmt = pprint.pformat(self.fileset.dump_dict())

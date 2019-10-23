@@ -107,7 +107,7 @@ class Vivado(Backend):
         inc_dirs = []
         ext_f = lambda x: inc_dirs.extend(x.get_flat_incdirs())
         m = map(ext_f, self.fileset.values())
-        _ = list(m)
+        _ = set(m)
         self.inc_dirs = Vivado.get_relpath(inc_dirs, work_root)
 
         self.synth_only = config.get('synth_only', False)

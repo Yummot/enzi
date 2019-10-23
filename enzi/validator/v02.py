@@ -633,6 +633,6 @@ class EnziConfigValidator(TypedMapValidator):
             out.write('\n')
 
         m = map(fn, TPARAMS_VALIDATOR_MAP.keys())
-        _ = list(m)
+        _ = set(m)
 
         return out

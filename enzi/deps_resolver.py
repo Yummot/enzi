@@ -544,7 +544,7 @@ class DependencyResolver(object):
 
         # detect conflicts
         m = map(lambda x: self.cache_git_urls(*x, enzi_config), deps.items())
-        _ = list(m)
+        _ = set(m)
 
         names = dict(map(fn, deps.items()))
         dep_ids = set(map(lambda item: item[1], names.items()))
