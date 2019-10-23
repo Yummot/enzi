@@ -10,11 +10,6 @@ vhdl_generics=""
 
 sv_input_port="-svinputport=var"
 
-# include dirs
-{% if inc_dirs -%}
-vlog_opts+=" {{ inc_dirs|inc_dirs_filter }}"
-{%- endif %}
-
 {% if vlog_opts -%}
 vlog_opts+=" {{ vlog_opts }} "
 {%- endif %}
@@ -39,11 +34,11 @@ vcom $vhdl_opts $vhdl_generics {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-vlog $vlog_opts $vlog_defines -sv {{ file|src_inc_filter }} $sv_input_port
+vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|src_inc_filter }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-vlog $vlog_opts $vlog_defines {{ file|src_inc_filter }}
+vlog $vlog_opts $vlog_defines {{ file|with_incdirs }}
 {% endif %}
 {#- -#}
 {% endfor %}

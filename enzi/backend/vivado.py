@@ -6,7 +6,9 @@ import re
 import os
 import subprocess
 
+from collections.abc import Mapping, Iterable
 from functools import partial
+from ordered_set import OrderedSet
 
 from enzi.backend import Backend
 
@@ -15,6 +17,16 @@ __all__ = ('Vivado', )
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+def inc_dir_filter(files):
+    """inc_dir_filter for vivado"""
+    if not files:
+        return ''
+
+    dedup_files = OrderedSet()
+    print(files)
+    m = map(lambda i: dedup_files.update(i), files.values())
+    _ = set(m)
+    return ' '.join(dedup_files)
 
 def src_file_filter(f):
     file_types = {
@@ -59,8 +71,23 @@ class Vivado(Backend):
     def get_relpath(files, root):
         if not root or not files:
             return files
-        m = map(lambda x: os.path.relpath(x, root), files)
-        return list(m)
+        if type(files) == list:
+            m = map(lambda x: os.path.relpath(x, root), files)
+            return list(m)
+        elif isinstance(files, Mapping):
+            def _relpath(item):
+                file, incdirs = item
+                file = os.path.relpath(file, root)
+                if isinstance(incdirs, Iterable):
+                    _m = map(lambda x: os.path.relpath(x, root), incdirs)
+                    incdirs = list(_m)
+                else:
+                    incdirs = os.path.relpath(incdirs, root)
+                return (file, incdirs)
+            m = map(_relpath, files.items())
+            return dict(m)
+        else:
+            raise RuntimeError('unreachable!')
 
     def __init__(self, config={}, work_root=None):
         self.version = Vivado.get_version()
@@ -85,11 +112,9 @@ class Vivado(Backend):
         self.generics = config.get('generics', {})
         self.vlog_defines = config.get('vlog_defines', {})
 
-        _fileset = config.get('fileset', {})
-        src_files = _fileset.get('files', [])
-        inc_dirs = _fileset.get('inc_dirs', [])
-        self.src_files = Vivado.get_relpath(src_files, work_root)
-        self.inc_dirs = Vivado.get_relpath(inc_dirs, work_root)
+        # filter relative path
+        self.src_files = Vivado.get_relpath(self.fileset, work_root)
+        self.inc_dirs = Vivado.get_relpath(self.inc_dirs, work_root)
 
         self.synth_only = config.get('synth_only', False)
         self.build_project_only = config.get('build_project_only', False)
@@ -98,6 +123,7 @@ class Vivado(Backend):
         self.has_xci = has_xci
 
         self.j2_env.filters['src_file_filter'] = src_file_filter
+        self.j2_env.filters['inc_dir_filter'] = inc_dir_filter
 
         # for vivado gen scripts' name only available after rendering the scripts
         self._gen_scripts_name = None

@@ -10,7 +10,10 @@ import platform
 import stat
 import subprocess
 import copy as py_copy
+
 from collections import OrderedDict
+from collections.abc import Iterable
+from ordered_set import OrderedSet
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
@@ -26,7 +29,7 @@ def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
 
     :param str_quote: enclosed the given str with this given str_quote
     :param bool_is_str: whether to treat bool as str.
-    @return: filter result
+    :return: filter result
     """
 
     if not bool_type:
@@ -44,11 +47,13 @@ def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
 
 INC_DIR_PREFIX = '+incdir+'
 
-def inc_dirs_filter(files):
+def inc_dirs_filter(files, *, cat='\n'):
     if not files:
         return ''
-    add_prefix = map(lambda f: INC_DIR_PREFIX + f, files)
-    return '\n'.join(add_prefix)
+
+    dedup_files = OrderedSet(files)
+    add_prefix = map(lambda f: INC_DIR_PREFIX + f, dedup_files)
+    return cat.join(add_prefix)
 
 def src_inc_filter(file):
     """
@@ -117,6 +122,10 @@ class Backend(object):
         self.env['WORK_ROOT'] = self.work_root
         self.silence_mode = config.get('silence_mode')
 
+        _fileset = config.get('fileset', {})
+        self.fileset = _fileset.get('files', [])
+        self.inc_dirs = _fileset.get('inc_dirs', [])
+
         self.config = config
 
         # jinja2 environment
@@ -130,6 +139,7 @@ class Backend(object):
 
         self.j2_env.filters['value_str_filter'] = value_str_filter
         self.j2_env.filters['inc_dirs_filter'] = inc_dirs_filter
+        self.j2_env.filters['with_incdirs'] = self.get_incdirs
         self.j2_env.filters['src_inc_filter'] = src_inc_filter
 
         # TODO: currently, each Backend op only support one callback, multi-callbacks for one op may be added.
@@ -142,6 +152,12 @@ class Backend(object):
 
         self._gen_scripts_name = set()
         self.current_system = platform.system()
+
+    def get_incdirs(self, file):
+        if file in self.inc_dirs:
+            incdirs = inc_dirs_filter(self.inc_dirs[file], cat=' \\\n\t')
+            return '{} \\\n\t{}'.format(incdirs, file)
+        return file 
 
     @property
     def gui_mode(self):

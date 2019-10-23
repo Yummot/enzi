@@ -26,10 +26,6 @@ $UVM_PATH/additions/sv/cdns_uvm_pkg.sv
 "
 {% endif %}
 
-{% if inc_dirs %}
-ncvlog_opts+=" {{ inc_dirs|inc_dirs_filter }}"
-{% endif %}
-
 {% if vlog_defines %}
 ncvlog_defines="{{ vlog_defines }}"
 {% else %}
@@ -83,11 +79,11 @@ ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|src_inc_filter }}
+ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|with_incdirs }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|src_inc_filter }}
+ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|with_incdirs }}
 {% endif %}
 {#- -#}
 {% endfor %}

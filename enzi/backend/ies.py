@@ -32,10 +32,6 @@ class IES(Backend):
         self.vlog_defines = config.get('vlog_defines', None)
         self.vhdl_generics = config.get('vhdl_generics', None)
 
-        _fileset = config.get('fileset', {})
-        self.fileset = _fileset.get('files', [])
-        self.inc_dirs = _fileset.get('inc_dirs', [])
-
         self.use_uvm = config.get('use_uvm', False)
 
         # IES elaborate step config

@@ -28,7 +28,7 @@ set_property verilog_define {
 {% endfor %}
 
 {% if inc_dirs -%}
-set_property include_dirs [list {{ inc_dirs|join(' ') }}] [get_filesets sources_1]
+set_property include_dirs [list {{ inc_dirs|inc_dir_filter }}] [get_filesets sources_1]
 {%- endif %}
 
 {% if toplevel -%}
