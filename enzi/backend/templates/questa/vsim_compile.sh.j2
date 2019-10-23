@@ -34,7 +34,7 @@ vcom $vhdl_opts $vhdl_generics {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|src_inc_filter }}
+vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|with_incdirs }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}

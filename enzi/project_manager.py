@@ -90,16 +90,16 @@ class ProjectFiles(FileManager):
 
         postorder_deps = nx.dfs_postorder_nodes(self.deps_graph)
         postorder_deps = list(postorder_deps)[:-1]
-        converter = lambda path: relpath(self.files_root, path)
+        # converter = lambda path: relpath(self.files_root, path)
         for dep_name in postorder_deps:
             dep = self.git_repos.get(dep_name)
             dep.fetch()
             cache = dep.cached_fileset()
-            files_filter = filter(
-                lambda path: path, map(converter, cache.files))
-            files = set(files_filter)
+            # files_filter = filter(
+            #     lambda path: path, map(converter, cache.files))
+            # files = set(files_filter)
             _files.inc_dirs.update(cache.inc_dirs)
-            _files.files.update(files)
+            _files.files.update(cache.files)
             _ccfiles.merge(cache)  
 
         # # TODO: code refactor
