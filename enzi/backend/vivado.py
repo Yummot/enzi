@@ -22,12 +22,12 @@ def inc_dir_filter(files):
     """inc_dir_filter for vivado"""
     if not files:
         return ''
-
+    
     dedup_files = OrderedSet()
     if isinstance(files, Mapping):
         m = map(lambda i: dedup_files.update(i), files.values())
     elif isinstance(files, list):
-        m = map(lambda i: dedup_files.update(i), files)
+        m = map(lambda i: dedup_files.add(i), files)
     else:
         fmt = 'unreachable files type shouldn\'t be {}'
         msg = fmt.format(files.__class__.__name__)
