@@ -85,6 +85,6 @@ ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|with_incdirs }}
 {% if file.endswith((".v", '.vh')) %}
 ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|with_incdirs }}
 {% endif %}
-{#- -#}
+
 {% endfor %}
 {% endif %}

@@ -40,7 +40,7 @@ vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|with_incdirs }}
 {% if file.endswith((".v", '.vh')) %}
 vlog $vlog_opts $vlog_defines {{ file|with_incdirs }}
 {% endif %}
-{#- -#}
+
 {% endfor %}
 {% endif %}
 
