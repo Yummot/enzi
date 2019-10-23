@@ -74,6 +74,11 @@ def src_inc_filter(file):
         return idirs + file.src
     return file.src
 
+def to_comment(lines):
+    lines = lines.splitlines()
+    m = map(lambda l: '# ' + l, lines)
+    return '\n'.join(m)
+
 
 class BackendCallback(object):
     def pre(self):
@@ -141,6 +146,7 @@ class Backend(object):
         self.j2_env.filters['inc_dirs_filter'] = inc_dirs_filter
         self.j2_env.filters['with_incdirs'] = self.get_incdirs
         self.j2_env.filters['src_inc_filter'] = src_inc_filter
+        self.j2_env.filters['to_comment'] = to_comment
 
         # TODO: currently, each Backend op only support one callback, multi-callbacks for one op may be added.
         self.cbs = {
