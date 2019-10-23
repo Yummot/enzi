@@ -23,7 +23,6 @@ def inc_dir_filter(files):
         return ''
 
     dedup_files = OrderedSet()
-    print(files)
     m = map(lambda i: dedup_files.update(i), files.values())
     _ = set(m)
     return ' '.join(dedup_files)
