@@ -100,21 +100,7 @@ class ProjectFiles(FileManager):
             # files = set(files_filter)
             _files.inc_dirs.update(cache.inc_dirs)
             _files.files.update(cache.files)
-            _ccfiles.merge(cache)  
-
-        # # TODO: code refactor
-        # for dep_name, dep in self.git_repos.items():
-        #     logger.debug('ProjectFiles:fetch GitRepo({})'.format(dep_name))
-        #     dep.fetch()
-        #     cache = dep.cached_fileset()
-        #     # convert absolute path into relative path
-        #     def converter(path): return relpath(self.files_root, path)
-        #     files_filter = filter(
-        #         lambda path: path, map(converter, cache.files))
-        #     files = set(files_filter)
-        #     _files.inc_dirs.update(cache.inc_dirs)
-        #     _files.files |= files
-        #     _ccfiles.merge(cache)
+            _ccfiles.merge(cache)
 
         self.deps_fileset = _files
 
