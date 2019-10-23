@@ -127,7 +127,6 @@ class UnixDelegate(object):
             "vlog_defines": self.master.vlog_defines,
             "vhdl_generics": self.master.vhdl_generics,
             "fileset": self.master.fileset,
-            "inc_dirs": self.master.inc_dirs
         }
 
     @property

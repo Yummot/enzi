@@ -128,8 +128,9 @@ class Backend(object):
         self.silence_mode = config.get('silence_mode')
 
         _fileset = config.get('fileset', {})
-        self.fileset = _fileset.get('files', [])
-        self.inc_dirs = _fileset.get('inc_dirs', [])
+        self.fileset = _fileset
+        # self.fileset = _fileset.get('files', [])
+        # self.inc_dirs = _fileset.get('inc_dirs', [])
 
         self.config = config
 
@@ -159,13 +160,14 @@ class Backend(object):
         self._gen_scripts_name = set()
         self.current_system = platform.system()
 
-    def get_incdirs(self, file):
+    def get_incdirs(self, file, *, pkg_name):
         relfile = os.path.relpath(file, self.work_root)
-        if file in self.inc_dirs:
+        incdirs = self.fileset[pkg_name].inc_dirs
+        if file in incdirs:
             fn = lambda idir: os.path.relpath(idir, self.work_root)
-            m = map(fn, self.inc_dirs[file])
-            incdirs = inc_dirs_filter(m, cat=' \\\n\t')
-            return '{} \\\n\t{}'.format(incdirs, relfile)
+            m = map(fn, incdirs[file])
+            filtered_incdirs = inc_dirs_filter(m, cat=' \\\n\t')
+            return '{} \\\n\t{}'.format(filtered_incdirs, relfile)
         return relfile 
 
     @property

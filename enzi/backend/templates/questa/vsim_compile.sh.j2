@@ -27,20 +27,22 @@ vhdl_generics+=" {{ vlog_defines }} "
 {%- endif %}
 
 {%- if fileset -%}
-{% for file in fileset %}
+{% for pkg_name, pkg in fileset.items() %}
+{{ pkg_name|to_comment }} package
+{% for file in pkg.files %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
 vcom $vhdl_opts $vhdl_generics {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|with_incdirs }}
+vlog $vlog_opts $vlog_defines $sv_input_port -sv {{ file|with_incdirs(pkg_name=pkg_name) }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-vlog $vlog_opts $vlog_defines {{ file|with_incdirs }}
+vlog $vlog_opts $vlog_defines {{ file|with_incdirs(pkg_name=pkg_name) }}
 {% endif %}
-
+{% endfor %}
 {% endfor %}
 {% endif %}
 

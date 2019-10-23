@@ -81,7 +81,6 @@ class IES(Backend):
             "vlog_defines": self.vlog_defines,
             "vhdl_generics": self.vhdl_generics,
             "fileset": self.fileset,
-            "inc_dirs": self.inc_dirs,
             "use_uvm": self.use_uvm,
         }
 

@@ -6,6 +6,7 @@ import pprint
 import shutil
 import typing
 
+from collections import OrderedDict
 import networkx as nx
 
 from enzi import file_manager
@@ -21,6 +22,7 @@ logger = logging.getLogger(__name__)
 
 class ProjectFiles(FileManager):
     def __init__(self, enzi_project):
+        self.name = enzi_project.name
         proj_root = enzi_project.work_dir
         build_src_dir = os.path.join(enzi_project.build_dir, enzi_project.name)
 
@@ -62,7 +64,7 @@ class ProjectFiles(FileManager):
                         name, path, revision, proj_root=proj_root)
                     self.git_repos[name] = git_repo
 
-        self.deps_fileset = Fileset()
+        self.deps_fileset = OrderedDict()
         self.deps_graph = enzi_project.deps_graph
 
         self.default_target = next(iter(enzi_project.targets.keys()))
@@ -77,8 +79,8 @@ class ProjectFiles(FileManager):
         elif not target_name in self.lf_managers.keys():
             raise RuntimeError('Unknown target {}.'.format(target_name))
 
-        _files = Fileset()
-        _ccfiles = Fileset()
+        # _files = Fileset()
+        _ccfiles = {}
 
         # fetch all git repos
         m = map(lambda x: x.status != FileManagerStatus.EXIST,
@@ -94,25 +96,29 @@ class ProjectFiles(FileManager):
             dep = self.git_repos.get(dep_name)
             dep.fetch()
             cache = dep.cached_fileset()
-            # files_filter = filter(
-            #     lambda path: path, map(converter, cache.files))
-            # files = set(files_filter)
-            _files.inc_dirs.update(cache.inc_dirs)
-            _files.files.update(cache.files)
-            _ccfiles.merge(cache)
-
-        self.deps_fileset = _files
+            self.deps_fileset[dep_name] = cache
+            _ccfiles[dep_name] = cache
 
         if file_manager.FM_DEBUG:
-            if not _ccfiles.is_empty():
+            if _ccfiles:
                 self.cache_files['deps'] = _ccfiles
                 fmt = 'ProjectFiles:fetch deps cache files:\n{}'
-                data = pprint.pformat(self.cache_files['deps'].dump_dict())
+                pd = dict(
+                    map(
+                        lambda x: (x[0], x[1].dump_dict()), 
+                        _ccfiles.items()
+                    ))
+                data = pprint.pformat(pd)
                 msg = fmt.format(data)
                 logger.info(msg)
 
-            if not self.deps_fileset.is_empty():
-                msg = pprint.pformat(self.deps_fileset.dump_dict())
+            if self.deps_fileset:
+                pd = dict(
+                    map(
+                        lambda x: (x[0], x[1].dump_dict()), 
+                        self.deps_fileset.items()
+                    ))
+                msg = pprint.pformat(pd)
                 logger.info('ProjectFiles:fetch deps fileset:\n{}'.format(msg))
 
         self.lf_managers[target_name].fetch()
@@ -139,10 +145,14 @@ class ProjectFiles(FileManager):
         # merge deps fileset
         local_fileset = self.lf_managers[target_name].cached_fileset()
         deps_fileset = self.deps_fileset
-        fileset = deps_fileset.merge_into(local_fileset)
-        # fileset = fileset.dump_dict()
+        filesets = OrderedDict()
+        filesets.update(deps_fileset)
+        filesets[self.name] = local_fileset
 
         if file_manager.FM_DEBUG:
+            fileset = Fileset()
+            m = map(lambda x: fileset.update(x), filesets.values())
+            _ = set(m)
             inc_dirs = {}
             for k, v in fileset['inc_dirs'].items():
                 inc_dirs[k] = list(v)
@@ -151,8 +161,8 @@ class ProjectFiles(FileManager):
             msg = fmt.format(pfmt)
             logger.info(msg)
             fmt = 'ProjectFiles:get_fileset: result:\n{}'
-            pfiles = { 'files': fileset['files'] }
+            pfiles = {'files': fileset['files']}
             pfmt = pprint.pformat(pfiles)
             logger.info(fmt.format(pfmt))
 
-        return fileset
+        return filesets

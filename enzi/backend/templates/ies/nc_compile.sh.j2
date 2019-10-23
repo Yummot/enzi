@@ -71,20 +71,22 @@ ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ vhdl_file }}
 {% endfor %}
 {% endif %}
 
-{% if fileset %}
-{% for file in fileset %}
+{%- if fileset -%}
+{% for pkg_name, pkg in fileset.items() %}
+{{ pkg_name|to_comment }} package
+{% for file in pkg.files %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
 ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|with_incdirs }}
+ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|with_incdirs(pkg_name=pkg_name) }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|with_incdirs }}
+ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ file|with_incdirs(pkg_name=pkg_name) }}
 {% endif %}
-
+{% endfor %}
 {% endfor %}
 {% endif %}
