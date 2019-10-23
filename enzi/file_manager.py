@@ -13,7 +13,7 @@ from collections import OrderedDict
 from enum import Enum, unique
 
 from ordered_set import OrderedSet
-from enzi.utils import rmtree_onerror
+from enzi.utils import flat_map, rmtree_onerror
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,11 @@ class Fileset(object):
         self.files = files
         self.inc_dirs = OrderedDict()
         self.inc_files = OrderedSet()
+
+    def get_flat_incdirs(self):
+        """return a flat include directories *generator*, only return flat values of self.inc_dirs"""
+        fm = flat_map(lambda x: x, self.inc_dirs.values())
+        return fm
 
     def is_empty(self):
         if not (self.files or self.inc_dirs or self.inc_files):

@@ -11,6 +11,7 @@ from functools import partial
 from ordered_set import OrderedSet
 
 from enzi.backend import Backend
+from enzi.utils import flat_map
 
 __all__ = ('Vivado', )
 
@@ -23,30 +24,17 @@ def inc_dir_filter(files):
         return ''
 
     dedup_files = OrderedSet()
-    m = map(lambda i: dedup_files.update(i), files.values())
+    if isinstance(files, Mapping):
+        m = map(lambda i: dedup_files.update(i), files.values())
+    elif isinstance(files, list):
+        m = map(lambda i: dedup_files.update(i), files)
+    else:
+        fmt = 'unreachable files type shouldn\'t be {}'
+        msg = fmt.format(files.__class__.__name__)
+        logger.error(msg)
+        raise RuntimeError(msg)
     _ = set(m)
     return ' '.join(dedup_files)
-
-def src_file_filter(f):
-    file_types = {
-        'vh': 'read_verilog',
-        'v': 'read_verilog',
-        'svh': 'read_verilog -sv',
-        'sv': 'read_verilog -sv',
-        'vhd': 'read_vhdl',
-        'vhdl': 'read_vhdl',
-        'xci': 'read_ip',
-        'xdc': 'read_xdc',
-        'tcl': 'source',
-        'sdc': 'read_xdc -unmanaged',
-    }
-    _, ext = os.path.splitext(f)
-    if ext:
-        ext = ext[1:].lower()
-    if ext in file_types:
-        return file_types[ext] + ' ' + f
-    else:
-        return ''
 
 
 class Vivado(Backend):
@@ -111,22 +99,52 @@ class Vivado(Backend):
         self.generics = config.get('generics', {})
         self.vlog_defines = config.get('vlog_defines', {})
 
+        # construct src_files for vivado backend
+        self.src_files = self.fileset
+
         # filter relative path
-        self.src_files = Vivado.get_relpath(self.fileset, work_root)
-        self.inc_dirs = Vivado.get_relpath(self.inc_dirs, work_root)
+        # construct inc_dirs for vivado backend
+        inc_dirs = []
+        ext_f = lambda x: inc_dirs.extend(x.get_flat_incdirs())
+        m = map(ext_f, self.fileset.values())
+        _ = list(m)
+        self.inc_dirs = Vivado.get_relpath(inc_dirs, work_root)
 
         self.synth_only = config.get('synth_only', False)
         self.build_project_only = config.get('build_project_only', False)
 
-        has_xci = any(filter(lambda x: 'xci' in x, self.src_files))
+        flattern = flat_map(lambda x: x.files, self.src_files.values())
+        has_xci = any(filter(lambda x: 'xci' in x, flattern))
         self.has_xci = has_xci
 
-        self.j2_env.filters['src_file_filter'] = src_file_filter
+        self.j2_env.filters['src_file_filter'] = self.src_file_filter
         self.j2_env.filters['inc_dir_filter'] = inc_dir_filter
 
         # for vivado gen scripts' name only available after rendering the scripts
         self._gen_scripts_name = None
         self.configured = False
+
+    def src_file_filter(self, f):
+        file_types = {
+            'vh': 'read_verilog',
+            'v': 'read_verilog',
+            'svh': 'read_verilog -sv',
+            'sv': 'read_verilog -sv',
+            'vhd': 'read_vhdl',
+            'vhdl': 'read_vhdl',
+            'xci': 'read_ip',
+            'xdc': 'read_xdc',
+            'tcl': 'source',
+            'sdc': 'read_xdc -unmanaged',
+        }
+        _, ext = os.path.splitext(f)
+        if ext:
+            ext = ext[1:].lower()
+        if ext in file_types:
+            f = os.path.relpath(f, self.work_root)
+            return file_types[ext] + ' ' + f
+        else:
+            return ''
 
     @property
     def _makefile_vars(self):

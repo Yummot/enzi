@@ -665,6 +665,8 @@ class RawConfig(object):
         copy2build = 'targets' in validated and 'program_device' in validated['targets']
         copy2build = copy2build and not 'build' in validated['targets']
         if copy2build:
+            logger.debug('Specified targets.program_device but not specified targets.build.')
+            logger.debug('Use targets.program_device as targets.program_device.')
             tpgm = validated['targets']['program_device']
             validated['targets']['build'] = py_copy.deepcopy(tpgm)
         if self.fileset_only:
