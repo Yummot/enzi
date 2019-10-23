@@ -35,7 +35,7 @@ class ProjectFiles(FileManager):
                                                   config,
                                                   enzi_project.work_dir,
                                                   build_src_dir)
-            self.cache_files[target] = {'files': []}
+            self.cache_files[target] = Fileset()
 
         self.git_db_records = {}
         self.git_repos: typing.Mapping[str, GitRepo] = {}
@@ -77,7 +77,6 @@ class ProjectFiles(FileManager):
         elif not target_name in self.lf_managers.keys():
             raise RuntimeError('Unknown target {}.'.format(target_name))
 
-        # TODO: generate fileset with deps order, maybe use DFS?
         _files = Fileset()
         _ccfiles = Fileset()
 
