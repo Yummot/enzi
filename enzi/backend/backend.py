@@ -154,10 +154,13 @@ class Backend(object):
         self.current_system = platform.system()
 
     def get_incdirs(self, file):
+        relfile = os.path.relpath(file, self.work_root)
         if file in self.inc_dirs:
-            incdirs = inc_dirs_filter(self.inc_dirs[file], cat=' \\\n\t')
-            return '{} \\\n\t{}'.format(incdirs, file)
-        return file 
+            fn = lambda idir: os.path.relpath(idir, self.work_root)
+            m = map(fn, self.inc_dirs[file])
+            incdirs = inc_dirs_filter(m, cat=' \\\n\t')
+            return '{} \\\n\t{}'.format(incdirs, relfile)
+        return relfile 
 
     @property
     def gui_mode(self):
