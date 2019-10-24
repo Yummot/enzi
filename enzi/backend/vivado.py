@@ -11,7 +11,7 @@ from functools import partial
 from ordered_set import OrderedSet
 
 from enzi.backend import Backend
-from enzi.utils import flat_map
+from enzi.backend import flat_map
 
 __all__ = ('Vivado', )
 

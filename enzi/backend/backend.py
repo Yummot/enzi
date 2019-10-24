@@ -13,12 +13,19 @@ import copy as py_copy
 
 from collections import OrderedDict
 from collections.abc import Iterable
+from itertools import chain
 from ordered_set import OrderedSet
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
-__all__ = ['value_str_filter', 'BackendCallback', 'Backend']
+__all__ = ['value_str_filter', 'BackendCallback', 'Backend', 'flat_map']
+
+def flat_map(f, items):
+    """
+    Creates an iterator that works like map, but flattens nested Iteratorable.
+    """
+    return chain.from_iterable(map(f, items))
 
 
 def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
