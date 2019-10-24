@@ -104,10 +104,9 @@ class Vivado(Backend):
 
         # filter relative path
         # construct inc_dirs for vivado backend
-        inc_dirs = []
-        ext_f = lambda x: inc_dirs.extend(x.get_flat_incdirs())
-        m = map(ext_f, self.fileset.values())
-        _ = set(m)
+        ext_f = lambda x: x.get_flat_incdirs()
+        m = flat_map(ext_f, self.fileset.values())
+        inc_dirs = list(m)
         self.inc_dirs = Vivado.get_relpath(inc_dirs, work_root)
 
         self.synth_only = config.get('synth_only', False)
