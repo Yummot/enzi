@@ -403,7 +403,8 @@ class EnziConfigValidator(TypedMapValidator):
 # All parameters in a single tool param section are optional. You don\'t have to provide all parameters.
 # This section is just a reminder of all the available tools and their available optional parameters.
 # Also, You don\'t have to include tools section, if you don\'t need to specify the parameters of any tools.
-# IMPORTANT: If you use uvm with tool ies, make sure you set ies tool params' use_uvm parameter to true. 
+# IMPORTANT: If you use uvm with tool ies, make sure you set ies tool params' use_uvm parameter to true.
+# IMPORTANT: base_cds_lib and base_hdl_var in IES params won\'t have effect on others that depends on this package.
 '''
 
     @staticmethod
