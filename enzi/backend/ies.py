@@ -14,13 +14,16 @@ logger.setLevel(logging.WARNING)
 
 
 class IES(Backend):
-    def __init__(self, config={}, work_root=None):
+    @staticmethod
+    def is_available():
         CDSHOME = os.environ.get('CDSHOME', None)
         if not CDSHOME:
             msg = 'CDSHOME environment variable is not set, you must set it as the path to IES install folder'
             logger.error(msg)
             raise SystemExit(1)
 
+    def __init__(self, config={}, work_root=None):
+        IES.is_available()
         # general run config
         self.gen_waves = config.get('gen_waves', True)
         self.proj_dir = config.get('proj_dir', '.')
