@@ -68,14 +68,14 @@ create_lib_mappings()
     echo "environment variable CDSHOME is not set. check if you setup cadence environment."
     exit 1
   else
-    lib_map_path="$CDSHOME/tools.lnx86/inca/files/"    
+    lib_map_path="$CDSHOME/tools.lnx86/inca/files"    
   fi
 
-  incl_ref="SOFTINCLUDE $lib_map_path/cds.lib"
+  incl_ref="SOFTINCLUDE $lib_map_path/$file"
   echo $incl_ref >> $file
   {%- raw %}
   for (( i=0; i<${#libs[*]}; i++ )); do
-  {%- endraw %}
+  {% endraw %}
   {#- #}
     lib="${libs[i]}"
     lib_dir="$dir/$lib"
