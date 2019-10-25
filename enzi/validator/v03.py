@@ -13,7 +13,7 @@ from enzi.validator.base import ValidatorError, Validator
 from enzi.validator.base import IntValidator, FloatValidator
 from enzi.validator.base import BoolValidator, StringValidator
 from enzi.validator.base import StringListValidator, TypedMapValidator
-from enzi.validator.base import PackageValidator
+from enzi.validator.base import PackageValidator, PathValidator
 from enzi.validator.base import DepsValidator, tools_section_line
 from enzi.validator.base import ALLOW_BACKENDS, ENZI_CONFIG_VERSIONS
 
@@ -117,6 +117,8 @@ class ToolValidator(TypedMapValidator):
 class IESValidator(ToolValidator):
     """Validator for a IES tool section"""
     __extras__ = {
+        'base_cds_lib': PathValidator,
+        'base_hdl_var': PathValidator,
         'link_libs': StringListValidator,
         'gen_waves': BoolValidator,
         'vlog_opts': StringListValidator,
@@ -145,6 +147,8 @@ class IESValidator(ToolValidator):
     def info():
         base = ToolValidator.info()
         extras = {
+            'base_cds_lib': PathValidator.info(),
+            'base_hdl_var': PathValidator.info(),
             'link_libs': StringListValidator.info(),
             'gen_waves': BoolValidator.info(),
             'vlog_opts': StringListValidator.info(),

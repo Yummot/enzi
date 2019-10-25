@@ -9,8 +9,8 @@ from abc import ABCMeta, abstractmethod
 from semver import VersionInfo as Version
 
 from enzi.backend import KnownBackends
-from enzi.ver import complete_version
-from enzi.ver import VersionReq
+from enzi.utils import realpath
+from enzi.ver import complete_version, VersionReq
 
 ALLOW_BACKENDS = set(KnownBackends().allow_backends.keys())
 ENZI_CONFIG_VERSIONS = {"0.1", "0.2", "0.3"}
@@ -280,6 +280,25 @@ class StringListValidator(Validator):
     def info():
         return '<array<string>>'
 
+class PathValidator(Validator):
+    """Check if a path is exists"""
+    def __init__(self, *, key, val, parent=None):
+        super(PathValidator, self).__init__(
+            key=key, val=val, parent=parent)
+    
+    def validate(self):
+        if not isinstance(self.val, (str, bytes)):
+            msg = 'value({}) must be a path like object'.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg)
+        p = realpath(self.val)
+        if not os.path.exists(p):
+            msg = 'path ({}) is not exists'.format(self.val)
+            raise ValidatorError(self.chain_keys_str(), msg)
+        return p
+    
+    @staticmethod
+    def info():
+        return '<path>'
 
 class TypedMapValidator(Validator):
     """
