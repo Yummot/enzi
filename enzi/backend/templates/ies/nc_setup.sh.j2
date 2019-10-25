@@ -71,8 +71,14 @@ create_lib_mappings()
     lib_map_path="$CDSHOME/tools.lnx86/inca/files"    
   fi
 
+  echo "# soft include the basis cds.lib provided by IES" >> $file
   incl_ref="SOFTINCLUDE $lib_map_path/$file"
   echo $incl_ref >> $file
+  {% if base_cds_lib %}
+  base_clib={{base_cds_lib}}
+  echo "# soft include the based cds.lib which is provided by user" >> $file
+  echo "SOFTINCLUDE $base_clib" >> $file
+  {% endif %}
   {%- raw %}
   for (( i=0; i<${#libs[*]}; i++ )); do
   {% endraw %}
@@ -117,10 +123,20 @@ setup()
     esac
   fi
 
+  # construct cds.lib
   create_lib_mappings
+
+  # construct hdl.var
   touch hdl.var
+  {# add base hdl.var as an include in this hdl.var #}
+  {% if base_hdl_var %}
+  base_hvar={{base_hdl_var}}
+  echo "# soft include the based hdl.var which is provided by user" >> hdl.var
+  echo "SOFTINCLUDE $base_hvar" >> hdl.var
+  {% endif %}
+  
   echo -e "INFO: Simulation setup files and library mappings created.\n"
-  # Add any setup/initialization commands here:-
+  # Add any setup/initialization commands here:
   # <user specific commands>
 }
 

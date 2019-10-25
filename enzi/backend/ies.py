@@ -67,7 +67,10 @@ class IES(Backend):
 
     @property
     def _setup_vars(self):
-        return {}
+        return {
+            'base_cds_lib': self.base_cds_lib,
+            'base_hdl_var': self.base_hdl_var,
+        }
 
     @property
     def _simulate_vars(self):
