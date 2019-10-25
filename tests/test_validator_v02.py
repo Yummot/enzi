@@ -438,12 +438,18 @@ def test_targets_validator():
 
 def test_enzi_config_validator():
     try:
-        f = io.FileIO('ExampleEnzi.toml', 'r')
+        if os.path.exists('tests/TestEnziV02.toml'):
+            f = io.FileIO('tests/TestEnziV02.toml', 'r')
+        elif os.path.exists('TestEnziV02.toml'):
+            f = io.FileIO('TestEnziV02.toml', 'r')
+        else:
+            return
         reader = io.BufferedReader(f)
         data = reader.read()
         reader.close()
     except Exception:
         return
+
     data = data.decode('utf-8')
     conf = toml_loads(data)
     validator = EnziConfigValidator(copy.deepcopy(conf), '.')
@@ -476,7 +482,12 @@ def test_raw_config_to_partial_config():
 
 def test_raw_config_to_config():
     try:
-        f = io.FileIO('ExampleEnzi.toml', 'r')
+        if os.path.exists('tests/TestEnziV02.toml'):
+            f = io.FileIO('tests/TestEnziV02.toml', 'r')
+        elif os.path.exists('TestEnziV02.toml'):
+            f = io.FileIO('TestEnziV02.toml', 'r')
+        else:
+            return
         reader = io.BufferedReader(f)
         data = reader.read()
         reader.close()
@@ -511,7 +522,12 @@ def test_raw_config_to_config():
 
 def test_into():
     try:
-        f = io.FileIO('ExampleEnzi.toml', 'r')
+        if os.path.exists('tests/TestEnziV02.toml'):
+            f = io.FileIO('tests/TestEnziV02.toml', 'r')
+        elif os.path.exists('TestEnziV02.toml'):
+            f = io.FileIO('TestEnziV02.toml', 'r')
+        else:
+            return
         reader = io.BufferedReader(f)
         data = reader.read()
         reader.close()

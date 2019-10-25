@@ -1,0 +1,162 @@
+# Enzi configuration file version
+# Mandatory enzi configuration file version section, must be specified.
+enzi_version = "0.2"
+
+# This enzi project/package information:
+# Mandatory package section, must be specified.
+# All the keys listed bellow need to be specified.
+# No additional keys are allowed.
+[package]
+name = "arb_tree"
+version = "0.1.0"
+authors = ["Mot Yu"]
+
+# table, indicate this is a remote package
+# [provider]
+# name = '' # may be git
+# authors = ''
+# version = ''
+# repo = ''
+
+# Dependencies for this enzi project/package:
+# Optional Dependencies Section, use when this Enzi package has dependencies.
+# A dependency must have a `path` or `url` key, but not have them the same time.
+# A dependency must have a `commit` or `path` key, but not have them the same time.
+# (WARNING) if using the path key in a dependency section, it must be a absolute path.
+# dependency must be a git repo with a valid Enzi.toml.
+# The root package is recommended to be a git repo. In this case,
+# we can have a better version control over root package. Also helping resolve deps. 
+[dependencies.dep1]
+path = "/home/motyu/ic_projs/enzi_test_deps/dep1" # or url
+version = ">0.4.3, <0.6.0" # TODO: allow use semver compare string
+# commit = "commit hash"
+# dep must have verison or commit string
+# dep must have path or url string
+
+# Filesets for this enzi project/package
+# At least one fileset must be provided.
+[filesets.rtl]
+files = [
+    "./mock/src/arb_tree.sv",
+    "./mock/src/req_mux2.sv",
+    "./mock/src/req_rr_flag.sv", 
+]
+
+[filesets.include]
+files = [
+    "./mock/include/test_clk_if.sv",
+]
+
+[filesets.tb]
+files = [
+    "./mock/tb/tb.sv",
+]
+
+# Targets for this enzi project/package
+# Optional Dependencies Section, use when you want to run a target.
+# One or more targets can be specified.
+# Currently, targets inside [ 'run', 'build', 'sim', 'program_device' ]
+[targets.sim]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+[targets.run]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+[targets.build]
+default_tool = "ies"
+toplevel = "tb"
+filesets = ["include", "rtl", "tb"]
+
+# Tools configuration for this enzi project/package:
+# Optional Tools Section, use when you want to provide extra parameters for a tool.
+# All parameters in a single tool param section are optional. You don't have to provide all parameters.
+# This section is just a reminder of all the available tools and their available optional parameters.
+# Also, You don't have to include tools section, if you don't need to specify the parameters of any tools.
+# IMPORTANT: If you use uvm with tool ies, make sure you set ies tool params' use_uvm parameter to true. 
+[[tools]]
+name = "ies"
+    [tools.params]
+    link_libs = [] # must be array
+    gen_waves = true # must be boolean
+    vlog_opts = [] # *_opts can be string or array
+    vhdl_opts = [] # *_opts can be string or array
+    elab_opts = [] # *_opts can be string or array
+    sim_opts = ["-message"] # *_opts can be string or array
+    vlog_defines = [] # must be a string array
+    vhdl_generics = [] # must be a string array
+    compile_log = "x.log" # string
+    elaborate_log = "y.log" # string
+    simulate_log = "z.log" # string
+
+[[tools]]
+# just an example, not supported yet
+name = "ixs"
+    [tools.params]
+    link_libs = [] # must be array
+    gen_waves = true # must be boolean
+    vlog_opts = [] # *_opts can be string or array
+    vhdl_opts = [] # *_opts can be string or array
+    elab_opts = [] # *_opts can be string or array
+    sim_opts = ["-message"] # *_opts can be string or array
+    vlog_defines = [] # must be a string array
+    vhdl_generics = [] # must be a string array
+    compile_log = "x.log" # string
+    elaborate_log = "y.log" # string
+    simulate_log = "z.log" # string
+
+[[tools]]
+name = "questa"
+    [tools.params]
+    link_libs = [] # must be array
+    vlog_opts = [] # *_opts can be string or array
+    vhdl_opts = [] # *_opts can be string or array
+    elab_opts = [] # *_opts can be string or array
+    sim_opts = [] # *_opts can be string or array
+    vlog_defines = ['-define TEST_DEP'] # must be a string array
+    vhdl_generics = [] # must be a string array
+    compile_log = "x.log" # string
+    elaborate_log = "y.log" # string
+    simulate_log = "z.log" # string
+
+# [[tools]]
+# name = "vsim"
+    # [tools.params]
+    # link_libs = [] # must be array
+    # vlog_opts = [] # *_opts can be string or array
+    # vhdl_opts = [] # *_opts can be string or array
+    # elab_opts = [] # *_opts can be string or array
+    # sim_opts = [] # *_opts can be string or array
+    # vlog_defines = ['-define TEST_DEP'] # must be a string array
+    # vhdl_generics = [] # must be a string array
+    # compile_log = "x.log" # string
+    # elaborate_log = "y.log" # string
+    # simulate_log = "z.log" # string
+
+# [tools.vivado]
+# bitstream_name = "<string>"
+# device_part = "<string>"
+# synth_only = "<bool>"
+# build_project_only = "<bool>"
+
+# [tools.vivado.vlog_params]
+# strParam = "<string>"
+# boolParam = "<bool>"
+# intParam = "<int>"
+# floatParam = "<float>"
+
+# [tools.vivado.generics]
+# strParam = "<string>"
+# boolParam = "<bool>"
+# intParam = "<int>"
+# floatParam = "<float>"
+
+# [tools.vivado.vlog_defines]
+# strParam = "<string>"
+# boolParam = "<bool>"
+# intParam = "<int>"
+# floatParam = "<float>"
+
