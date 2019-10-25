@@ -46,6 +46,10 @@ class IES(Backend):
         self.simulate_log = config.get('simulate_log', None)
         self.sim_opts = config.get('sim_opts', None)
 
+        # base_cds_lib and base_hdl_var
+        self.base_cds_lib = config.get('base_cds_lib')
+        self.base_hdl_var = config.get('base_hdl_var')
+
         self._gui_mode = False
 
         super(IES, self).__init__(config=config, work_root=work_root)

@@ -311,7 +311,8 @@ class BackendConfigGen(object):
 
         config['name'] = ies_config.get('name', '')
         config['silence_mode'] = ies_config.get('silence_mode', False)
-
+        config['base_cds_lib'] = ies_config.get('base_cds_lib')
+        config['base_hdl_var'] = ies_config.get('base_hdl_var')
         config['gen_waves'] = ies_config.get('gen_waves', True)
         config['use_uvm'] = ies_config.get('use_uvm', False)
         config['compile_log'] = ies_config.get('compile_log', 'compile.log')
