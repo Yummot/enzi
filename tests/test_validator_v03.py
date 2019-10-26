@@ -7,7 +7,7 @@ from enzi.validator.v03 import AnyBaseValidator, ParamsDictValidator
 from enzi.validator.v03 import ToolValidator, ToolsValidator
 from enzi.validator.v03 import IESValidator, IXSValidator
 from enzi.validator.v03 import QuestaValidator, VsimValidator
-from enzi.validator.v03 import VivadoValidator
+from enzi.validator.v03 import VivadoValidator, MinimalValidator
 from enzi.validator.v03 import EnziConfigValidator as V03ECValidator
 
 from enzi.validator import EnziConfigValidator
@@ -162,3 +162,31 @@ def test_v03_ec_validator():
 def test_get_v03_validator():
     validator = EnziConfigValidator({'enzi_version': '0.3'})
     assert isinstance(validator.validator, V03ECValidator)
+
+def test_minimal_validator():
+    val = { 'filesets': ['a', 'b', 'c'] }
+    validator = MinimalValidator(key='mini', val=val)
+    assert validator.validate() == val
+
+def test_v03_minimal_validator():
+    import io, os, pprint
+    from enzi.utils import toml_loads
+    try:
+        if os.path.exists('tests/TestEnziV03minimal.toml'):
+            f = io.FileIO('tests/TestEnziV03minimal.toml', 'r')
+        elif os.path.exists('TestEnziV03minimal.toml'):
+            f = io.FileIO('TestEnziV03minimal.toml', 'r')
+        else:
+            return
+        reader = io.BufferedReader(f)
+        data = reader.read()
+        reader.close()
+    except Exception:
+        return
+
+    data = data.decode('utf-8')
+    conf = toml_loads(data)
+    validator = V03ECValidator(copy.deepcopy(conf), '.')
+
+    assert validator.validate()
+    assert set(validator.val['minimal']['filesets']) == set(conf['minimal']['filesets']) 

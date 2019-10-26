@@ -7,6 +7,8 @@ import platform
 import toml
 import typing
 
+from ordered_set import OrderedSet
+
 from enzi.validator.v02 import FilesetValidator, FilesetsValidator
 from enzi.validator.v02 import TargetValidator, TargetsValidator
 from enzi.validator.base import ValidatorError, Validator
@@ -339,6 +341,29 @@ class ToolsValidator(TypedMapValidator):
             'vivado': VivadoValidator.info(),
         }
 
+class MinimalValidator(TypedMapValidator):
+    """A validator for the minimal section"""
+    __optional__ = {
+        'filesets': StringListValidator,
+    }
+
+    def __init__(self, *, key, val, parent=None):
+        super(MinimalValidator, self).__init__(
+            key=key,
+            val=val,
+            must=None,
+            optional=MinimalValidator.__optional__
+        )
+
+    def validate(self):
+        if not self.val:
+            return self.val
+        return super(MinimalValidator, self).validate()
+    
+    @staticmethod
+    def info():
+        return { 'filesets': StringListValidator.info() }
+
 class EnziConfigValidator(TypedMapValidator):
     """
     Validator for "Enzi.toml"
@@ -352,7 +377,8 @@ class EnziConfigValidator(TypedMapValidator):
     __optional__ = {
         'dependencies': DepsValidator,
         'targets': TargetsValidator,
-        'tools': ToolsValidator
+        'tools': ToolsValidator,
+        'minimal': MinimalValidator,
     }
     BASE_ESTRING = 'Enzi exits on error: '
 
@@ -381,6 +407,11 @@ class EnziConfigValidator(TypedMapValidator):
     FILESETS_COMMENT = '''
 # Filesets for this enzi project/package
 # At least one fileset must be provided.
+'''
+    MINIMAL_SECTION_COMMENT = '''
+# Optional minimal Section.
+# Specify the minimal data that this package need to be used as a dependency.
+# If not specified, the minimal filesets is the same as a list of all filesets.
 '''
 
     TARGETS_COMMENT = '''
@@ -446,7 +477,23 @@ class EnziConfigValidator(TypedMapValidator):
                                  val=enzi_version, parent=self)
             msg = 'unknown enzi_version: {}'.format(enzi_version)
             raise ValidatorError(_v.chain_keys_str(), msg)
-        
+
+        # check if all filesets in the minimal sections exists 
+        # in this package's filesets.
+        if 'minimal' in self.val:
+            known_filesets = OrderedSet(self.val['filesets'].keys())
+            minimal_filesets = OrderedSet(self.val['minimal'].get('filesets'))
+            if not minimal_filesets:
+                self.val['minimal']['filesets'] = known_filesets
+            else:
+                diff = minimal_filesets - known_filesets
+                if diff:
+                    k = self.chain_keys_str() + '.minimal.filesets'
+                    fmt = 'filesets: {} not exists'
+                    msg = fmt.format(list(diff))
+                    raise ValidatorError(k, msg)
+                self.val['minimal']['filesets'] = minimal_filesets
+
         # check self dependency
         if 'dependencies' in self.val:
             package_name = self.val['package']['name']
