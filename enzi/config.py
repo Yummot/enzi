@@ -439,6 +439,8 @@ class PartialConfig(object):
 
         # extract filesets
         self.filesets = config.get('filesets')
+        if 'minimal' in config:
+            self.minimal_filesets = config['minimal'].get('filesets')
 
         # get file stat
         if from_str:
@@ -458,6 +460,9 @@ class PartialConfig(object):
             'filesets': self.filesets,
             'tools': self.tools
         }
+        if self.minimal_filesets:
+            config['minimal'] = { 'filesets': self.minimal_filesets }
+
         ret = Config(config, self.path, self.is_local, from_str=True)
         ret.file_stat = self.file_stat
         return ret
@@ -503,6 +508,8 @@ class Config(object):
 
         # extract filesets
         self.filesets = config.get('filesets')
+        if 'minimal' in config:
+            self.minimal_filesets = config['minimal'].get('filesets')
 
         # get file stat
         if from_str:
