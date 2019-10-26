@@ -136,15 +136,12 @@ class Backend(object):
 
         _fileset = config.get('fileset', {})
         self.fileset = _fileset
-        # self.fileset = _fileset.get('files', [])
-        # self.inc_dirs = _fileset.get('inc_dirs', [])
 
         self.config = config
 
         # jinja2 environment
         self.j2_env = jinja2.Environment(
             loader=jinja2.PackageLoader(__package__, 'templates'),
-            # loader=jinja2.FileSystemLoader('./src/templates'),
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
