@@ -9,6 +9,7 @@ import toml
 import typing
 import copy as py_copy
 
+from collections import OrderedDict
 from itertools import chain
 from semver import VersionInfo as Version
 
@@ -353,7 +354,7 @@ class Locked(object):
         """
         dump locked's deps to a dict: typing.MutableMapping[str, str]
         """
-        d = {}
+        d = OrderedDict()
 
         config = {
             'path': self.config_path,
@@ -362,8 +363,13 @@ class Locked(object):
         d['metadata'] = {}
         d['metadata']['config'] = config
 
-        d['dependencies'] = self.dep_dumps()['dependencies']
-        d['cache'] = self.cache_dumps()
+        deps = self.dep_dumps()['dependencies']
+        if deps:
+            d['dependencies'] = deps
+
+        cache = self.cache_dumps()
+        if cache:
+            d['cache'] = cache
 
         return d
 
@@ -377,14 +383,16 @@ class Locked(object):
         meta_config = metadata['config']
         locked.config_path = meta_config['path']
         locked.config_mtime = int(meta_config['mtime'])
-        for dep_name, dep in config['dependencies'].items():
-            locked_dep = LockedDependency(
-                revision=dep.get('revision'),
-                version=dep.get('version'),
-                source=LockedSource(dep.get('source')),
-                dependencies=set(dep.get('dependencies', []))
-            )
-            locked.dependencies[dep_name] = locked_dep
+        deps = meta_config.get('dependencies')
+        if deps:
+            for dep_name, dep in deps.items():
+                locked_dep = LockedDependency(
+                    revision=dep.get('revision'),
+                    version=dep.get('version'),
+                    source=LockedSource(dep.get('source')),
+                    dependencies=set(dep.get('dependencies', []))
+                )
+                locked.dependencies[dep_name] = locked_dep
 
         if 'cache' in config and 'git' in config['cache']:
             git_records = config['cache']['git']
