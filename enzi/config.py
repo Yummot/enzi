@@ -9,6 +9,7 @@ import toml
 import typing
 import copy as py_copy
 
+from ordered_set import OrderedSet
 from collections import OrderedDict
 from itertools import chain
 from semver import VersionInfo as Version
@@ -383,7 +384,7 @@ class Locked(object):
         meta_config = metadata['config']
         locked.config_path = meta_config['path']
         locked.config_mtime = int(meta_config['mtime'])
-        deps = meta_config.get('dependencies')
+        deps = config.get('dependencies')
         if deps:
             for dep_name, dep in deps.items():
                 locked_dep = LockedDependency(
@@ -439,8 +440,12 @@ class PartialConfig(object):
 
         # extract filesets
         self.filesets = config.get('filesets')
-        if 'minimal' in config:
-            self.minimal_filesets = config['minimal'].get('filesets')
+        if 'minimal' in config and 'filesets' in config['minimal']:
+            keys = config['minimal'].get('filesets')
+            m = map(lambda k: (k, self.filesets[k]), keys)
+            self.minimal_filesets = OrderedDict(m)
+        else:
+            self.minimal_filesets = self.filesets
 
         # get file stat
         if from_str:
@@ -508,8 +513,12 @@ class Config(object):
 
         # extract filesets
         self.filesets = config.get('filesets')
-        if 'minimal' in config:
-            self.minimal_filesets = config['minimal'].get('filesets')
+        if 'minimal' in config and 'filesets' in config['minimal']:
+            keys = config['minimal'].get('filesets')
+            m = map(lambda k: (k, self.filesets[k]), keys)
+            self.minimal_filesets = OrderedDict(m)
+        else:
+            self.minimal_filesets = self.filesets
 
         # get file stat
         if from_str:

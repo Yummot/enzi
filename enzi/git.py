@@ -341,7 +341,7 @@ class GitRepo(FileManager):
         # extract repo's fileset
         _files = OrderedSet()
         def fn(p): return os.path.normpath(os.path.join(self.path, p))
-        for fileset in enzi_config.filesets.values():
+        for fileset in enzi_config.minimal_filesets.values():
             _new_files = fileset.get('files', [])
             _new_files = map(fn, _new_files)
             _files |= OrderedSet(_new_files)
