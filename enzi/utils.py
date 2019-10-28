@@ -176,7 +176,7 @@ def _ensure_value(namespace, name, value):
     return getattr(namespace, name)
 
 
-class FilesAction(argparse.Action):
+class FileListAction(argparse.Action):
     """
     argparse Action for Files args, support multiple inputs.
     """
@@ -193,7 +193,7 @@ class FilesAction(argparse.Action):
         if const is not None and nargs != argparse.OPTIONAL:
             raise ValueError('nargs must be %r to supply const' %
                              argparse.OPTIONAL)
-        super(FilesAction, self).__init__(
+        super(FileListAction, self).__init__(
             option_strings=option_strings,
             dest=dest,
             nargs=nargs,
