@@ -41,6 +41,7 @@ def rmtree_onerror(func, path, exc_info):
 
 
 def try_parse_semver(tag_and_id):
+    """try to parse a string as a semver, return None if failed"""
     tag, tag_id = tag_and_id
     if tag.startswith('v'):
         try:
@@ -52,6 +53,7 @@ def try_parse_semver(tag_and_id):
 
 
 def unique(iterable: typing.Iterable[typing.Any]):
+    """return a generator which generate a unique value from the given iterable object"""
     # TODO: code review, can we improve performance ?
     seen = set()
     for item in iterable:
@@ -61,6 +63,7 @@ def unique(iterable: typing.Iterable[typing.Any]):
 
 
 class PathBuf(object):
+    """A Path Buffer for constructing a path"""
     def __init__(self, base=''):
         self.path = base
 
@@ -90,6 +93,7 @@ class PathBuf(object):
 
 
 def realpath(path):
+    """get realpath of a given path, expand vars/user"""
     path = os.path.expandvars(path)
     path = os.path.expanduser(path)
     path = os.path.normpath(path)
