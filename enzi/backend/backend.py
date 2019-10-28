@@ -47,8 +47,10 @@ def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
 
     if type(value) == bool:
         return str(bool_type[1]) if value else str(bool_type[0])
-    elif type(value) == str:
+    elif type(value) == str and len(value) > 0:
         return str_quote + str(value) + str_quote
+    elif type(value) == str and len(value) == 0:
+        return "1"
     else:
         return str(value)
 
