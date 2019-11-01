@@ -14,7 +14,7 @@ import toml
 import colorama
 from colorama import Fore, Style
 
-from enzi.validator import EnziConfigValidator, VersionValidator 
+from enzi.validator import EnziConfigValidator, VersionValidator
 from enzi.config import validate_git_repo, RawConfig
 from enzi.git import Git
 from enzi.file_manager import IncDirsResolver
@@ -28,6 +28,7 @@ try:
 except Exception:
     coloredlogs = None
 
+# logging
 LOG_FMT = '%(asctime)s %(name)s[%(process)d] %(levelname)s %(message)s'
 logging.basicConfig(format=LOG_FMT)
 logger = logging.getLogger('Enzi')
@@ -41,6 +42,7 @@ AUTO_COMMIT_MESSAGE = 'Auto commit by Enzi'
 # REGEX for matching
 PKG_SECTION_RE = re.compile(r'\[\s*package\s*\]')
 VERISON_FIELD_RE = re.compile(r'^\s*version\s*=\s*"(?P<version>(.*))"')
+
 
 class ProjectInitialor(object):
     """
@@ -97,6 +99,7 @@ class ProjectInitialor(object):
             f.write('build/\n')
         self.git.add_files('.gitignore')
 
+
 class EnziApp(object):
     """
     Enzi Cli Application
@@ -111,12 +114,16 @@ class EnziApp(object):
         self.init()
 
     def update_args(self, args):
+        """update the args that use in running this app"""
         self.args = self.parser.parse_args(args)
 
     def init(self):
+        """initialize this app"""
         self.init_logger()
 
     def run(self):
+        """run this app"""
+        # if user want to run enzi config help
         if self.args.enzi_config_help:
             self.enzi_config_help()
             return
@@ -127,8 +134,9 @@ class EnziApp(object):
             self.enzi_config_help()
             return
 
-        is_task = hasattr(args, 'task')
+        is_task = hasattr(args, 'task')  # check if this run is task
 
+        # clean up enzi workspace
         if is_task and args.task == 'clean':
             self.clean()
             return
@@ -141,6 +149,7 @@ class EnziApp(object):
             self.check_package()
             return
 
+        # a root must be specified if not running {'clean', 'init', 'check'}
         if not args.root:
             raise RuntimeError('No root directory specified.')
 
@@ -159,11 +168,11 @@ class EnziApp(object):
             self.enzi = Enzi(args.root[0], non_lazy=self.args.non_lazy)
 
         if is_task and args.task == 'update':
-            if args.version:
-              self.update_version()  
-            elif args.git:
+            if args.version:  # --version
+                self.update_version()
+            elif args.git:  # -- git
                 self.update_git()
-            else:
+            else:  # enzi update without flags
                 self.update_deps()
             return
 
@@ -179,11 +188,14 @@ class EnziApp(object):
         if target is None:
             return
         self.info('start `{}`'.format(target))
+        # init the enzi frontend
         enzi.init()
         enzi.silence_mode = self.args.silence_mode
+        # get target filesets
         project_manager = ProjectFiles(enzi)
         project_manager.fetch(target)
         fileset = project_manager.get_fileset(target)
+        # run target
         enzi.run_target(target, fileset, self.args.tool)
         self.info('`{}` done'.format(target))
 
@@ -209,6 +221,7 @@ class EnziApp(object):
         else:
             effective_level = logger.getEffectiveLevel()
 
+        # make sure warning and error display at any effective level
         if effective_level > logging.WARNING:
             self.warning = logger.critical
         else:
@@ -234,7 +247,7 @@ class EnziApp(object):
 
         initializer = ProjectInitialor(package_name)
         initializer.init()
-    
+
     def check_package(self):
         manifest_only = self.args.manifest
         root = self.args.root
@@ -255,7 +268,7 @@ class EnziApp(object):
 
         if manifest_only:
             return
-        
+
         # check filesets
         try:
             config.check_filesets()
@@ -267,20 +280,23 @@ class EnziApp(object):
         if is_git_repo:
             git = Git(root)
             untracked = git.list_untracked()
-            ufilter = filter(lambda x: x.endswith(HDL_SUFFIXES_TUPLE), untracked)
+            ufilter = filter(lambda x: x.endswith(
+                HDL_SUFFIXES_TUPLE), untracked)
             untracked_hdl = list(ufilter)
             if untracked_hdl:
                 fmt = 'this package has some hdl files: {}, which are not listed in {}\'s filesets'
                 msg = fmt.format(untracked_hdl, config_path)
                 self.warning(msg)
         else:
+            # if the package is not a git repository
+            # we walk the directory to check filesets' files validation.
             cwd = os.getcwd()
             os.chdir(root)
             fileset = config.get_flat_fileset()
             fileset = set(fileset['files'])
 
             flist = []
-            files_filter = lambda x: x.endswith(HDL_SUFFIXES_TUPLE)
+            def files_filter(x): return x.endswith(HDL_SUFFIXES_TUPLE)
             # TODO: code review
             for (dirpath, _, filenames) in os.walk(root):
                 dirname = os.path.relpath(dirpath, root)
@@ -307,7 +323,7 @@ class EnziApp(object):
                 msg = fmt.format(unlisted, config_path)
                 self.warning(msg)
             os.chdir(cwd)
-        
+
         # check include files directories
         if not self.args.include:
             return
@@ -359,7 +375,8 @@ class EnziApp(object):
             raw_version = version.strip()
             if raw_version.startswith('v'):
                 raw_version = raw_version.strip()[1:]
-            version = VersionValidator(key='version', val=raw_version).validate()
+            version = VersionValidator(
+                key='version', val=raw_version).validate()
 
         root = self.args.root
         config = self.args.config
@@ -377,11 +394,11 @@ class EnziApp(object):
             if PKG_SECTION_RE.search(line):
                 idx = i
                 break
-        
+
         if idx == -1:
             self.error('No package section found')
             raise SystemExit(1)
-        
+
         for i in range(idx, nlines):
             v_search = VERISON_FIELD_RE.search(lines[i])
             if v_search:
@@ -391,7 +408,7 @@ class EnziApp(object):
                 new_version_line = lines[i].replace(found_version, version)
                 lines[i] = new_version_line
                 break
-        
+
         # lines to write back
         # print(lines)
         mlines = map(lambda x: x + '\n', lines)
@@ -399,12 +416,11 @@ class EnziApp(object):
             f.writelines(mlines)
         self.debug('EnziApp: update_package_version done.')
 
-
     def update_version(self):
         """enzi update --version"""
         root = self.args.root
         self.info('updating the version of this Enzi package')
-        
+
         raw_version = self.args.version.strip()
         if raw_version.startswith('v'):
             raw_version = raw_version.strip()[1:]
@@ -416,7 +432,7 @@ class EnziApp(object):
         if tags:
             exists = any(filter(lambda x: version in x, tags))
 
-        version = 'v' + version        
+        version = 'v' + version
         if exists:
             msg = 'Version tag {} already exists'.format(version)
             self.error(msg)
@@ -429,17 +445,18 @@ class EnziApp(object):
             git = self.update_git()
             if git is None:
                 raise SystemExit(1)
-        
+
         self.args.message = version
         self.update_package_version(version[1:], validated=True)
         git = self.update_git()
-        
+
         git.quiet_spawn_with(
             lambda x: x.arg('tag').arg(vtag)
         )
-        self.info('update to version {} finished'.format(vtag))        
+        self.info('update to version {} finished'.format(vtag))
 
     def update_git(self):
+        """update the package's git repository"""
         root = self.args.root
         name = self.enzi.name
         self.info('updating this Enzi package\'s git repository')
@@ -497,23 +514,23 @@ class EnziApp(object):
         # staged modified files
         # print(modified)
         git.add_files(modified)
-        
+
         # log commit message
         message = self.args.message
         if message is None:
             message = AUTO_COMMIT_MESSAGE
-        
+
         fmt = 'update this package\'s git repository with commit message:{} "{}"'
         msg = fmt.format(Fore.BLUE, message)
         logger.info(msg)
-        
+
         git.quiet_spawn_with(
             lambda x: x.arg('commit')
             .arg('-m')
             .arg(message)
         )
         self.info('update git finished')
-        
+
         return git
 
     def update_deps(self, **kwargs):
@@ -569,6 +586,7 @@ class EnziApp(object):
         logger.info(Fore.BLUE + 'finished cleaning')
 
     def get_confirm(self):
+        """get confirmation from user"""
         self.warning('Would you like to execute[y/N]: ')
         _choice = input()
         choice = _choice.lower() if _choice else 'n'
@@ -663,7 +681,7 @@ class EnziApp(object):
             '--include',
             help='''Check Verilog the correctness and existence for all include files 
             of the Verilog/SystemVerilog files delcared at Enzi.toml filesets sections.
-            ''', 
+            ''',
             action='store_true'
         )
         check_parser.set_defaults(task='check')
