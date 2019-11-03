@@ -30,15 +30,15 @@ run: build
 run-gui: build
 {% if simulate_log %}
 	{% if silence_mode %}
-	@vsim -do vsim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }} $(link_libs)
+	@vsim -gui -do vsim-gui.tcl -l {{ simulate_log }} -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -do vsim-gui.tcl -l {{ simulate_log }} {{ sim_opts }} $(link_libs)
+	@vsim -gui -do vsim-gui.tcl -l {{ simulate_log }} {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
-	@vsim -do vsim-gui.tcl -l simulate.log -quiet {{ sim_opts }} $(link_libs)
+	@vsim -gui -do vsim-gui.tcl -l simulate.log -quiet {{ sim_opts }} $(link_libs)
 	{% else %}
-	@vsim -do vsim-gui.tcl -l simulate.log {{ sim_opts }} $(link_libs)
+	@vsim -gui -do vsim-gui.tcl -l simulate.log {{ sim_opts }} $(link_libs)
 	{% endif %}
 {% endif %}
 

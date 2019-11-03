@@ -191,6 +191,9 @@ class EnziApp(object):
         # init the enzi frontend
         enzi.init()
         enzi.silence_mode = self.args.silence_mode
+        # if we set --gui flag for this target
+        use_gui = hasattr(self.args, 'gui') and self.args.gui
+        enzi.gui_mode = use_gui
         # get target filesets
         project_manager = ProjectFiles(enzi)
         project_manager.fetch(target)
@@ -690,17 +693,23 @@ class EnziApp(object):
         build_parser = subparsers.add_parser(
             'build', help='Build the given project')
         build_parser.add_argument('--tool', help='Override the default target')
+        build_parser.add_argument(
+            '--gui', help='Build in GUI mode, if this tool has a GUI.', action='store_true')
         build_parser.set_defaults(target='build')
 
         # run subparser
         run_parser = subparsers.add_parser('run', help='Run the given project')
         run_parser.add_argument('--tool', help='Override the default tool')
+        run_parser.add_argument(
+            '--gui', help='Run in GUI mode, if this tool has a GUI.', action='store_true')
         run_parser.set_defaults(target='run')
 
         # sim subparser
         sim_parser = subparsers.add_parser(
             'sim', help='Simulate the given project')
         sim_parser.add_argument('--tool', help='Override the default tool')
+        sim_parser.add_argument(
+            '--gui', help='Simulate in GUI mode, if this tool has a GUI.', action='store_true')
         sim_parser.set_defaults(target='sim')
 
         # program_device subparser

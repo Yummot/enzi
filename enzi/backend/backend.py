@@ -21,6 +21,7 @@ logger.setLevel(logging.WARNING)
 
 __all__ = ['value_str_filter', 'BackendCallback', 'Backend', 'flat_map']
 
+
 def flat_map(f, items):
     """
     Creates an iterator that works like map, but flattens nested Iteratorable.
@@ -54,7 +55,9 @@ def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
     else:
         return str(value)
 
+
 INC_DIR_PREFIX = '+incdir+'
+
 
 def inc_dirs_filter(files, *, cat='\n'):
     if not files:
@@ -63,6 +66,7 @@ def inc_dirs_filter(files, *, cat='\n'):
     dedup_files = OrderedSet(files)
     add_prefix = map(lambda f: INC_DIR_PREFIX + f, dedup_files)
     return cat.join(add_prefix)
+
 
 def src_inc_filter(file):
     """
@@ -82,6 +86,7 @@ def src_inc_filter(file):
         idirs = inc_dirs_filter(file.inc_dirs)
         return idirs + file.src
     return file.src
+
 
 def to_comment(lines):
     lines = lines.splitlines()
@@ -109,7 +114,6 @@ class Backend(object):
     supported_ops = ['build', 'sim', 'run', 'program_device']
     # backend are assumed to support at least Linux('s distribution)
     supported_system = ('Linux', )
-    
 
     def __init__(self, config={}, work_root=None):
         if config is None:
@@ -170,11 +174,11 @@ class Backend(object):
         relfile = os.path.relpath(file, self.work_root)
         incdirs = self.fileset[pkg_name].inc_dirs
         if file in incdirs:
-            fn = lambda idir: os.path.relpath(idir, self.work_root)
+            def fn(idir): return os.path.relpath(idir, self.work_root)
             m = map(fn, incdirs[file])
             filtered_incdirs = inc_dirs_filter(m, cat=' \\\n\t')
             return '{} \\\n\t{}'.format(filtered_incdirs, relfile)
-        return relfile 
+        return relfile
 
     @property
     def gui_mode(self):
@@ -235,6 +239,12 @@ class Backend(object):
                 raise RuntimeError("'{}' exited with error code {}".format(
                     script['name'], e.returncode)) from e
 
+    def _run_tool_gui(self, cmd, args=[]):
+        logger.debug("Running {} with args: {}" .format(cmd, args))
+        subprocess.Popen([cmd] + args, cwd=self.work_root,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return
+
     def _run_tool(self, cmd, args=[], stdout=None):
         logger.debug("Running {} with args: {}" .format(cmd, args))
 
@@ -257,7 +267,7 @@ class Backend(object):
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
                 "Error: '{}' exited {}".format(cmd, e.returncode)) from e
-    
+
     def _backend_warn(self, fmt):
         """backend warning for an unimplemented target"""
         cls_name = self.__class__.__name__

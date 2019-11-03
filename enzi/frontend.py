@@ -173,6 +173,23 @@ class Enzi(object):
             self._silence_mode = value
         else:
             setattr(self, '_silence_mode', value)
+    
+    @property
+    def gui_mode(self):
+        if hasattr(self, '_gui_mode'):
+            return self._gui_mode
+        else:
+            setattr(self, '_gui_mode', False)
+            return False
+
+    @gui_mode.setter
+    def gui_mode(self, value):
+        if not isinstance(value, bool):
+            raise ValueError('gui_mode must be boolean')
+        if hasattr(self, '_gui_mode'):
+            self._gui_mode = value
+        else:
+            setattr(self, '_gui_mode', value)
 
     def load_dependency(self, name, dep: config.Dependency, econfig):
         if not isinstance(dep, config.Dependency):
@@ -255,6 +272,9 @@ class Enzi(object):
                 toplevel=target_toplevel,
                 fileset=target_fileset
             )
+
+            # if simulate in gui mode
+            backend_config['gui_mode'] = self.gui_mode
 
             backend = self.known_backends.get(
                 tool_name, backend_config, self.build_dir)

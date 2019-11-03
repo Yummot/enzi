@@ -50,9 +50,10 @@ class IES(Backend):
         self.base_cds_lib = config.get('base_cds_lib')
         self.base_hdl_var = config.get('base_hdl_var')
 
-        self._gui_mode = False
-
         super(IES, self).__init__(config=config, work_root=work_root)
+
+        if self.gui_mode:
+            self.gen_waves = True
 
         self._gen_scripts_name = {'nc_waves.tcl', 'nc_setup.sh', 'nc_compile.sh',
                                   'nc_elaborate.sh', 'nc_simulate.sh', 'nc_run.sh', 'nc_make.mk'}

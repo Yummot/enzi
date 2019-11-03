@@ -109,7 +109,7 @@ class UnixDelegate(object):
             self.master._run_tool('make', ['-f', 'vsim_make.mk', 'run'])
 
     def sim_main(self):
-        logger.info('cleanup')
+        logger.info('simulating')
         if self.gui_mode:
             self.master._run_tool('make', ['-f', 'vsim_make.mk', 'sim-gui'])
         else:
