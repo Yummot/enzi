@@ -100,7 +100,7 @@ class WinPackageLoader(PackageLoader):
         super(WinPackageLoader, self).__init__(
             package_name, 
             package_path, 
-            package_path, encoding
+            encoding
         )
 
     def get_source(self, environment, template):
