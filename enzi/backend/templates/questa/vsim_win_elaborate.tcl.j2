@@ -1,5 +1,10 @@
 # elaborate step
-{% if toplevel %}
-vopt {{ elab_opts }} work.{{ toplevel }} -o {{ toplevel }}_opt
-{% endif %}
-exit
+try {
+    {% if toplevel %}
+    vopt {{ elab_opts }} work.{{ toplevel }} -o {{ toplevel }}_opt
+    {% endif %}
+    exit
+} on error {result options} {
+    puts "compile error"
+    exit -force -code 1
+}
