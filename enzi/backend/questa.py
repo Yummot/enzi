@@ -317,7 +317,7 @@ class WinDelegate(object):
         if self.master.vlog_opts:
             vlog_opts = vlog_opts + self.master.vlog_opts
         if self.master.vhdl_opts:
-            vhdl_opts = vhdl_opts + self.master.vhdl_opts)
+            vhdl_opts = vhdl_opts + self.master.vhdl_opts
         if self.master.vlog_defines:
             vlog_defines = vlog_defines + self.master.vlog_defines
         if self.master.vhdl_generics:
