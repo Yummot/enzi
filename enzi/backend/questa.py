@@ -337,7 +337,7 @@ class WinDelegate(object):
         silence_mode = self.master.silence_mode
         sim_opts = self.master.sim_opts
         link_libs = map(lambda x: ' -lib ' + x, self.master.link_libs)
-        link_libs = ''.join(link_libs)
+        link_libs = ' '.join(link_libs)
 
         return {
             'sim_toplevel': self.toplevel_opt,
