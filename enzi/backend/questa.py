@@ -169,6 +169,8 @@ class WinDelegate(object):
         self.toplevel = self.master.toplevel
         self.toplevel_opt = self.master.toplevel + '_opt'
         self.master.j2_env.filters['winpath'] = lambda x: x.replace('/', '\\')
+        # force slash to prevent recognizing as escape characters
+        self.master.j2_env.filters['force_slash'] = lambda x: x.replace('\\', '/')
 
     def _win_run_tool(self, cmd, log=None):
         logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))

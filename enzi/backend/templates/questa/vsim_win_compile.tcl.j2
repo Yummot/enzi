@@ -5,15 +5,15 @@
 {% for file in pkg.files %}
 {#- -#}
 {% if file.endswith((".vhd", '.vhdl')) %}
-vcom {{ vhdl_opts }} {{ vhdl_generics }} {{ file }}
+vcom {{ vhdl_opts }} {{ vhdl_generics }} {{ file|force_slash }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-vlog {{ vlog_opts }} {{ vlog_defines }} {{ sv_input_port }} -sv {{ file|with_incdirs(pkg_name=pkg_name) }}
+vlog {{ vlog_opts }} {{ vlog_defines }} {{ sv_input_port }} -sv {{ file|with_incdirs(pkg_name=pkg_name)|force_slash }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
-vlog {{ vlog_opts }} {{ vlog_defines }} {{ file|with_incdirs(pkg_name=pkg_name) }}
+vlog {{ vlog_opts }} {{ vlog_defines }} {{ file|with_incdirs(pkg_name=pkg_name)|force_slash }}
 {% endif %}
 {% endfor %}
 {% endfor %}
