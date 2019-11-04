@@ -246,7 +246,7 @@ class WinDelegate(object):
         writer = io.BufferedWriter(f)
 
         if self.gui_mode:
-            cmd_fmt = 'vsim -gui -do sim-gui.tcl {} {} {} {}'
+            cmd_fmt = 'vsim -gui -do vsim-gui.tcl {} {} {} {}'
             if self.master.silence_mode:
                 cmd = cmd_fmt.format(
                     '-quiet', sim_top, sim_opts, link_libs)
