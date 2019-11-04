@@ -7,7 +7,8 @@ import subprocess
 
 from functools import partial
 
-from enzi.backend import Backend, inc_dirs_filter
+from enzi.backend import Backend
+from enzi.backend.backend import inc_dirs_filter
 
 __all__ = ('Questa', )
 
@@ -174,7 +175,7 @@ class WinDelegate(object):
         self.master.j2_env.filters['winpath'] = lambda x: x.replace('/', '\\')
         # force slash to prevent recognizing as escape characters
         self.master.j2_env.filters['force_slash'] = force_slash
-        self.master.j2_env.filters['get_incdirs'] = self.get_incdirs
+        self.master.j2_env.filters['with_incdirs'] = self.get_incdirs
 
     def get_incdirs(self, file, *, pkg_name):
         relfile = os.path.relpath(file, self.master.work_root)
