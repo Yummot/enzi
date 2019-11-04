@@ -5,6 +5,6 @@ try {
     {% endif %}
     exit
 } on error {result options} {
-    puts "compile error"
+    puts "elaboration error"
     exit -force -code 1
 }

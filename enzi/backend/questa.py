@@ -171,7 +171,6 @@ class WinDelegate(object):
         self.elog = self.master.elaborate_log if self.master.elaborate_log else 'elaborate.log'
         self.slog = self.master.simulate_log if self.master.simulate_log else 'simulate.log'
         self.toplevel = self.master.toplevel
-        self.toplevel_opt = self.master.toplevel + '_opt'
         self.master.j2_env.filters['winpath'] = lambda x: x.replace('/', '\\')
         # force slash to prevent recognizing as escape characters
         self.master.j2_env.filters['force_slash'] = force_slash
@@ -237,7 +236,7 @@ class WinDelegate(object):
     def run_main(self):
         svars = self._simulate_vars
         sim_opts = svars['sim_opts']
-        sim_top = self.toplevel_opt
+        sim_top = self.toplevel + '_opt'
         link_libs = svars['link_libs']
         log_name = self.master.simulate_log
         log_name = os.path.join(self.master.work_root, log_name)
@@ -340,7 +339,7 @@ class WinDelegate(object):
         link_libs = ' '.join(link_libs)
 
         return {
-            'sim_toplevel': self.toplevel_opt,
+            'toplevel': self.toplevel,
             'silence_mode': silence_mode,
             'sim_opts': sim_opts,
             'link_libs': link_libs,
