@@ -257,16 +257,20 @@ class Backend(object):
                 raise RuntimeError("'{}' exited with error code {}".format(
                     script['name'], e.returncode)) from e
 
-    def _run_tool_gui(self, cmd, args=[]):
-        logger.debug("Running {} with args: {}" .format(cmd, args))
-        subprocess.Popen([cmd] + args, cwd=self.work_root,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return
+    # def _run_tool_gui(self, cmd, args=[]):
+    #     logger.debug("Running {} with args: {}" .format(cmd, args))
+    #     subprocess.Popen([cmd] + args, cwd=self.work_root,
+    #                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #     return
 
     def _run_tool(self, cmd, args=[], stdout=None):
         logger.debug("Running {} with args: {}" .format(cmd, args))
 
         stdout = stdout if stdout else subprocess.DEVNULL
+
+        if self.current_system == 'Windows':
+            import shutil
+            cmd = shutil.which(cmd)
 
         try:
             if self.silence_mode:
