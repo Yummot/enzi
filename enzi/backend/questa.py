@@ -65,9 +65,9 @@ class Questa(Backend):
 
 
 class UnixDelegate(object):
-    """
+    '''
     Delegate class for Running Questa Simulator Backend in UNIX like systems
-    """
+    '''
 
     def __init__(self, master: Questa):
         self.master = master
@@ -122,52 +122,53 @@ class UnixDelegate(object):
     @property
     def _compile_vars(self):
         return {
-            "vlog_opts": self.master.vlog_opts,
-            "vhdl_opts": self.master.vhdl_opts,
-            "vlog_defines": self.master.vlog_defines,
-            "vhdl_generics": self.master.vhdl_generics,
-            "fileset": self.master.fileset,
+            'vlog_opts': self.master.vlog_opts,
+            'vhdl_opts': self.master.vhdl_opts,
+            'vlog_defines': self.master.vlog_defines,
+            'vhdl_generics': self.master.vhdl_generics,
+            'fileset': self.master.fileset,
         }
 
     @property
     def _elaborate_vars(self):
         return {
-            "elab_opts": self.master.elab_opts,
-            "toplevel": self.master.toplevel,
+            'elab_opts': self.master.elab_opts,
+            'toplevel': self.master.toplevel,
         }
 
     @property
     def _makefile_vars(self):
         return {
-            "compile_log": self.master.compile_log,
-            "elaborate_log": self.master.elaborate_log,
-            "simulate_log": self.master.simulate_log,
-            "silence_mode": self.master.silence_mode,
-            "toplevel": self.master.toplevel,
-            "sim_opts": self.master.sim_opts,
-            "link_libs": self.master.link_libs,
+            'compile_log': self.master.compile_log,
+            'elaborate_log': self.master.elaborate_log,
+            'simulate_log': self.master.simulate_log,
+            'silence_mode': self.master.silence_mode,
+            'toplevel': self.master.toplevel,
+            'sim_opts': self.master.sim_opts,
+            'link_libs': self.master.link_libs,
         }
 
     @property
     def _sim_gui_vars(self):
-        return {"toplevel": self.master.toplevel}
+        return {'toplevel': self.master.toplevel}
+
+# TODO: update this Delegate to multiple filesets
 
 
 class WinDelegate(object):
-    """
+    '''
     Delegate class for Running Questa Simulator Backend in Windows
-    """
+    '''
 
     def __init__(self, master: Questa):
         self.master: Questa = master
         self.silence_mode = self.master.silence_mode
-        self.clog = self.master.compile_log if self.master.compile_log else "compile.log"
-        self.elog = self.master.elaborate_log if self.master.elaborate_log else "elaborate.log"
-        self.slog = self.master.simulate_log if self.master.simulate_log else "simulate.log"
+        self.clog = self.master.compile_log if self.master.compile_log else 'compile.log'
+        self.elog = self.master.elaborate_log if self.master.elaborate_log else 'elaborate.log'
+        self.slog = self.master.simulate_log if self.master.simulate_log else 'simulate.log'
         self.toplevel = self.master.toplevel
         self.toplevel_opt = self.master.toplevel + '_opt'
-        self.fileset = list(
-            map(lambda x: x.replace('/', '\\'), self.master.fileset))
+        self.master.j2_env.filters['winpath'] = lambda x: x.replace('/', '\\')
 
     def _win_run_tool(self, cmd, log=None):
         logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))
@@ -193,7 +194,20 @@ class WinDelegate(object):
 
     def gen_scripts(self):
         self.master.render_template(
-            'vsim-gui.tcl.j2', 'vsim-gui.tcl', self._sim_gui_vars)
+            'vsim_win_compile.tcl.j2',
+            'vsim_compile.tcl',
+            self._compile_vars
+        )
+        self.master.render_template(
+            'vsim_win_elaborate.tcl.j2',
+            'vsim_elaborate.tcl',
+            self._elaborate_vars
+        )
+        self.master.render_template(
+            'vsim-gui.tcl.j2',
+            'vsim-gui.tcl',
+            self._sim_gui_vars
+        )
 
     def configure_main(self, *, non_lazy=False):
         self.gen_scripts()
@@ -214,23 +228,23 @@ class WinDelegate(object):
         writer = io.BufferedWriter(f)
 
         if self.gui_mode:
-            cmd_fmt = 'vsim {} -do sim-gui.tcl {} {} {} {}'
+            cmd_fmt = 'vsim -gui -do sim-gui.tcl {} {} {} {}'
             if self.master.silence_mode:
                 cmd = cmd_fmt.format(
-                    '', '-quiet', sim_top, sim_opts, link_libs)
+                    '-quiet', sim_top, sim_opts, link_libs)
                 self._win_run_tool(cmd, writer)
             else:
-                cmd = cmd_fmt.format('', '', sim_top, sim_opts, link_libs)
+                cmd = cmd_fmt.format('', sim_top, sim_opts, link_libs)
                 self._win_run_tool(cmd, writer)
         else:
-            cmd_fmt = 'vsim {} -do "run -a" {} {} {} {}'
+            cmd_fmt = 'vsim -c -do "run -a; exit" {} {} {} {}'
             if self.master.silence_mode:
                 cmd = cmd_fmt.format(
-                    '-c', '-quiet', sim_top, sim_opts, link_libs)
+                    '-quiet', sim_top, sim_opts, link_libs)
                 self._win_run_tool(cmd, writer)
             else:
                 cmd = cmd_fmt.format(
-                    '-c', '', sim_top, sim_opts, link_libs)
+                    '', sim_top, sim_opts, link_libs)
                 self._win_run_tool(cmd, writer)
 
         writer.close()
@@ -243,101 +257,18 @@ class WinDelegate(object):
         pass
 
     def _compile(self):
-        cvars = self._compile_vars
-        fileset = cvars['fileset']
-        vlog_opts = cvars['vlog_opts']
-        inc_dirs = cvars['inc_dirs']
-        vhdl_opts = cvars['vhdl_opts']
-        vlog_defines = cvars['vlog_defines']
-        vhdl_generics = cvars['vhdl_generics']
-        sv_iport = cvars['sv_input_port']
-        log_name = self.master.compile_log
-        log_name = os.path.join(self.master.work_root, log_name)
-
-        f = io.FileIO(log_name, 'w')
+        compile_log = self.master.compile_log
+        f = io.FileIO(compile_log, 'w')
         writer = io.BufferedWriter(f)
-
-        # TODO: use map-reduce
-        vhdl = []
-        sv = []
-        verilog = []
-        for file in fileset:
-            if file.endswith((".vhd", '.vhdl')):
-                vhdl.append(file)
-            elif file.endswith(('.sv', '.svh')):
-                sv.append(file)
-            elif file.endswith(('.v', '.vh')):
-                verilog.append(file)
-
-        if len(vhdl):
-            self._vhdl_f(vhdl, vhdl_opts, vhdl_generics, '', writer)
-        if len(sv):
-            self._vlog_f(sv, vlog_opts, vlog_defines,
-                         sv_iport, writer, inc_dirs=inc_dirs)
-        if len(verilog):
-            self._vlog_f(verilog, vlog_opts, vlog_defines,
-                         '', writer, inc_dirs=inc_dirs)
-
-        writer.close()
+        cmd = "vsim -c -do vsim_compile.tcl"
+        self._win_run_tool(cmd, writer)
 
     def _elaborate(self):
-        evars = self._elaborate_vars
-        elab_opts = evars['elab_opts']
-        toplevel = 'work.' + evars['toplevel']
-        args = [elab_opts, toplevel, '-o', self.toplevel_opt]
-        args = ' '.join(args)
-        cmd = 'vopt ' + args
-        log_name = self.master.elaborate_log
-        log_name = os.path.join(self.master.work_root, log_name)
-
-        f = io.FileIO(log_name, 'w')
+        elaborate_log = self.master.elaborate_log
+        f = io.FileIO(elaborate_log, 'w')
         writer = io.BufferedWriter(f)
+        cmd = "vsim -c -do vsim_elaborate.tcl"
         self._win_run_tool(cmd, writer)
-        writer.close()
-
-    def _f_line(self, line: str):
-        line = line.replace('\\', '/')
-        line = '"{}"\n'.format(line)
-        return line.encode('utf-8')
-
-    def _vlog_f(self, files: list, opts: str, defines: str, sv: str = None, fd=None, *, inc_dirs=None):
-        if inc_dirs is None:
-            inc_dirs = []
-        inc_dirs = ' '.join(inc_dirs)
-
-        opts = opts + inc_dirs
-        for file in files:
-            self._vlog(file, opts, defines, sv, fd)
-
-    def _vhdl_f(self, files: list, opts: str, defines: str, dummy='', fd=None):
-        f_path = os.path.join(self.master.work_root, 'vhdl.f')
-        f = io.FileIO(f_path, 'w')
-        writer = io.BufferedWriter(f)
-        lines = map(self._f_line, files)
-        writer.writelines(lines)
-        writer.close()
-        fake = os.path.relpath(f_path, self.master.work_root)
-        fake = fake.replace('\\', '/')
-        fake_file = '-f ' + fake
-        self._vlog(fake_file, opts, defines, dummy, fd)
-
-    def _vlog(self, file: str, opts: str, defines: str, sv: str = None, fd=None):
-        if sv:
-            args = [opts, defines, '-sv', file, sv]
-            args = ' '.join(args)
-            cmd = 'vlog ' + args
-            self._win_run_tool(cmd, fd)
-        else:
-            args = [opts, defines, file]
-            args = ' '.join(args)
-            cmd = 'vlog ' + args
-            self._win_run_tool(cmd, fd)
-
-    def _vhdl(self, file: str, opts: str, defines: str, dummy='', fd=None):
-        args = [opts, defines, file, dummy]
-        args = ' '.join(args)
-        cmd = 'vcom ' + args
-        self._win_run_tool(cmd, fd)
 
     @property
     def _run_vars(self):
@@ -349,59 +280,55 @@ class WinDelegate(object):
 
     @property
     def _elaborate_vars(self):
-        elab_opts = "+cover=bcefsx +acc=npr "
+        elab_opts = '+cover=bcefsx +acc=npr '
         if self.master.elab_opts:
-            elab_opts = elab_opts + self.master.elab_opts
+            elab_opts = elab_opts + ' '.join(self.master.elab_opts)
 
         return {
-            "elab_opts": elab_opts,
-            "toplevel": self.master.toplevel,
+            'elab_opts': elab_opts,
+            'toplevel': self.master.toplevel,
         }
 
     @property
     def _compile_vars(self):
-        vlog_opts = "+cover=bcefsx -incr "
-        vhdl_opts = "+cover=bcefsx "
-        vlog_defines = ""
-        vhdl_generics = ""
-        inc_dirs = []
-        sv_input_port = "-svinputport=var "
+        vlog_opts = '+cover=bcefsx -incr '
+        vhdl_opts = '+cover=bcefsx '
+        vlog_defines = ''
+        vhdl_generics = ''
+        sv_input_port = '-svinputport=var '
         if self.master.vlog_opts:
-            vlog_opts = vlog_opts + self.master.vlog_opts
+            vlog_opts = vlog_opts + ' '.join(self.master.vlog_opts)
         if self.master.vhdl_opts:
-            vhdl_opts = vhdl_opts + self.master.vhdl_opts
+            vhdl_opts = vhdl_opts + ' '.join(self.master.vhdl_opts)
         if self.master.vlog_defines:
-            vlog_defines = vlog_defines + self.master.vlog_defines
+            vlog_defines = vlog_defines + ' '.join(self.master.vlog_defines)
         if self.master.vhdl_generics:
-            vhdl_generics = vhdl_generics + self.master.vhdl_generics
-        if self.master.inc_dirs:
-            idirs = list(map(lambda x: '+incdir+' + x, self.master.inc_dirs))
-            inc_dirs = inc_dirs + idirs
+            vhdl_generics = vhdl_generics + ' '.join(self.master.vhdl_generics)
+
         return {
-            "vlog_opts": vlog_opts,
-            "vhdl_opts": vhdl_opts,
-            "vlog_defines": vlog_defines,
-            "vhdl_generics": vhdl_generics,
-            "fileset": self.fileset,
-            "sv_input_port": sv_input_port,
-            "inc_dirs": inc_dirs,
+            'vlog_opts': vlog_opts,
+            'vhdl_opts': vhdl_opts,
+            'vlog_defines': vlog_defines,
+            'vhdl_generics': vhdl_generics,
+            'fileset': self.master.fileset,
+            'sv_input_port': sv_input_port,
         }
 
     @property
     def _simulate_vars(self):
         silence_mode = self.master.silence_mode
-        sim_opts = self.master.sim_opts
+        sim_opts = ' '.join(self.master.sim_opts)
         link_libs = map(lambda x: ' -lib ' + x, self.master.link_libs)
         link_libs = ''.join(link_libs)
 
         return {
-            "sim_toplevel": self.toplevel_opt,
-            "silence_mode": silence_mode,
-            "sim_opts": sim_opts,
-            "link_libs": link_libs,
-            "simulate_log": self.master.simulate_log
+            'sim_toplevel': self.toplevel_opt,
+            'silence_mode': silence_mode,
+            'sim_opts': sim_opts,
+            'link_libs': link_libs,
+            'simulate_log': self.master.simulate_log
         }
 
     @property
     def _sim_gui_vars(self):
-        return {"toplevel": self.master.toplevel}
+        return {'toplevel': self.master.toplevel}
