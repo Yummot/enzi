@@ -24,7 +24,7 @@ setup(
     install_requires=[
         'toml>=0.10.0',
         'semver>=2.8',
-        'jinja2>=2.0.0',
+        'jinja2>=2.10.0',
         'colorama>=0.4.0',
         'coloredlogs>=9.3'
         'pytest>=5.0.1',
