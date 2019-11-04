@@ -40,7 +40,7 @@ class Questa(Backend):
                                       'vsim_elaborate.sh', 'vsim-gui.tcl', 'vsim_make.mk'}
         elif self.current_system == 'Windows':
             self.delegate = WinDelegate(self)
-            self._gen_scripts_name = {'vsim-gui.tcl'}
+            self._gen_scripts_name = {'vsim-gui.tcl', 'vsim-compile.tcl', 'vsim-elaborate.tcl'}
         else:
             raise ValueError('INTERNAL ERROR: unimplemented system')
 

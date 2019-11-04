@@ -10,8 +10,8 @@ setup(
     license="MIT",
     packages=find_packages(),
     package_data={
-        'enzi': [
-            "enzi/backend/templates/*"
+        'enzi.backend': [
+            "templates/*/*.j2"
         ]
     },
     description="Enzi(Enzyme IC) is a tool for automating HDL project",
