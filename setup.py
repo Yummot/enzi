@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="enzi",
-    version="0.8.1",
+    version="0.8.2",
     author="Mot Yu",
     author_email="mot.yu@outlook.com",
     url="https://github.com/Yummot/enzi",
