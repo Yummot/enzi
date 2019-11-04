@@ -11,6 +11,7 @@ import stat
 import subprocess
 import copy as py_copy
 
+from jinja2 import PackageLoader
 from collections import OrderedDict
 from collections.abc import Iterable
 from itertools import chain
@@ -21,6 +22,7 @@ logger.setLevel(logging.WARNING)
 
 __all__ = ['value_str_filter', 'BackendCallback', 'Backend', 'flat_map']
 
+INC_DIR_PREFIX = '+incdir+'
 
 def flat_map(f, items):
     """
@@ -56,9 +58,6 @@ def value_str_filter(value, *, str_quote="", bool_is_str=False, bool_type=None):
         return str(value)
 
 
-INC_DIR_PREFIX = '+incdir+'
-
-
 def inc_dirs_filter(files, *, cat='\n'):
     if not files:
         return ''
@@ -92,6 +91,22 @@ def to_comment(lines):
     lines = lines.splitlines()
     m = map(lambda l: '# ' + l, lines)
     return '\n'.join(m)
+
+
+class WinPackageLoader(PackageLoader):
+    """Package loader for Windows"""
+    def __init__(self, package_name, package_path='templates',
+                 encoding='utf-8'):
+        super(WinPackageLoader, self).__init__(
+            package_name, 
+            package_path, 
+            package_path, encoding
+        )
+
+    def get_source(self, environment, template):
+        # force to use slash because jinja2 only support forward slash in path
+        template = template.replace('\\', '/')
+        return super(WinPackageLoader, self).get_source(environment, template)
 
 
 class BackendCallback(object):
@@ -144,10 +159,14 @@ class Backend(object):
         self.fileset = _fileset
 
         self.config = config
+        
+        # get current system type
+        self.current_system = platform.system()
+        _PackageLoader = WinPackageLoader if self.current_system == "Windows" else PackageLoader
 
         # jinja2 environment
         self.j2_env = jinja2.Environment(
-            loader=jinja2.PackageLoader(__package__, 'templates'),
+            loader=_PackageLoader(__package__, 'templates'),
             trim_blocks=True,
             lstrip_blocks=True,
             keep_trailing_newline=True,
@@ -168,7 +187,6 @@ class Backend(object):
         }
 
         self._gen_scripts_name = set()
-        self.current_system = platform.system()
 
     def get_incdirs(self, file, *, pkg_name):
         relfile = os.path.relpath(file, self.work_root)
