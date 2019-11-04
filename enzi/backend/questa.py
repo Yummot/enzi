@@ -7,7 +7,7 @@ import subprocess
 
 from functools import partial
 
-from enzi.backend import Backend
+from enzi.backend import Backend, inc_dirs_filter
 
 __all__ = ('Questa', )
 
@@ -154,6 +154,9 @@ class UnixDelegate(object):
 
 # TODO: update this Delegate to multiple filesets
 
+def force_slash(x):
+    """convert backslashes to slashes"""
+    return x.replace('\\', '/')
 
 class WinDelegate(object):
     '''
@@ -170,7 +173,19 @@ class WinDelegate(object):
         self.toplevel_opt = self.master.toplevel + '_opt'
         self.master.j2_env.filters['winpath'] = lambda x: x.replace('/', '\\')
         # force slash to prevent recognizing as escape characters
-        self.master.j2_env.filters['force_slash'] = lambda x: x.replace('\\', '/')
+        self.master.j2_env.filters['force_slash'] = force_slash
+        self.master.j2_env.filters['get_incdirs'] = self.get_incdirs
+
+    def get_incdirs(self, file, *, pkg_name):
+        relfile = os.path.relpath(file, self.master.work_root)
+        relfile = force_slash(relfile)
+        incdirs = self.master.fileset[pkg_name].inc_dirs
+        if file in incdirs:
+            def fn(idir): return os.path.relpath(idir, self.master.work_root)
+            m = map(force_slash, map(fn, incdirs[file]))
+            filtered_incdirs = inc_dirs_filter(m, cat=' \\\n\t')
+            return '{} \\\n\t{}'.format(filtered_incdirs, relfile)
+        return relfile
 
     def _win_run_tool(self, cmd, log=None):
         logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))
