@@ -300,7 +300,7 @@ class WinDelegate(object):
     def _elaborate_vars(self):
         elab_opts = '+cover=bcefsx +acc=npr '
         if self.master.elab_opts:
-            elab_opts = elab_opts + ' '.join(self.master.elab_opts)
+            elab_opts = elab_opts + self.master.elab_opts
 
         return {
             'elab_opts': elab_opts,
@@ -315,13 +315,13 @@ class WinDelegate(object):
         vhdl_generics = ''
         sv_input_port = '-svinputport=var '
         if self.master.vlog_opts:
-            vlog_opts = vlog_opts + ' '.join(self.master.vlog_opts)
+            vlog_opts = vlog_opts + self.master.vlog_opts
         if self.master.vhdl_opts:
-            vhdl_opts = vhdl_opts + ' '.join(self.master.vhdl_opts)
+            vhdl_opts = vhdl_opts + self.master.vhdl_opts)
         if self.master.vlog_defines:
-            vlog_defines = vlog_defines + ' '.join(self.master.vlog_defines)
+            vlog_defines = vlog_defines + self.master.vlog_defines
         if self.master.vhdl_generics:
-            vhdl_generics = vhdl_generics + ' '.join(self.master.vhdl_generics)
+            vhdl_generics = vhdl_generics + self.master.vhdl_generics
 
         return {
             'vlog_opts': vlog_opts,
@@ -335,7 +335,7 @@ class WinDelegate(object):
     @property
     def _simulate_vars(self):
         silence_mode = self.master.silence_mode
-        sim_opts = ' '.join(self.master.sim_opts)
+        sim_opts = self.master.sim_opts
         link_libs = map(lambda x: ' -lib ' + x, self.master.link_libs)
         link_libs = ''.join(link_libs)
 
