@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name="enzi",
@@ -8,7 +8,7 @@ setup(
     author_email="mot.yu@outlook.com",
     url="https://github.com/Yummot/enzi",
     license="MIT",
-    packages=['enzi'],
+    packages=find_packages(),
     package_data={
         'enzi': [
             "enzi/backend/templates/*"
