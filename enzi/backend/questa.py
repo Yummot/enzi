@@ -41,7 +41,8 @@ class Questa(Backend):
                                       'vsim_elaborate.sh', 'vsim-gui.tcl', 'vsim_make.mk'}
         elif self.current_system == 'Windows':
             self.delegate = WinDelegate(self)
-            self._gen_scripts_name = {'vsim-gui.tcl', 'vsim-compile.tcl', 'vsim-elaborate.tcl'}
+            self._gen_scripts_name = {'vsim-gui.tcl',
+                                      'vsim-compile.tcl', 'vsim-elaborate.tcl'}
         else:
             raise ValueError('INTERNAL ERROR: unimplemented system')
 
@@ -155,9 +156,11 @@ class UnixDelegate(object):
 
 # TODO: update this Delegate to multiple filesets
 
+
 def force_slash(x):
     """convert backslashes to slashes"""
     return x.replace('\\', '/')
+
 
 class WinDelegate(object):
     '''
@@ -187,23 +190,23 @@ class WinDelegate(object):
             return '{} \\\n\t{}'.format(filtered_incdirs, relfile)
         return relfile
 
-    def _win_run_tool(self, cmd, log=None):
-        logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))
-        if log is None:
-            p = subprocess.Popen(cmd, cwd=self.master.work_root)
-        else:
-            p = subprocess.Popen(cmd, cwd=self.master.work_root,
-                                 stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        out, _ = p.communicate()
+    # def _win_run_tool(self, cmd, log=None):
+    #     logger.debug('cmd: {} at {}'.format(cmd, self.master.work_root))
+    #     if log is None:
+    #         p = subprocess.Popen(cmd, cwd=self.master.work_root)
+    #     else:
+    #         p = subprocess.Popen(cmd, cwd=self.master.work_root,
+    #                              stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    #     out, _ = p.communicate()
 
-        if not self.silence_mode:
-            print(out.decode('utf-8'))
-        log.write(out)
+    #     if not self.silence_mode:
+    #         print(out.decode('utf-8'))
+    #     log.write(out)
 
-        if p.returncode:
-            log_name = log.name
-            raise RuntimeError(
-                'cmd: {} error, see {} for details'.format(cmd, log_name))
+    #     if p.returncode:
+    #         log_name = log.name
+    #         raise RuntimeError(
+    #             'cmd: {} error, see {} for details'.format(cmd, log_name))
 
     @property
     def gui_mode(self):
@@ -239,32 +242,28 @@ class WinDelegate(object):
         sim_top = self.toplevel + '_opt'
         link_libs = svars['link_libs']
         log_name = self.master.simulate_log
-        log_name = os.path.join(self.master.work_root, log_name)
 
-        f = io.FileIO(log_name, 'w')
-        writer = io.BufferedWriter(f)
+        cmd = 'vsim'
+        args = [sim_top, '-logfile', log_name]
+        if sim_opts:
+            args.append(sim_opts)
+        if link_libs:
+            args.append(link_libs)
 
         if self.gui_mode:
-            cmd_fmt = 'vsim -gui -do vsim-gui.tcl {} {} {} {}'
             if self.master.silence_mode:
-                cmd = cmd_fmt.format(
-                    '-quiet', sim_top, sim_opts, link_libs)
-                self._win_run_tool(cmd, writer)
-            else:
-                cmd = cmd_fmt.format('', sim_top, sim_opts, link_libs)
-                self._win_run_tool(cmd, writer)
+                args.append('-quiet')
+            args.insert(0, '-gui')
+            args.append('-do')
+            args.append('vsim-gui.tcl')
         else:
-            cmd_fmt = 'vsim -c -do "run -a; exit" {} {} {} {}'
             if self.master.silence_mode:
-                cmd = cmd_fmt.format(
-                    '-quiet', sim_top, sim_opts, link_libs)
-                self._win_run_tool(cmd, writer)
-            else:
-                cmd = cmd_fmt.format(
-                    '', sim_top, sim_opts, link_libs)
-                self._win_run_tool(cmd, writer)
-
-        writer.close()
+                args.append('-quiet')
+            args.insert(0, '-c')
+            args.append('-do')
+            args.append('run -a; exit')
+        
+        self.master._run_tool(cmd, args)
 
     def sim_main(self):
         self.build_main()
@@ -275,17 +274,15 @@ class WinDelegate(object):
 
     def _compile(self):
         compile_log = self.master.compile_log
-        f = io.FileIO(compile_log, 'w')
-        writer = io.BufferedWriter(f)
-        cmd = "vsim -c -do vsim_compile.tcl"
-        self._win_run_tool(cmd, writer)
+        cmd = 'vsim'
+        args =  ['-c', '-do', 'vsim_compile.tcl', '-logfile', compile_log]
+        self.master._run_tool(cmd, args)
 
     def _elaborate(self):
         elaborate_log = self.master.elaborate_log
-        f = io.FileIO(elaborate_log, 'w')
-        writer = io.BufferedWriter(f)
-        cmd = "vsim -c -do vsim_elaborate.tcl"
-        self._win_run_tool(cmd, writer)
+        cmd = 'vsim'
+        args = ['-c', '-do', 'vsim_elaborate.tcl', '-logfile', elaborate_log]
+        self.master._run_tool(cmd, args)
 
     @property
     def _run_vars(self):
