@@ -64,9 +64,9 @@ if [[ ($# == 1 ) && ($1 == "--gui") ]]; then
   exit 0
 else
   {% if gen_waves %}
-  nc_out=$(ncsim {{ toplevel }} $ncsim_opts -input ./nc_waves.tcl 2>&1)
+  nc_out=$(ncsim -run {{ toplevel }} $ncsim_opts -input ./nc_waves.tcl 2>&1)
   {% else %}
-  nc_out=$(ncsim {{ toplevel }} $ncsim_opts 2>&1)
+  nc_out=$(ncsim -run {{ toplevel }} $ncsim_opts 2>&1)
   {% endif %}
   nc_ecode=$?
 
