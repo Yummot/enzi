@@ -5,7 +5,7 @@ probe -create {{ toplevel }} -depth all -all -vcd -database ./waves/tbvcdwaves
 
 # generates shm file
 database -open ./waves/tbwaves -shm -default
-probe -create {{ toplevel }} -depth all -all -shm -database ./waves/tbwaves
+probe -create {{ toplevel }} -depth all -all -dynamic -shm -database ./waves/tbwaves
 
 # hook script
 
