@@ -407,9 +407,9 @@ class Predicate(object):
         return hash(h)
 
 
-class VerReqVaildator(object):
+class VerReqValidator(object):
     """
-    VerReqVaildator: Vaildate a version request string.
+    VerReqValidator: Vaildate a version request string.
     """
     # Multiple version requirements can be separated with a comma,
     # e.g., >= 1.2, < 1.5
@@ -450,7 +450,7 @@ class VersionReq(object):
         take a version and return a VersionReq that contains corresponding requirements.
         """
         ver_req = ver_req.strip()
-        validator = VerReqVaildator(ver_req)
+        validator = VerReqValidator(ver_req)
         preds = validator.validate()
         return VersionReq(preds)
 
@@ -507,7 +507,7 @@ class VersionReq(object):
 # v = semver.VersionInfo.parse('0.1.0-alpha+build1')
 # print(type(v.major))
 # print(type(v.build))
-# vor = VerReqVaildator('>= 1.1.0, <= 1.1.8')
+# vor = VerReqValidator('>= 1.1.0, <= 1.1.8')
 # ps = vor.validate()
 # test1 = PREFIX_REGEX.match('>= 1.1.0')
 # test2 = PREFIX_REGEX.match('>= 1.1.0, <= 1.1.8')
