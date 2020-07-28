@@ -22,7 +22,8 @@ if [ ! -e $logfile ]; then
   exit 1
 fi
 
-res=$(grep -rni $logfile -e "Errors: \d*" | grep -v "Errors: 0")
+res="$(grep ${logfile} -e 'Errors: [0-9]' | sed -e 's/^Errors:[[:space:]]0.*$//')"
+res="$(echo -e "${res}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
 if [ ! -z "$res" ]; then
     exit 1
