@@ -17,7 +17,7 @@ fi
 
 logfile=$1
 
-if [ ! -e logfile ]; then
+if [ ! -e $logfile ]; then
   echo -e "$logfile is not exists.\n"
   exit 1
 fi
