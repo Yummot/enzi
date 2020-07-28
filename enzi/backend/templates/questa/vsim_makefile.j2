@@ -50,14 +50,18 @@ compile: vsim_compile.sh
 {% if compile_log %}
 	{% if silence_mode %}
 	@./vsim_compile.sh | tee {{ compile_log }} > /dev/null
+	@./vsim_exec_check.sh {{ compile_log }}
 	{% else %}
 	@./vsim_compile.sh | tee {{ compile_log }}
+	@./vsim_exec_check.sh {{ compile_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
 	@./vsim_compile.sh | tee compile.log > /dev/null
+	@./vsim_exec_check.sh compile.log
 	{% else %}
 	@./vsim_compile.sh | tee compile.log
+	@./vsim_exec_check.sh compile.log
 	{% endif %}
 {% endif %}
 
@@ -65,14 +69,18 @@ elaborate: vsim_elaborate.sh
 {% if elaborate_log %}
 	{% if silence_mode %}
 	@./vsim_elaborate.sh | tee {{ elaborate_log }} > /dev/null
+	@./vsim_exec_check.sh {{ elaborate_log }}
 	{% else %}
 	@./vsim_elaborate.sh | tee {{ elaborate_log }}
+	@./vsim_exec_check.sh {{ elaborate_log }}
 	{% endif %}
 {% else %}
 	{% if silence_mode %}
 	@./vsim_elaborate.sh | tee elaborate.log > /dev/null
+	./vsim_exec_check.sh elaborate.log
 	{% else %}
 	@./vsim_elaborate.sh | tee elaborate.log
+	@./vsim_exec_check.sh elaborate.log
 	{% endif %}
 {% endif %}
 

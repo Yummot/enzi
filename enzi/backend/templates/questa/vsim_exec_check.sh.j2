@@ -1,0 +1,29 @@
+#! /bin/bash -f
+set -Eeuo pipefail
+
+# Script usage
+usage()
+{
+  msg="Usage: vsim_exec_check.sh [--help|-h]\n\
+Usage: nc_run.sh <logfile>\n"
+  echo -e $msg
+  exit 1
+}
+
+if [[ $# > 1 ]]; then
+  echo -e "ERROR: invalid number of arguments specified\n"
+  usage
+fi
+
+logfile=$1
+
+if [ ! -e logfile ]; then
+  echo -e "$logfile is not exists.\n"
+  exit 1
+fi
+
+res=$(grep -rni $logfile -e "Errors: \d*" | grep -v "Errors: 0")
+
+if [ ! -z "$res" ]; then
+    exit 1
+fi

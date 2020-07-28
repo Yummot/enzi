@@ -37,8 +37,9 @@ class Questa(Backend):
 
         if self.current_system == 'Linux':
             self.delegate = UnixDelegate(self)
-            self._gen_scripts_name = {'vsim_compile.sh',
-                                      'vsim_elaborate.sh', 'vsim-gui.tcl', 'vsim_make.mk'}
+            self._gen_scripts_name = {'vsim_compile.sh', 'vsim_elaborate.sh', 
+                                      'vsim-gui.tcl', 'vsim_make.mk',
+                                      'vsim_exec_check.sh'}
         elif self.current_system == 'Windows':
             self.delegate = WinDelegate(self)
             self._gen_scripts_name = {'vsim-gui.tcl',
@@ -75,6 +76,8 @@ class UnixDelegate(object):
         self.master = master
 
     def gen_scripts(self):
+        self.master.render_template(
+            'vsim_exec_check.sh.j2', 'vsim_exec_check.sh')
         self.master.render_template(
             'vsim_compile.sh.j2', 'vsim_compile.sh', self._compile_vars)
         self.master.render_template(
