@@ -17,13 +17,15 @@ ncvlog_opts+=" -logfile nc_compile.log -append_log -update"
 
 {% if use_uvm %}
 UVM_PATH="$CDSHOME/tools/methodology/UVM/CDNS-1.2"
-ncvlog_opts+="
+nc_uvm_opts="
 -define
 UVM_PLI
 $UVM_PATH/sv/src/uvm_pkg.sv 
 $UVM_PATH/additions/sv/cdns_uvm_pkg.sv
 +incdir+$UVM_PATH/sv/src+$UVM_PATH/sv/src+$UVM_PATH/additions/sv 
 "
+{% else %}
+nc_uvm_opts=""
 {% endif %}
 
 {% if vlog_defines %}
@@ -54,7 +56,7 @@ ncvhdl_generics=""
 {% for vlog_file in vlog_fileset %}
 {#- -#}
 {% if vlog_file.endswith((".sv", '.svh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ vlog_file }}
+ncvlog $ncvlog_opts $ncvlog_defines $nc_uvm_opts -sv -work worklib {{ vlog_file }}
 {% endif %}
 {% if vlog_file.endswith((".v", '.vh')) %}
 ncvlog $ncvlog_opts $ncvlog_defines -work worklib {{ vlog_file }}
@@ -81,7 +83,7 @@ ncvhdl $ncvhdl_opts $ncvhdl_generics -work worklib {{ file }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".sv", '.svh')) %}
-ncvlog $ncvlog_opts $ncvlog_defines -sv -work worklib {{ file|with_incdirs(pkg_name=pkg_name) }}
+ncvlog $ncvlog_opts $ncvlog_defines $nc_uvm_opts -sv -work worklib {{ file|with_incdirs(pkg_name=pkg_name) }}
 {% endif %}
 {#- -#}
 {% if file.endswith((".v", '.vh')) %}
